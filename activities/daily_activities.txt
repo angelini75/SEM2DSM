@@ -1,6 +1,7 @@
 22/Jan/2015
   Morning
-    reading "The nature and Properties of the Soils"
-    meeting with Luc Steibuch to show him Github
+    reading "The nature and Properties of the Soils"; 3 hs
+    meeting with Luc Steibuch to show him Github; 0,6 hs
   Afternoon
-    
+    reading "The nature and Properties of the Soils"; 4 hs
+--
