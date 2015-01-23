@@ -1,7 +1,17 @@
 22/Jan/2015
   Morning
-    reading "The nature and Properties of the Soils"; 3 hs
+    reading "The nature and Properties of the Soils", Chapter 8; 3 hs
     meeting with Luc Steibuch to show him Github; 0,6 hs
   Afternoon
-    reading "The nature and Properties of the Soils"; 4 hs
+    reading "The nature and Properties of the Soils", Chapter 8; 4 hs
+--
+23/Jan/2015
+  Morning
+    reading "The nature and Properties of the Soils", Chapter 8; 2 hs
+    reading 1995Morras.pdf @Bibliography
+    estimation of Clay CEC, Silt CEC, OM CEC. File calib_data/CEC_analysis.R; 2 hs
+  Afternoon
+    reading "The nature and Properties of the Soils", Chapter 8; 2 hs
+    Exploring spatial distribution different types of CEC (CEC_analysis.R); 1 hs
+    printing references; 0.5 hs
 --
