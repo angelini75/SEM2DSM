@@ -20,8 +20,13 @@ for(i in a){
   hist(D$CEC_pure.cl[D$hor == i],breaks = 20, xlab = paste("Clay CEC ",i," horizon",sep=""))
 }
 
-
-
+# spatial distribution
+library(sp)
+d <- cbind(D[D$hor == "BC",1:2],CEC_cl=D$CEC_pure.cl[D$hor == "BC"])
+d <- na.omit(d)
+d$CEC_cl <- round(d$CEC_cl,0)
+coordinates(d) <- ~X+Y
+spplot(d,zcol ="CEC_cl",edge.col="black", colorkey=T,col.regions= rainbow(1000) )
 
 # Morrás, Héctor JM. "Mineralogy and cation exchange capacity of the fine silt fraction in 
 # two soils from the southern Chaco Region (Argentina)." Geoderma 64, no. 3 (1995): 281-295.
