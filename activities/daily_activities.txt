@@ -1,7 +1,7 @@
 22/Jan/2015
   Morning
     reading "The nature and Properties of the Soils", Chapter 8; 3 hs
-    meeting with Luc Steibuch to show him Github; 0,6 hs
+    meeting with Luc Steibuch to show him Github; 0.6 hs
   Afternoon
     reading "The nature and Properties of the Soils", Chapter 8; 4 hs
 --
@@ -14,4 +14,18 @@
     reading "The nature and Properties of the Soils", Chapter 8; 2 hs
     Exploring spatial distribution different types of CEC (CEC_analysis.R); 1 hs
     printing references; 0.5 hs
+--
+24 & 25/Jan/2015
+    Reading "The nature and Properties of the Soils", Chapter 7
+    Reading Gustavo Cruzate (2000) Thesis
+-- 
+26/Jan
+  Morning
+    studying English; 1.5 hs
+    Reading "The nature and Properties of the Soils", Chapter 9; 2 hs
+    Reading Papers: Teruggi 1983, Morras comments and Teruggi replies.
+      Teruggi model consider allophane as a component of Pampean loess while Morras did not.
+  Afternoon
+    Reading "The nature and Properties of the Soils", Chapter 9; 2 hs
+    Reading Villiers 1967 (conceptual model of CEC)
 --
