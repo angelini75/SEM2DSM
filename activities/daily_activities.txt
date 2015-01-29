@@ -45,3 +45,12 @@
   Afternoon
     Exploring climatic data: from siga2.inta.gov.ar, siia.gov.ar, http://www.cru.uea.ac.uk
 --
+29/Jan
+  Morning
+    Editing Google doc covariates: description of climate data sources and nature; 3 hs
+    Contact Argentinian specialist about climate;
+    Editing Google doc covariates: Parent material status; 1 hs
+  Afternoon
+    Editing Google doc covariates: parent material; 3 hs
+    Reading paper Zarate 2003
+--
