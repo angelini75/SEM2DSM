@@ -54,3 +54,12 @@
     Editing Google doc covariates: parent material; 3 hs
     Reading paper Zarate 2003
 --
+02/Feb
+  Morning
+    Data Management PLan meeting w/ Jakob and Arnaud; 2.5 hs
+    Editing Google doc Conceptual model; 1.3 hs
+  Afternoon
+    Editing Google doc Conceptual model; 1.5 hs
+    Exploring Evapotranspiration MOD16A2 
+--
+ 
