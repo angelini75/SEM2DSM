@@ -68,4 +68,10 @@
   Afternoon
     English
 --
-
+04/Feb
+  Morning
+    Editing Google doc Conceptual model; 0.5 hs
+    Data sanitization; 4 hs
+  Afternoon
+    Data sanitization; 3 hs
+--
