@@ -75,3 +75,9 @@
   Afternoon
     Data sanitization; 3 hs
 --
+05/Feb
+  Morning
+    Data sanitization; 4 hs
+  Afternoon
+    Data sanitization; 3 hs
+--
