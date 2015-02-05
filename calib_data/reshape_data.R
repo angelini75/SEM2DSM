@@ -15,8 +15,9 @@ library(corrgram)
 # covariates for every location, and s.pr that refers to soil properties of every horizon.
 # dat, d2 and dat2 are data.frames intermediates to rich the final dataset: data
 
-############### PREPROCESSING DATA ###########################
 
+
+#################### RE-SHAPING DATA  ########
 setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration")
 
 D <-read.csv("calib.data-0.1.1.csv")
@@ -74,6 +75,8 @@ for(i in 1:length(ex)){
 
 # delete rows without horizon information
 d0 <-d[!is.na(d$top),] 
+# delete rows without analysis
+d0 <- d0[!is.na(d0$a_ph_h2o) & !is.na(d0$a_arcilla),]
 
 # bottom == NA <- top + 20 cm & misstiping errors
 d0[is.na(d0$bottom)& d0$top <100, 3:10]
@@ -99,49 +102,111 @@ d1$weight <- d1$thick / d1$s.thick
 #compute soil properties per id.hor
 names(d1)
 count(d1$id.hor)
-d2 <- cbind(d1[,c(1:10)],(d1[,11:33]* d1[,45]),c(35:45))
-
+d2 <- cbind(d1[,c(1:10)],(d1[,11:33]* d1[,45]),d1[,c(35:45)])
+d2[,26:33][is.na(d2[,26:33])] <- 0
 #### merge horizons
 ## horizon boundaries
 limits <- cbind(ddply(d2,.(id.hor), summarise, mintop=min(top))[,1:2],
             maxbot=(ddply(d2,.(id.hor), summarise, maxbot=max(bottom))[,2]))
 ## soil properties 
-names(d2)
- d3 <-  cbind(ddply(d2,.(id.hor), summarise, a_ph_h2o=sum(a_ph_h2o))[,1:2],
-                a_base_ca=(ddply(d2,.(id.hor), summarise, a_base_ca=sum(a_base_ca))[,2]),
-                a_base_mg=(ddply(d2,.(id.hor), summarise, a_base_mg=sum(a_base_mg))[,2]),
-                a_base_k =(ddply(d2,.(id.hor), summarise,   a_base_k=sum(a_base_k))[,2]),
-                a_base_na=(ddply(d2,.(id.hor), summarise, a_base_na=sum(a_base_na))[,2]),
-                a_mo_c=   (ddply(d2,.(id.hor),    summarise,    a_mo_c=sum(a_mo_c))[,2]),
-                a_arcilla=(ddply(d2,.(id.hor), summarise, a_arcilla=sum(a_arcilla))[,2]),
-                a_limo_2_5=(ddply(d2,.(id.hor), summarise, a_limo_2_5=sum(a_limo_2_5))[,2])
+names(d2)[11:33]
+####  aggregation of horizon by id.hor. Warning! = If one horizon has NA the other horizons result in NA
+
+d3 <-  cbind(ddply(d2,.(id.hor), summarise, a_S=sum(a_sum_bases))[,1:2],
+             a_CEC=(ddply(d2,.(id.hor), summarise, a_CEC=sum(a_CEC))[,2]),
+             a_base_ca=(ddply(d2,.(id.hor), summarise, a_base_ca=sum(a_base_ca))[,2]),
+             a_base_mg=(ddply(d2,.(id.hor), summarise, a_base_mg=sum(a_base_mg))[,2]),
+             a_base_k=(ddply(d2,.(id.hor), summarise, a_base_k=sum(a_base_k))[,2]),
+             a_base_na=(ddply(d2,.(id.hor), summarise, a_base_na=sum(a_base_na))[,2]),
+             a_H=(ddply(d2,.(id.hor), summarise, a_H=sum(a_h))[,2]),
+             a_sat_CEC=(ddply(d2,.(id.hor), summarise, a_sat_CEC=sum(a_saturacion_t))[,2]),
+             a_sat_SH=(ddply(d2,.(id.hor), summarise, a_sat_SH=sum(a_saturacion_s_h))[,2]),
+             a_cond=(ddply(d2,.(id.hor), summarise, a_cond=sum(a_conductividad))[,2]),
+             a_res_pasta=(ddply(d2,.(id.hor), summarise, a_res_pasta=sum(a_resistencia_pasta))[,2]),
+             a_ph_pasta=(ddply(d2,.(id.hor), summarise, a_ph_pasta=sum(a_ph_pasta))[,2]),
+             a_ph_h2o=(ddply(d2,.(id.hor), summarise, a_ph_h2o=sum(a_ph_h2o))[,2]),
+             a_ph_kcl=(ddply(d2,.(id.hor), summarise, a_ph_kcl=sum(a_ph_kcl))[,2]),
+             a_OC=(ddply(d2,.(id.hor), summarise, a_OC=sum(a_OC))[,2]),
+             a_clay=(ddply(d2,.(id.hor), summarise, a_clay=sum(a_arcilla))[,2]),
+             a_silt_20=(ddply(d2,.(id.hor), summarise, a_silt_20=sum(a_limo_2_20))[,2]),
+             a_silt_50=(ddply(d2,.(id.hor), summarise, a_silt_50=sum(a_limo_2_50))[,2]),
+             a_sand_100=(ddply(d2,.(id.hor), summarise, a_sand_100=sum(a_arena_muy_fina))[,2]),
+             a_sand_250=(ddply(d2,.(id.hor), summarise, a_sand_250=sum(a_arena_fina))[,2]),
+             a_sand_500=(ddply(d2,.(id.hor), summarise, a_sand_500=sum(a_arena_media))[,2]),
+             a_sand_1k=(ddply(d2,.(id.hor), summarise, a_sand_1k=sum(a_arena_gruesa))[,2]),
+             a_sand_2k=(ddply(d2,.(id.hor), summarise, a_sand_2k=sum(a_arena_muy_gruesa))[,2])
                 )
 
-## merge (((limits + d2) + dat2) + covD)
-data <- merge(x= merge(x= unique(merge(x = limits,y = d2[,1:3],by = "id.hor",all.x = F, all.y = T)), 
-              y= dat2, by= "id.hor", all= T),
-              y= covD, by= "id.p", all.x=T, all.y=F)
-# data$E <- as.numeric(data$hor == "E")
-# E <-ddply(data,.(id.p), summarise,is.E=sum(E))
-# 
-# Ecov<- merge(E,covD, by="id.p", all.x=T)
-# Ecov$is.E <- as.factor(Ecov$is.E)
-# Ecov<- Ecov[order(Ecov$is.E),]
+## merge (((limits + d2) + d3) + d2) #Concretions and mottles remain out of this dataset
+d4 <- merge(x= merge(x= unique(merge(x = limits,y = d2[,c(1:3,5,6,8)],by = "id.hor",all.x = F, all.y = T)), 
+              y= d3, by= "id.hor", all= T),
+              y= unique(d2[,c(5,36:41)]), by= "id.p", all.x=T, all.y=F)
 
 
-A <- data[data$hor=="A",c(1,3,4,6:13)]
-Bt <- data[data$hor=="Bt",c(1,3,4,6:13)]
-E <- data[data$hor=="E",c(1,3,4,6:13)]
-names(E) <- c("id.p","mintop.E","maxbot.E","a_ph_h2o.E","a_base_ca.E","a_base_mg.E","a_base_k.E","a_base_na.E","a_mo_c.E","a_arcilla.E","a_limo_2_5.E")
-ABt <-merge(A,Bt, by="id.p", all=T, suffixes = c(".A",".Bt"))
-ABtE <- merge(ABt,E, by= "id.p", all=T)
-data <- merge(ABtE, covD, by= "id.p", all.x=T) 
-#names(dat3) <- tolower(names(data))
-# dat3$id.hor <- as.factor(dat3$id.hor)
-# dat4 <- melt(dat3, id=c("id.p", "id.hor"), na.rm=F)
-# data <- cast(dat4, id.p ~ hor ~ variable)
-# data[[2]]
-# table(dat3)
+# to recover concretions and mottles
+d2$moteados[(d2$moteados)==""]<-NA
+d2$is.mottles<- as.numeric(!is.na(d2$moteados))
+d2$is.mottles[d2$is.mottles==0] <-9999
+d2$is.mottles[(d2$is.mottles)<9999]<- d2$top[(d2$is.mottles)<9999]
+
+d2$concreciones[(d2$concreciones)==""]<-NA
+d2$is.concr<- as.numeric(!is.na(d2$concreciones))
+d2$is.concr[d2$is.concr==0] <-9999
+d2$is.concr[d2$is.concr<9999]<- d2$top[d2$is.concr<9999]
+# merge d4 + concretions(depth) + mottles(depth)
+d5 <-merge(x=merge(d4, ddply(d2,.(id.p), summarise, is.mottles=min(is.mottles)),by= "id.p", all=T),
+      y=ddply(d2,.(id.p), summarise, is.concr=min(is.concr)), by= "id.p")
+
+d5$is.concr[d5$is.concr==9999] <-NA
+d5$is.mottles[d5$is.mottles==9999] <-NA
+
+
+### order variables by horizons
+A <- d5[d5$hor=="A",c(1:4,9:31)]
+B <- d5[d5$hor=="B",c(1:4,9:31)]
+E <- d5[d5$hor=="E",c(1:4,9:31)]
+C <- d5[d5$hor=="C",c(1:4,9:31)]
+names(A)[2:27] <- paste(names(A)[2:27],".A",sep="")
+names(B)[2:27] <- paste(names(B)[2:27],".B",sep="")
+names(E)[2:27] <- paste(names(E)[2:27],".E",sep="")
+names(C)[2:27] <- paste(names(C)[2:27],".E",sep="")
+
+AB <-merge(A,B, by="id.p", all=T)
+ABE <- merge(AB,E, by= "id.p", all=T)
+ABEC <- merge(ABE, C, by= "id.p", all=T) 
+
+d6 <- merge(unique(d5[,c(1,5:7,32:39)]),ABEC,by="id.p", all=T)
+#################### THE END OF RE-SHAPING
+rm(list=ls()[ls()!="d6"])
+################## ESTIMATING NEW VARIABLES #####
+
+d6$is.Bt <-d6$a_clay.B/d6$a_clay.A
+boxplot(d6$is.Bt)
+# coordinates(d6) <- ~X+Y
+# spplot(d6,zcol ="is.Bt",edge.col="black", colorkey=T,col.regions= rainbow(1000) )
+
+
+##### CEC analysis
+
+# CEC from OC (Nyle and Weil, 2007: chapter 8)
+d6$e_CEC_OM.A <- (d6$a_ph_h2o.A*50/1.5-33.33)*(d6$a_OC.A*1.72/100)
+# CEC from clay + silt
+d6$e_CEC_cl.sl.A <- d6$a_CEC.A - d6$e_CEC_OM.A 
+# CEC from silt considering CEC of silt = 15.5 cmol/kg (range 8 to 23 from Morras, 1995)
+d6$e_CEC_sl.A <- 10*(d6$a_silt_20.A/100)
+# CEC from clay
+d6$e_CEC_cl.A <- d6$e_CEC_cl.sl.A - d6$e_CEC_OM.A - d6$e_CEC_sl.A
+# CEC from pure clay 
+d6$e_CEC_pure.cl.A <- d6$e_CEC_cl.A/(d6$a_clay.A/100)
+
+plot(d6$a_ph_kcl.A,d6$a_base_na.A)
+hist(d6$e_CEC_pure.cl.A,breaks = 20, xlab = "Clay CEC A horizon")
+
+
+d7 <-d6
+coordinates(d7) <- ~X+Y
+spplot(d7,zcol ="a_ph_kcl.A",edge.col="black", colorkey=T)
+
 data$clayAB <- data$a_arcilla.A/data$a_arcilla.Bt
 data$dist_mean <- data$dist_mean/1000
 coordinates(data)=~X+Y
@@ -173,6 +238,9 @@ corrgram(data, order=F, lower.panel=panel.shade,
 boxplot(DEM_min ~ is.E,data)
 #write.csv(data,"data.csv")
 ############### STRUCTURAL EQUATION MODELLING ######################
+
+
+
 #data <- read.csv("data.csv")
 #Ecov[,"is.E"] <- lapply(Ecov[,"is.E"], ordered)
 #names(Ecov)
