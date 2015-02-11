@@ -1,5 +1,9 @@
 rm(list=ls())
 #install.packages('reshape')
+# install.packages("lavaan", repos="http://www.da.ugent.be", type="source")
+# install.packages('soiltexture')
+# install.packages("plyr")
+library(soiltexture)
 library(reshape)
 library(plyr)
 library(lavaan)
@@ -7,7 +11,7 @@ library(sp)
 library(lattice) # required for trellis.par.set():
 trellis.par.set(sp.theme()) # sets color ramp to bpy.colors()
 library(corrgram)
-#install.packages("lavaan", repos="http://www.da.ugent.be", type="source")
+library(plyr)
 
 # The first section concerns about grouping horizons with the same clasification, making a 
 # weighted mean of soil properties and taking min and max boundaries of horizons; 
@@ -169,7 +173,7 @@ C <- d5[d5$hor=="C",c(1:4,9:31)]
 names(A)[2:27] <- paste(names(A)[2:27],".A",sep="")
 names(B)[2:27] <- paste(names(B)[2:27],".B",sep="")
 names(E)[2:27] <- paste(names(E)[2:27],".E",sep="")
-names(C)[2:27] <- paste(names(C)[2:27],".E",sep="")
+names(C)[2:27] <- paste(names(C)[2:27],".C",sep="")
 
 AB <-merge(A,B, by="id.p", all=T)
 ABE <- merge(AB,E, by= "id.p", all=T)
@@ -198,8 +202,26 @@ d6$e_CEC_sl.A <- 10*(d6$a_silt_20.A/100)
 d6$e_CEC_cl.A <- d6$e_CEC_cl.sl.A - d6$e_CEC_OM.A - d6$e_CEC_sl.A
 # CEC from pure clay 
 d6$e_CEC_pure.cl.A <- d6$e_CEC_cl.A/(d6$a_clay.A/100)
+######################################## PLOTS
+write.csv(d6, "calib.data-1.1.csv")
+##
+# Titles and font size
+boxplot(d6[,c(31,33,83,85,57,59,109,111)],main="Percentage of clay and silt by horizon",ylab="percentage", xlab="Particle size by horizon",
+        cex.main=1.5,cex.lab=1.3,col=c(rep("brown",2),rep("violet",2),rep("orange",2),rep("yellow",2)))
 
-plot(d6$a_ph_kcl.A,d6$a_base_na.A)
+
+soiltexture::TT.plot()
+
+d6$a_sand.A <- d6[34]+d6[35]+d6[36]+d6[37]+d6[38]
+texture.A<- d6[,complete.cases(d6[,c(31,33,123)])]
+names(texture.A) <- c("CLAY","SILT","SAND")
+TT.plot(tri.data =texture.A,  class.sys = "USDA.TT", lang = "en" )  # English, default
+
+
+plot(d6$a_ph_kcl.B,d6$a_base_na.B)
+
+install.packages("soiltexture", )
+library(soiltexture)
 hist(d6$e_CEC_pure.cl.A,breaks = 20, xlab = "Clay CEC A horizon")
 
 
