@@ -81,3 +81,29 @@
   Afternoon
     Data sanitization; 3 hs
 --
+06/Feb
+  Morning
+    Data reshaping; new dataset version 1.1 called calib.data-1.1.csv
+    Exploring soiltexture package
+    getting ready for Progress meeting
+  Afternoon
+    Progress meeting; 1.5 hs
+--
+09/Feb
+  Morning
+    Preparing fieldwork presentation for Fruitfull Meeting; 4 hs
+  Afternoon
+    Preparing fieldwork presentation for Fruitfull Meeting; 6 hs
+    Showing presentation to roomates SGL
+--
+10/Feb
+  Morning
+    Preparing fieldwork presentation for Fruitfull Meeting (practicing)
+  Afternoon
+    Fieldwork presentation at Fruitfull Meeting with ISRIC and SGL colleagues; 25 assistant.
+    presentation at: https://docs.google.com/presentation/d/1pQMmieYlCUp7QTMgCylDCZVmOaMVx8NPPu-UUkENmjI/edit#slide=id.p4
+--
+11/Feb
+  Morning
+    Sending inquiring for grant renovation to INTA
+
