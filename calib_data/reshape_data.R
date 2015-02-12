@@ -205,6 +205,8 @@ d6$e_CEC_pure.cl.A <- d6$e_CEC_cl.A/(d6$a_clay.A/100)
 ######################################## PLOTS
 write.csv(d6, "calib.data-1.1.csv")
 ##
+d6 <-read.csv("calib.data-1.1.csv")[,-1]
+
 # Titles and font size
 boxplot(d6[,c(31,33,83,85,57,59,109,111)],main="Percentage of clay and silt by horizon",ylab="percentage", xlab="Particle size by horizon",
         cex.main=1.5,cex.lab=1.3,col=c(rep("brown",2),rep("violet",2),rep("orange",2),rep("yellow",2)))
@@ -212,10 +214,18 @@ boxplot(d6[,c(31,33,83,85,57,59,109,111)],main="Percentage of clay and silt by h
 
 soiltexture::TT.plot()
 
-d6$a_sand.A <- d6[34]+d6[35]+d6[36]+d6[37]+d6[38]
-texture.A<- d6[,complete.cases(d6[,c(31,33,123)])]
+d6 <- cbind(d6,(d6[34]+d6[35]+d6[36]+d6[37]+d6[38]))
+texture.A<- d6[,c(31,33,123)]
 names(texture.A) <- c("CLAY","SILT","SAND")
-TT.plot(tri.data =texture.A,  class.sys = "USDA.TT", lang = "en" )  # English, default
+texture.A <- na.omit(texture.A)
+texture.A <- texture.A[c(-162,-108),]
+texture.A <- cbind(texture.A,"sum"=(texture.A[1]+texture.A[2]+texture.A[3]))
+names(texture.A)[4] <- "sum"
+texture.A$CLAY <- texture.A$CLAY/texture.A$sum*100
+texture.A$SILT <- texture.A$SILT/texture.A$sum*100
+texture.A$SAND <- texture.A$SAND/texture.A$sum*100
+TT.plot(tri.data =texture.A,  class.sys = "USDA.TT", lang = "en",
+        col = "blue", cex = 0.5)  # English, default
 
 
 plot(d6$a_ph_kcl.B,d6$a_base_na.B)
