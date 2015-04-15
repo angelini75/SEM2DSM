@@ -2,6 +2,7 @@ rm(list=ls())
 #install.packages('reshape')
 # install.packages("lavaan", repos="http://www.da.ugent.be", type="source")
 # install.packages('soiltexture')
+#install.packages('corrgram')
 # install.packages("plyr")
 library(soiltexture)
 library(reshape)
@@ -28,7 +29,7 @@ D <-read.csv("calib.data-0.1.1.csv")
 
 #selected soil properties
 names(D)
-d <- cbind(D[,c(1:4,61,98,95,94,7:16,30:33,18,17,20:26,51,42,55,87,88,90,91,77,81)])
+d <- cbind(D[,c(1:4,61,98,95,94,7:16,30:33,18,17,20:27,51,42,55,87,88,90,91,77,81)])
 as.numeric(d$a_ph_kcl == 73.2) 
 as.numeric(d$a_ph_kcl == 0.3) 
 d[1482,13]<- 7.32
@@ -39,12 +40,13 @@ names(d)[7]<-"top"
 names(d)[8]<-"bottom"
 names(d)[9:10]<-c("a_sum_bases","a_CEC")
 names(d)[23]<-"a_OC"
+d$horizon <- as.character(d$horizon)
 
 # standardising horizon names
 t(table(d$horizon))
 d$hor <-""
-d<- cbind(d[,c(1:6,41,7:40)])
-if(d$horizon==)
+d<- cbind(d[,c(1:6,42,7:41)])
+#if(d$horizon==)
 count(d[grep("A1",d$horizon),c(6,7)])
 d$hor[grep("A1",d$horizon)] <- "A"
 d$hor[grep("^A$",d$horizon)] <- "A"
@@ -106,14 +108,14 @@ d1$weight <- d1$thick / d1$s.thick
 #compute soil properties per id.hor
 names(d1)
 count(d1$id.hor)
-d2 <- cbind(d1[,c(1:10)],(d1[,11:33]* d1[,45]),d1[,c(35:45)])
+d2 <- cbind(d1[,c(1:10)],(d1[,11:34]* d1[,46]),d1[,c(36:46)])
 d2[,26:33][is.na(d2[,26:33])] <- 0
 #### merge horizons
 ## horizon boundaries
 limits <- cbind(ddply(d2,.(id.hor), summarise, mintop=min(top))[,1:2],
             maxbot=(ddply(d2,.(id.hor), summarise, maxbot=max(bottom))[,2]))
 ## soil properties 
-names(d2)[11:33]
+names(d2)[11:34]
 ####  aggregation of horizon by id.hor. Warning! = If one horizon has NA the other horizons result in NA
 
 d3 <-  cbind(ddply(d2,.(id.hor), summarise, a_S=sum(a_sum_bases))[,1:2],
@@ -138,13 +140,14 @@ d3 <-  cbind(ddply(d2,.(id.hor), summarise, a_S=sum(a_sum_bases))[,1:2],
              a_sand_250=(ddply(d2,.(id.hor), summarise, a_sand_250=sum(a_arena_fina))[,2]),
              a_sand_500=(ddply(d2,.(id.hor), summarise, a_sand_500=sum(a_arena_media))[,2]),
              a_sand_1k=(ddply(d2,.(id.hor), summarise, a_sand_1k=sum(a_arena_gruesa))[,2]),
-             a_sand_2k=(ddply(d2,.(id.hor), summarise, a_sand_2k=sum(a_arena_muy_gruesa))[,2])
-                )
+             a_sand_2k=(ddply(d2,.(id.hor), summarise, a_sand_2k=sum(a_arena_muy_gruesa))[,2]),
+             a_caco3=(ddply(d2,.(id.hor), summarise, a_caco3=sum(a_ca_co3))[,2])
+             )
 
 ## merge (((limits + d2) + d3) + d2) #Concretions and mottles remain out of this dataset
 d4 <- merge(x= merge(x= unique(merge(x = limits,y = d2[,c(1:3,5,6,8)],by = "id.hor",all.x = F, all.y = T)), 
               y= d3, by= "id.hor", all= T),
-              y= unique(d2[,c(5,36:41)]), by= "id.p", all.x=T, all.y=F)
+              y= unique(d2[,c(5,35:40)]), by= "id.p", all.x=T, all.y=F)
 
 
 # to recover concretions and mottles
@@ -163,23 +166,23 @@ d5 <-merge(x=merge(d4, ddply(d2,.(id.p), summarise, is.mottles=min(is.mottles)),
 
 d5$is.concr[d5$is.concr==9999] <-NA
 d5$is.mottles[d5$is.mottles==9999] <-NA
-
-
+names(d5)
+d5 <- d5[,-c(34,33)]
 ### order variables by horizons
-A <- d5[d5$hor=="A",c(1:4,9:31)]
-B <- d5[d5$hor=="B",c(1:4,9:31)]
-E <- d5[d5$hor=="E",c(1:4,9:31)]
-C <- d5[d5$hor=="C",c(1:4,9:31)]
-names(A)[2:27] <- paste(names(A)[2:27],".A",sep="")
-names(B)[2:27] <- paste(names(B)[2:27],".B",sep="")
-names(E)[2:27] <- paste(names(E)[2:27],".E",sep="")
-names(C)[2:27] <- paste(names(C)[2:27],".C",sep="")
+A <- d5[d5$hor=="A",c(1:4,9:32)]
+B <- d5[d5$hor=="B",c(1:4,9:32)]
+E <- d5[d5$hor=="E",c(1:4,9:32)]
+BC <- d5[d5$hor=="BC",c(1:4,9:32)]
+names(A)[2:28] <- paste(names(A)[2:28],".A",sep="")
+names(B)[2:28] <- paste(names(B)[2:28],".B",sep="")
+names(E)[2:28] <- paste(names(E)[2:28],".E",sep="")
+names(BC)[2:28] <- paste(names(BC)[2:28],".BC",sep="")
 
 AB <-merge(A,B, by="id.p", all=T)
 ABE <- merge(AB,E, by= "id.p", all=T)
-ABEC <- merge(ABE, C, by= "id.p", all=T) 
+ABEBC <- merge(ABE, BC, by= "id.p", all=T) 
 
-d6 <- merge(unique(d5[,c(1,5:7,32:39)]),ABEC,by="id.p", all=T)
+d6 <- merge(unique(d5[,c(1,5:7,33:38)]),unique(ABEBC),by="id.p", all=T)
 #################### THE END OF RE-SHAPING
 rm(list=ls()[ls()!="d6"])
 ################## ESTIMATING NEW VARIABLES #####
@@ -192,52 +195,94 @@ boxplot(d6$is.Bt)
 
 ##### CEC analysis
 
-# CEC from OC (Nyle and Weil, 2007: chapter 8)
-d6$e_CEC_OM.A <- (d6$a_ph_h2o.A*50/1.5-33.33)*(d6$a_OC.A*1.72/100)
-# CEC from clay + silt
-d6$e_CEC_cl.sl.A <- d6$a_CEC.A - d6$e_CEC_OM.A 
-# CEC from silt considering CEC of silt = 15.5 cmol/kg (range 8 to 23 from Morras, 1995)
-d6$e_CEC_sl.A <- 10*(d6$a_silt_20.A/100)
-# CEC from clay
-d6$e_CEC_cl.A <- d6$e_CEC_cl.sl.A - d6$e_CEC_OM.A - d6$e_CEC_sl.A
-# CEC from pure clay 
-d6$e_CEC_pure.cl.A <- d6$e_CEC_cl.A/(d6$a_clay.A/100)
+# # CEC from OC (Nyle and Weil, 2007: chapter 8)
+# d6$e_CEC_OM.A <- (d6$a_ph_h2o.A*50/1.5-33.33)*(d6$a_OC.A*1.72/100)
+# # CEC from clay + silt
+# d6$e_CEC_cl.sl.A <- d6$a_CEC.A - d6$e_CEC_OM.A 
+# # CEC from silt considering CEC of silt = 15.5 cmol/kg (range 8 to 23 from Morras, 1995)
+# d6$e_CEC_sl.A <- 10*(d6$a_silt_20.A/100)
+# # CEC from clay
+# d6$e_CEC_cl.A <- d6$e_CEC_cl.sl.A - d6$e_CEC_OM.A - d6$e_CEC_sl.A
+# # CEC from pure clay 
+# d6$e_CEC_pure.cl.A <- d6$e_CEC_cl.A/(d6$a_clay.A/100)
 ######################################## PLOTS
-write.csv(d6, "calib.data-1.1.csv")
+write.csv(d6, "calib.data-1.2.csv")
 ##
-d6 <-read.csv("calib.data-1.1.csv")[,-1]
-
+d6 <-read.csv("calib.data-1.2.csv")[,-1]
+names(d6)
 # Titles and font size
 boxplot(d6[,c(31,33,83,85,57,59,109,111)],main="Percentage of clay and silt by horizon",ylab="percentage", xlab="Particle size by horizon",
         cex.main=1.5,cex.lab=1.3,col=c(rep("brown",2),rep("violet",2),rep("orange",2),rep("yellow",2)))
 
 
-soiltexture::TT.plot()
+d6$a_base_k.BC[d6$a_base_k.BC>10 & !is.na(d6$a_base_k.BC)]<-1.852
 
-d6 <- cbind(d6,(d6[34]+d6[35]+d6[36]+d6[37]+d6[38]))
-texture.A<- d6[,c(31,33,123)]
-names(texture.A) <- c("CLAY","SILT","SAND")
-texture.A <- na.omit(texture.A)
-texture.A <- texture.A[c(-162,-108),]
-texture.A <- cbind(texture.A,"sum"=(texture.A[1]+texture.A[2]+texture.A[3]))
-names(texture.A)[4] <- "sum"
-texture.A$CLAY <- texture.A$CLAY/texture.A$sum*100
-texture.A$SILT <- texture.A$SILT/texture.A$sum*100
-texture.A$SAND <- texture.A$SAND/texture.A$sum*100
-TT.plot(tri.data =texture.A,  class.sys = "USDA.TT", lang = "en",
-        col = "blue", cex = 0.5)  # English, default
+# soiltexture::TT.plot()
+# 
+# d6 <- cbind(d6,(d6[34]+d6[35]+d6[36]+d6[37]+d6[38]))
+# texture.A<- d6[,c(31,33,123)]
+# names(texture.A) <- c("CLAY","SILT","SAND")
+# texture.A <- na.omit(texture.A)
+# texture.A <- texture.A[c(-162,-108),]
+# texture.A <- cbind(texture.A,"sum"=(texture.A[1]+texture.A[2]+texture.A[3]))
+# names(texture.A)[4] <- "sum"
+# texture.A$CLAY <- texture.A$CLAY/texture.A$sum*100
+# texture.A$SILT <- texture.A$SILT/texture.A$sum*100
+# texture.A$SAND <- texture.A$SAND/texture.A$sum*100
+# TT.plot(tri.data =texture.A,  class.sys = "USDA.TT", lang = "en",
+#         col = "blue", cex = 0.5)  # English, default
+# d6$thickness.A <- d6$maxbot.A-d6$mintop.A
+# d6$thickness.B <- d6$maxbot.B-d6$mintop.B
+# d6$thickness.E <- d6$maxbot.E-d6$mintop.E
+# d6$is.E <- as.factor(!is.na(d6$thickness.E>0))
+
+plot(d6$a_base_na.BC,d6$a_silt_50.BC)
+#+d6$a_base_k.B )
+
+summary(lm(a_clay.B~a_CEC.B, d6))
 
 
-plot(d6$a_ph_kcl.B,d6$a_base_na.B)
 
-install.packages("soiltexture", )
-library(soiltexture)
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 hist(d6$e_CEC_pure.cl.A,breaks = 20, xlab = "Clay CEC A horizon")
 
 
 d7 <-d6
+
 coordinates(d7) <- ~X+Y
-spplot(d7,zcol ="a_ph_kcl.A",edge.col="black", colorkey=T)
+spplot(d7,zcol ="a_caco3.BC",edge.col="black", colorkey=T)
+
+#install.packages("ggmap")
+library(ggmap)
+ggmap(get_googlemap(c(-60,-35)))
+  
+ext <-  get_map(c(min(d6$X),min(d6$Y),-59,max(d6$Y)), color = "bw")
+ext <- get_googlemap(center = c((-59+min(d6$X))/2, (max(d6$Y)+min(d6$Y))/2),color="bw",
+                     zoom=8, maptype =  "terrain", scale=2)
+
+
+ggmap(ext,) +
+  geom_point(aes(x = X, y = Y, colour = a_silt_50.BC), data = d6, alpha = 1)
+
+
 
 data$clayAB <- data$a_arcilla.A/data$a_arcilla.Bt
 data$dist_mean <- data$dist_mean/1000
@@ -265,12 +310,10 @@ names(data) <- c("id.p","top.A","bot.A","ph.A","ca.A","mg.A","k.A","na.A","om.A"
                  "na_AB","ca_AB","thick.Bt")
 data$ca.mg.Bt <- data$ca.Bt/data$mg.Bt
 data$is.E <- as.factor(as.numeric(!is.na(data$top.E)))
-corrgram(data, order=F, lower.panel=panel.shade, 
-         upper.panel=panel.pie)
+corrgram(d6[,120:127], order=F, lower.panel=panel.shade,   upper.panel=panel.pie)
 boxplot(DEM_min ~ is.E,data)
 #write.csv(data,"data.csv")
 ############### STRUCTURAL EQUATION MODELLING ######################
-
 
 
 #data <- read.csv("data.csv")
