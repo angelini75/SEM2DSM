@@ -13,6 +13,7 @@ library(lattice) # required for trellis.par.set():
 trellis.par.set(sp.theme()) # sets color ramp to bpy.colors()
 library(corrgram)
 library(plyr)
+library(gdalUtils)
 
 # The first section concerns about grouping horizons with the same clasification, making a 
 # weighted mean of soil properties and taking min and max boundaries of horizons; 
@@ -82,7 +83,7 @@ for(i in 1:length(ex)){
 # delete rows without horizon information
 d0 <-d[!is.na(d$top),] 
 # delete rows without analysis
-d0 <- d0[!is.na(d0$a_ph_h2o) & !is.na(d0$a_arcilla),]
+d0 <- d0[!is.na(d0$a_ph_h2o) & !is.na(d0$a_OC)]
 
 # bottom == NA <- top + 20 cm & misstiping errors
 d0[is.na(d0$bottom)& d0$top <100, 3:10]
@@ -153,21 +154,23 @@ d4 <- merge(x= merge(x= unique(merge(x = limits,y = d2[,c(1:3,5,6,8)],by = "id.h
 # to recover concretions and mottles
 d2$moteados[(d2$moteados)==""]<-NA
 d2$is.mottles<- as.numeric(!is.na(d2$moteados))
-d2$is.mottles[d2$is.mottles==0] <-9999
-d2$is.mottles[(d2$is.mottles)<9999]<- d2$top[(d2$is.mottles)<9999]
+#d2$is.mottles[d2$is.mottles==0] <-9999
+#d2$is.mottles[(d2$is.mottles)<9999]<- d2$top[(d2$is.mottles)<9999]
 
 d2$concreciones[(d2$concreciones)==""]<-NA
 d2$is.concr<- as.numeric(!is.na(d2$concreciones))
-d2$is.concr[d2$is.concr==0] <-9999
-d2$is.concr[d2$is.concr<9999]<- d2$top[d2$is.concr<9999]
+#d2$is.concr[d2$is.concr==0] <-9999
+#d2$is.concr[d2$is.concr<9999]<- d2$top[d2$is.concr<9999]
 # merge d4 + concretions(depth) + mottles(depth)
-d5 <-merge(x=merge(d4, ddply(d2,.(id.p), summarise, is.mottles=min(is.mottles)),by= "id.p", all=T),
-      y=ddply(d2,.(id.p), summarise, is.concr=min(is.concr)), by= "id.p")
+# d5 <-merge(x=merge(d4, ddply(d2,.(id.p), summarise, is.mottles=min(is.mottles)),by= "id.p", all=T),
+#       y=ddply(d2,.(id.p), summarise, is.concr=min(is.concr)), by= "id.p")
+d5 <-merge(x=merge(d4, ddply(d2,.(id.p), summarise, is.mottles=max(is.mottles)),by= "id.p", all=T),
+           y=ddply(d2,.(id.p), summarise, is.concr=max(is.concr)), by= "id.p")
 
-d5$is.concr[d5$is.concr==9999] <-NA
-d5$is.mottles[d5$is.mottles==9999] <-NA
+# d5$is.concr[d5$is.concr==9999] <-NA
+# d5$is.mottles[d5$is.mottles==9999] <-NA
 names(d5)
-d5 <- d5[,-c(34,33)]
+d5 <- d5[,-c(33,34)]
 ### order variables by horizons
 A <- d5[d5$hor=="A",c(1:4,9:32)]
 B <- d5[d5$hor=="B",c(1:4,9:32)]
@@ -185,12 +188,84 @@ ABEBC <- merge(ABE, BC, by= "id.p", all=T)
 d6 <- merge(unique(d5[,c(1,5:7,33:38)]),unique(ABEBC),by="id.p", all=T)
 #################### THE END OF RE-SHAPING
 rm(list=ls()[ls()!="d6"])
-################## ESTIMATING NEW VARIABLES #####
+################## preparing endogenous variables from conceptual model #####
+names(d6)
+# PSI 
+d6$esp.A <- d6$a_base_na.A/d6$a_S.A*100
+d6$esp.B <- d6$a_base_na.A/d6$a_S.A*100
+# Bt ratio
+d6$Bt <-d6$a_clay.B/d6$a_clay.A
+# is.caco3
+d6$a_caco3.A[is.na(d6$a_caco3.A)==T]<-0
+d6$a_caco3.B[is.na(d6$a_caco3.B)==T]<-0
+d6$a_caco3.BC[is.na(d6$a_caco3.BC)==T]<-0
+d6$is.caco3 <- as.numeric(d6$a_caco3.A>0 | d6$a_caco3.B>0 | d6$a_caco3.BC>0)
+# depth caco3
+d6$d.caco3[d6$a_caco3.BC>0] <- d6$mintop.BC[d6$a_caco3.BC>0]
+d6$d.caco3[d6$a_caco3.B>0] <- d6$mintop.B[d6$a_caco3.B>0]
+d6$d.caco3[d6$a_caco3.A>0] <- d6$mintop.A[d6$a_caco3.A>0]
+# is.E
+d6$is.E <- as.numeric(!is.na(d6$maxbot.E))
+# thick.A
+d6$thick.A <- d6$maxbot.A - d6$mintop.A 
 
-d6$is.Bt <-d6$a_clay.B/d6$a_clay.A
-boxplot(d6$is.Bt)
-# coordinates(d6) <- ~X+Y
-# spplot(d6,zcol ="is.Bt",edge.col="black", colorkey=T,col.regions= rainbow(1000) )
+## dataset endogenous veriables
+endo <- d6[,c(1,2,3,9,10,125,14,119,120,28,121,122,123,124)]
+endo$is.hydro <- as.numeric(endo$is.mottles>0 & endo$is.concr>0)
+############################################################################################################
+
+#install.packages("maptools")
+library(raster)
+library(maptools)
+library(sp)
+library(rgdal)
+
+setwd("/media/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
+# X <- 
+# Y <- 
+files <- list.files(pattern=".sdat$")
+files30 <- files[c(1:4,9,10,12,13)]
+files250p <- files[11]
+files250m <- files[c(7,8)]
+files1km <- files[c(5,6)]
+
+coordinates(endo) <- ~X+Y
+
+
+#define crs
+wgs84 <- CRS("+init=epsg:4326")
+posgar98 <- CRS("+init=epsg:22175")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
+# assign projection
+proj4string(endo) <- wgs84
+
+
+# However, if you got the data from a RasterLayer (it looks like it)
+# you can avoid the above and simply do:
+# library(raster)
+# pts <- rasterToPoints(r, spatial=TRUE)
+
+# use spTransform
+endo <- spTransform( endo, posgar98)
+
+#load rasters
+stack <- list()
+for(i in 1:length(files30)) {
+  stack <- list()
+  stack[[1]] <- readGDAL(files30[1])
+  proj4string(stack[[1]]) <- posgar98
+  endo@data$id.p as.vector(over(endo, stack[[1]]))
+#####################################checking_dataset###########################################################
+
+
+
+
+
+
+
+
+
 
 
 ##### CEC analysis
