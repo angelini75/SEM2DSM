@@ -206,7 +206,7 @@ rm(list=ls()[ls()!="d6"])
 names(d6)
 # PSI 
 d6$esp.A <- d6$a_base_na.A/d6$a_S.A*100
-d6$esp.B <- d6$a_base_na.A/d6$a_S.A*100
+d6$esp.B <- d6$a_base_na.B/d6$a_S.B*100
 # Bt ratio
 d6$Bt <-d6$a_clay.B/d6$a_clay.A
 # is.caco3
@@ -224,7 +224,7 @@ d6$is.E <- as.numeric(!is.na(d6$maxbot.E))
 d6$thick.A <- d6$maxbot.A - d6$mintop.A 
 
 ## dataset endogenous veriables
-endo <- d6[,c(1,2,3,9,10,125,14,119,120,28,121,122,123,124)]
+endo <- d6[,c(1,2,3,9,10,125,14,21,119,120,28,121,122,123,124)]
 endo$is.hydro <- as.numeric(endo$is.mottles>0 & endo$is.concr>0)
 ############################################################################################################
 
@@ -313,7 +313,6 @@ setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration")
 write.csv(calib, "calib.data-2.0.csv")
 
 #####################################checking_dataset###########################################################
-
 
 
 
