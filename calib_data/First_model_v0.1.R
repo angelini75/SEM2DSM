@@ -1,11 +1,12 @@
 rm(list=ls())
 #install.packages("lavaan")
+#install.packages("lavaan", repos="http://www.da.ugent.be", type="source") 
 library(lavaan)
 setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
 
 d <-read.csv("calib.data-2.0.csv")[,-1]
 
-############### STRUCTURAL EQUATION MODELLING ######################
+#### preprocess 
 names(d)
 names(d)[c(5,6,9,10)]<- c("tb.A","sat.A", "oc.A","bt")
 d<-d[!is.na(d$oc.A),]
@@ -34,6 +35,22 @@ for(i in 1:length(d)){
   print(shapiro.test(d[,i]))
 }
 paste(names(d),".r", " =~ ",names(d), sep="")
+# d$is.E <- ordered(d$is.E)
+# d$is.hydro <- ordered(d$is.hydro)
+# step(lm(sat.A ~ dem+wdist+maxc+mrvbf+slope+twi+vdchn+lstm+lstsd+evim+evisd+river, d),direction = "both")
+# summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd, data = d))
+# summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd + tb.A + d.caco3 + river, data = d))
+# summary(lm(formula = oc.A ~ mrvbf + lstm + lstsd + evisd, data = d))
+# summary(lm(formula = tb.A ~ wdist + lstm + evim + evisd + river, data = d))
+# summary(lm(formula = thick.A ~ dem + maxc + evisd, data = d))
+# summary(lm(formula = esp.B ~ mrvbf + twi + vdchn + lstsd + evim + evisd + 
+#              river, data = d))
+# summary(lm(formula = esp.A ~ dem + mrvbf + twi + vdchn + lstsd + evim + 
+#              esp.B, data = d))
+# summary(lm(formula = sat.A ~ maxc + lstm + lstsd + evim + evisd, data = d))
+# summary(lm(formula = d.caco3 ~ dem + mrvbf + vdchn + lstm + lstsd + evim + 
+#             evisd + river, data = d))
+############### STRUCTURAL EQUATION MODELLING ######################
 
 first_model <- '            ##CREATING MODEL
 
@@ -73,7 +90,7 @@ tb.A.r ~      dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + l
               oc.A.r + d.caco3.r
 sat.A.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
               oc.A.r +  d.caco3.r 
-bt.r ~        dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r +
+bt.r ~        dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + river.r +
               esp.A.r + d.caco3.r #+ esp.B.r + 
 esp.A.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
               esp.B.r
@@ -118,11 +135,15 @@ thick.A.r ~1
 '
 
 #fitting
-fit1 <- lavaan(first_model,std.lv = T, data=d) #Fit the model with the data
+# std.ov = If TRUE, observed variables are standardized before entering the analysis
+# std.lv = If TRUE, the metric of each latent variable is determined by fixing their variances to 1.0.
+fit1 <- lavaan(first_model, std.ov=T, std.lv = T, data=d) #, ordered = c("is.E","is.hydro")) 
 
-plot(fit1)    #summary of the model fit
+# str(fit1)    #summary of the model fit
+# str(fit1@Options)
+summary(fit1, standardized=F, modindices = F, fit.measures=F) 
+warnings()
 
-summary(fit, standardized=T, modindices = F, fit.measures=T)   #summary of the fitting the model
 inspect(fit1,"cov.ov")      #shows the covariance matrix with negative values
 
 piet <- lav_partable_independence(fit1)
