@@ -80,8 +80,8 @@ mrvbf.r =~ 1*mrvbf
 slope.r =~ 1*slope 
 twi.r =~ 1*twi 
 vdchn.r =~ 1*vdchn 
-lstm.r =~ 1*lstm 
-lstsd.r =~ 1*lstsd 
+lstm.r =~ lstm 
+lstsd.r =~ lstsd 
 evim.r =~ 1*evim 
 evisd.r =~ 1*evisd 
 
@@ -89,34 +89,39 @@ evisd.r =~ 1*evisd
 tb.A.r ~      dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r+
               oc.A.r + d.caco3.r
 sat.A.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
-              oc.A.r +  d.caco3.r 
+              oc.A.r +  d.caco3.r + esp.A.r
 bt.r ~        dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + river.r +
               esp.A.r + d.caco3.r #+ esp.B.r + 
 esp.A.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
-              esp.B.r
-esp.B.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r 
-            # esp.A.r
+              esp.B.r 
+esp.B.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
+              esp.A.r 
 oc.A.r ~      dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
-              thick.A.r
+              thick.A.r + esp.A.r
 d.caco3.r ~   dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r +
               esp.B + bt.r
-is.hydro.r ~  dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + evim.r + evisd.r +
-              esp.A.r # it does not converge with esp.B.r but it does with esp.A.r 
+is.hydro.r ~  dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + evim.r + evisd.r + lstsd.r + 
+              esp.A.r + d.caco3.r # it does not converge with esp.B.r but it does with esp.A.r 
 is.E.r ~      dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + evim.r + evisd.r +
               esp.B.r #esp.A.r + 
-thick.A.r ~   dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + evim.r + evisd.r + maxc.r + slope.r
+thick.A.r ~   dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + evim.r + evisd.r + maxc.r + slope.r +
+              esp.B.r 
 
-river.r  ~   dem.r
-#mrvbf.r  ~ slope.r
-lstsd.r  ~   dem.r
-vdchn.r  ~    river.r
-twi.r  ~    vdchn.r
-evisd.r  ~      dem.r + vdchn.r + twi.r
-vdchn.r  ~ slope.r
-wdist.r  ~  lstm.r
+river.r  ~  dem.r
+lstsd.r  ~  dem.r + slope.r + evisd.r + lstm.r
+vdchn.r  ~  river.r + slope.r
+twi.r  ~    vdchn.r + river.r + evisd.r + wdist.r + dem.r
+evisd.r  ~  dem.r + vdchn.r + twi.r
+wdist.r  ~  lstm.r + twi.r
+lstm.r  ~   mrvbf.r + evim.r
+mrvbf.r  ~    river.r
+slope.r  ~      dem.r
 
 # residual variances observed variables #indicate the residual variance in the measurements, as indicator of measurement error
-thick.A ~~ thick.A
+# thick.A ~~ thick.A
+# esp.B ~~  esp.B
+
+
 
 #factor variances                       #Only for endogenous variables, so not for age and vegetation index
 tb.A.r ~~      oc.A.r + d.caco3.r
@@ -131,9 +136,16 @@ mrvbf.r ~~ slope.r
 thick.A.r ~~ thick.A.r
 river.r ~~ lstm.r
 twi.r ~~    vdchn.r
-d.caco3.r ~~ d.caco3.r
-maxc.r ~~   vdchn.r
-vdchn.r ~~   evisd.r
+maxc.r ~~   vdchn.r 
+mrvbf.r ~~    vdchn.r
+slope.r ~~    vdchn.r + slope.r
+twi.r ~~     evisd.r
+evim.r ~~   evisd.r + twi.r
+lstsd.r ~~   lstsd.r
+dem.r ~~   wdist.r + maxc.r + mrvbf.r
+maxc.r ~~    mrvbf.r + slope.r + lstsd.r
+  
+
 
 #Intercepts         #This code indicates that intercepts should be taken into account with the regression
 tb.A.r ~1
@@ -151,49 +163,14 @@ thick.A.r ~1
 #fitting
 # std.ov = If TRUE, observed variables are standardized before entering the analysis
 # std.lv = If TRUE, the metric of each latent variable is determined by fixing their variances to 1.0.
-fit1 <- lavaan(first_model, std.ov=T, std.lv = T, data=d)#, ordered = c("is.E","is.hydro")) 
+fit1 <- lavaan(first_model, std.ov=T, std.lv = T, data=d,estimator = "MLMVS")#, ordered = c("is.E","is.hydro")) 
 fit1
 # str(fit1)    #summary of the model fit
 # str(fit1@Options)
 
 summary(fit1, standardized=F, modindices = F, fit.measures=T) 
 modi<-summary(fit1, standardized=F, modindices = T, fit.measures=F) 
-modi<-modi[modi$mi>20 & !is.na(modi$mi),]
-sum(modi$mi[modi$mi>20])
+modi<-modi[modi$mi>5 & !is.na(modi$mi),]
 modi
+
 #
-
-
-inspect(fit1,"cov.ov")      #shows the covariance matrix with negative values
-
-
-
-
-
-#################Prediction 1A##############
-##setting up matrices
-
-{B <-matrix(c(0,coef(fit1)["silt_1A_r~thick_1A_r"],coef(fit1)["OM_1A_r~thick_1A_r"],  
-              coef(fit1)["thick_1A_r~silt_1A_r"],0,coef(fit1)["OM_1A_r~silt_1A_r"],
-              coef(fit1)["thick_1A_r~OM_1A_r"],coef(fit1)["silt_1A_r~OM_1A_r"],0),
-            ncol=3,nrow=3)
- B[is.na(B)] <- 0} #Matrix endogenous variables B
-{I<-diag(nrow=3,
-         ncol=3)} #Identity matrix
-{A<-matrix(c(coef(fit1Al)["thick_1A_r~age_hy"],coef(fit1Al)["silt_1A_r~age_hy"],         
-             coef(fit1Al)["OM_1A_r~age_hy"],coef(fit1Al)["thick_1A_r~VI"],
-             coef(fit1Al)["silt_r~VI"],coef(fit1Al)["OM_1A_r~VI"]),
-           nrow=3,ncol=2)
- A[is.na(A)] <- 0
-} #Matrix exogenous variables
-
-#Create test rasters
-age <- as.vector(seq(from=0,to=140,by=140/49))
-VI <- seq(from=100,to=40,by=-(100-40)/49)
-
-age_df=matrix(nrow=50,ncol=50)
-for (i in 1:50){
-  age_df[i,]<-age}
-VI_df=matrix(nrow=50,ncol=50)
-for (i in 1:50){
-  VI_df[,i]<-VI}

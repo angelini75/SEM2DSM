@@ -52,17 +52,16 @@ summary(lm(formula = tb.A ~ wdist + lstm + evisd + river+sat.A+oc.A+bt, data = d
 summary(lm(formula = sat.A ~ maxc + lstm + evisd + tb.A + oc.A + bt, data = d))
 # summary(lm(formula = d.caco3 ~ dem + mrvbf + vdchn + lstm + lstsd + evim + 
 #             evisd + river, data = d))
-corrgram(d[,15:29],upper.panel=panel.conf)
+library(corrgram)
+corrgram(d[,2:29],upper.panel=panel.conf)
 ############### STRUCTURAL EQUATION MODELLING ######################
-
 first_model <- '            ##CREATING MODEL
 
 
 # measurement model           ## Indicate in what manner the latent variables depend on the measured variables 
-                              ## (arrows in conceptual model)
-                              ## multiplication by 1 to set factor loading to 1 
- 
-thick.A.r =~ 1*thick.A 
+## (arrows in conceptual model)
+## multiplication by 1 to set factor loading to 1 
+
 tb.A.r =~ 1*tb.A 
 sat.A.r =~ 1*sat.A
 esp.A.r =~ 1*esp.A 
@@ -72,10 +71,11 @@ bt.r =~ 1*bt
 d.caco3.r =~ 1*d.caco3 
 is.E.r =~ 1*is.E 
 is.hydro.r =~ 1*is.hydro 
+thick.A.r =~ 1*thick.A 
 dem.r =~ 1*dem 
 river.r =~ 1*river 
 wdist.r =~ 1*wdist 
-#water.r =~ 1*water 
+
 maxc.r =~ 1*maxc 
 mrvbf.r =~ 1*mrvbf 
 slope.r =~ 1*slope 
@@ -89,10 +89,10 @@ evisd.r =~ 1*evisd
 
 # path analysis (regressions)           #indicates the regressions between the different latent variables
 
-tb.A.r ~      river.r + wdist.r + lstm.r + evisd.r+
-              oc.A.r + sat.A.r + bt.r #+d.caco3.r
-sat.A.r ~     lstm.r + evisd.r + maxc.r +
-              oc.A.r +  bt.r + tb.A
+tb.A.r ~      dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r+
+              oc.A.r + d.caco3.r
+sat.A.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
+              oc.A.r +  d.caco3.r 
 bt.r ~        dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + river.r +
               esp.A.r + d.caco3.r #+ esp.B.r + 
 esp.A.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
@@ -102,27 +102,26 @@ esp.B.r ~     dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + l
 oc.A.r ~      dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r + evim.r + evisd.r +
               thick.A.r
 d.caco3.r ~   dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + lstm.r + lstsd.r 
-            
+
 is.hydro.r ~  dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + evim.r + evisd.r +
               esp.A.r # it does not converge with esp.B.r but it does with esp.A.r 
 is.E.r ~      dem.r + wdist.r + mrvbf.r + twi.r + vdchn.r + evim.r + evisd.r +
               esp.B.r #esp.A.r + 
 thick.A.r ~   dem.r + river.r + wdist.r + mrvbf.r + twi.r + vdchn.r + evim.r + evisd.r + maxc.r + slope.r
-              
-# evim.r ~      is.hydro.r + is.E.r
-# evisd.r ~     is.hydro.r + is.E.r
+
+
 
 # residual variances observed variables #indicate the residual variance in the measurements, as indicator of measurement error
-thick.A ~~ 2*thick.A
+thick.A ~~ 4*thick.A
 
-#factor variances                       #Only for endogenous variables, so not for age and vegetation index
-tb.A.r ~~      oc.A.r + sat.A.r + bt.r
-sat.A.r ~~     oc.A.r +  bt.r + tb.A
-bt.r ~~        esp.A.r + esp.B.r + d.caco3.r 
-esp.A.r ~~     esp.B.r
-oc.A.r ~~      thick.A.r
-is.hydro.r ~~  esp.A.r + esp.B.r
-is.E.r ~~      esp.A.r + esp.B.r
+#factor variances       #Only for endogenous variables, 
+# tb.A.r ~~      oc.A.r + d.caco3.r
+# sat.A.r ~~     oc.A.r + d.caco3.r
+# bt.r ~~        esp.A.r + esp.B.r + d.caco3.r 
+# esp.A.r ~~     esp.B.r
+# oc.A.r ~~      thick.A.r
+# is.hydro.r ~~  esp.A.r + esp.B.r
+# is.E.r ~~      esp.A.r + esp.B.r
 
 #Intercepts         #This code indicates that intercepts should be taken into account with the regression
 tb.A.r ~1
@@ -132,16 +131,34 @@ esp.A.r ~1
 esp.B.r ~1
 oc.A.r ~1 
 d.caco3.r ~1  
-is.hydro.r ~0 
-is.E.r ~0     
+is.hydro.r ~1 
+is.E.r ~1     
 thick.A.r ~1
 '
 
 #fitting
 # std.ov = If TRUE, observed variables are standardized before entering the analysis
 # std.lv = If TRUE, the metric of each latent variable is determined by fixing their variances to 1.0.
-fit1 <- lavaan(first_model, std.ov=T, test="Yuan.Bentler", std.lv = T, data=d) #, test="Satorra.Bentler", ordered = c("is.E","is.hydro")) 
+fit1 <- lavaan(first_model, std.ov=T, std.lv = T, data=d, ordered = c("is.E","is.hydro")) 
+v<-varTable(fit1)
+fit1
+resc <- c(.1,.1,.1,.01,10,10,.0001,1,1,.1,.01,.000000001,.00001,.01,1,.001,1,.1,10,100,.00001,.00001)
+v[,2]
+n<-rep(1,27)
 
+for(i in 1:length(v[,2])){
+  n[v[,2][i]]<- resc[i]  
+}
+n
+d1 <- d
+for(i in 1:length(n)){
+  d1[,i]<- d[,i]*n[i]
+}
+fit1 <- lavaan(first_model, std.ov=F, std.lv = F, data=d1, ordered = c("is.E","is.hydro")) 
+
+
+
+standardizedSolution(fit1)
 # str(fit1)    #summary of the model fit
 # str(fit1@Options)
 summary(fit1, standardized=F, modindices = F, fit.measures=F) 
