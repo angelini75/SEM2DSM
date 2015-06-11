@@ -1,8 +1,8 @@
 rm(list=ls())
-#install.packages("lavaan")
-#install.packages("lavaan", repos="http://www.da.ugent.be", type="source") 
+# install.packages("lavaan")
+# install.packages("lavaan", repos="http://www.da.ugent.be", type="source")
 library(lavaan)
-setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
+setwd("D:/UserData/BaseARG/2_Calibration/simplest_model")
 
 d <-read.csv("calib.data-2.0.csv")[,-1]
 
@@ -59,17 +59,21 @@ d$is.caco3 <- ordered(d$is.caco3)
 # d$dem <- d$dem/100
 # d$maxc <- d$maxc/100
 
+e<- (((4-mean(d$thick.A))/sd(d$thick.A))^2)^(1/2)
 ##@## data normalization
 n <- c(4:10,15:27)
 for(i in n){
   d[,i]<- (d[,i]-mean(d[,i]))/sd(d[,i])
 }
+
 boxplot(d[,c(4:10,15:27)])  
+
 
 # step(lm(sat.A ~ dem+wdist+maxc+mrvbf+slope+twi+vdchn+lstm+lstsd+evim+evisd+river, d),direction = "both")
 # summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd, data = d))
 # summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd + tb.A + d.caco3 + river, data = d))
 summary(lm(formula = oc.A ~ mrvbf + lstm + lstsd + evisd, data = d))
+
 summary(lm(formula = tb.A ~ wdist + lstm + evim + evisd + river, data = d))
 # summary(lm(formula = thick.A ~ dem + maxc + evisd, data = d))
 # summary(lm(formula = esp.B ~ mrvbf + twi + vdchn + lstsd + evim + evisd + 
@@ -80,9 +84,6 @@ summary(lm(formula = tb.A ~ wdist + lstm + evim + evisd + river, data = d))
 # summary(lm(formula = d.caco3 ~ dem + mrvbf + vdchn + lstm + lstsd + evim + 
 #             evisd + river, data = d))
 ############### STRUCTURAL EQUATION MODELLING ######################
-
-
-
 
 #### Third Model####
 third_model <- '
@@ -97,41 +98,30 @@ thick.Ar =~ 1*thick.A
 esp.Br =~ 1*esp.B
 esp.Ar =~ 1*esp.A
 
-tb.Ar ~      evim + evisd + river + lstm +  dem + wdist +          #mrvbf + vdchn +  twi +
-              is.caco3 + oc.Ar + esp.Br + esp.Ar + btr
-sat.Ar ~      lstm + lstsd + wdist +   mrvbf +  vdchn +            #evim + evisd +twi + dem +
-              tb.Ar + is.caco3 + is.hydro + esp.Ar + oc.Ar 
-btr ~        lstm +  wdist + vdchn +   twi + dem + river +         # mrvbf + lstsd +
-              esp.Br + esp.Ar + is.hydro + is.caco3
-is.caco3 ~  wdist + vdchn + lstm + lstsd + evim +                 #+ twi + mrvbf + dem 
-              esp.Br 
-is.hydro ~  wdist + vdchn + mrvbf + evisd + lstm +                #twi +    dem +
-              esp.Br + esp.Ar + is.E + is.caco3
-is.E ~      wdist + vdchn +  dem +                                #mrvbf + twi + 
-              is.hydro + esp.Ar + esp.Br
-oc.Ar ~      wdist +  mrvbf + twi +  evisd + lstm + lstsd + dem +  #evim + vdchn + 
-              esp.Br + esp.Ar #+ is.hydro                           #thick.A +
-thick.Ar ~   wdist + maxc + dem + vdchn +                          # slope + mrvbf + lstm + lstsd + river + twi + 
-              esp.Br + esp.Ar + is.caco3                            # + is.hydro
-esp.Ar ~     lstsd +  lstm + river + evim +                        #evisd + wdist + vdchn +  mrvbf + twi +  dem +
-              esp.Br 
-esp.Br ~     lstm + lstsd + vdchn +  mrvbf + twi + river + evisd + #  evim + wdist +  dem 
-             is.caco3 
 
-is.caco3 ~~ esp.B
-thick.A ~~  thick.A
-sat.A ~~       bt
-
-
-# tb.A ~~ tb.A
-# sat.A ~~ sat.A
-# bt ~~ bt
-# is.caco3 ~~ is.caco3
-# is.hydro ~~ is.hydro
-# is.E ~~ is.E
-# oc.A ~~ oc.A
-# esp.A ~~ esp.A
-# esp.B ~~ esp.B
+tb.Ar ~     evim + evisd + river + lstm +  dem + wdist +          #mrvbf + vdchn +  twi +
+            oc.Ar + esp.Br + esp.Ar + btr                         #is.caco3r +
+sat.Ar ~    lstm + lstsd + wdist +   mrvbf +  vdchn +            #evim + evisd +twi + dem +
+            tb.Ar + esp.Ar + oc.Ar                                #is.caco3r + is.hydror +
+btr ~       lstm +  wdist + vdchn +   twi + dem + river +         # mrvbf + lstsd +
+            esp.Br + esp.Ar                                       #+ is.hydror + is.caco3r
+# is.caco3r ~  wdist + vdchn + lstm + lstsd + evim +                 #+ twi + mrvbf + dem 
+#             esp.Br 
+# is.hydror ~  wdist + vdchn + mrvbf + evisd + lstm +                #twi +    dem +
+#             esp.Br + esp.Ar                                     # + is.Er + is.caco3r
+# is.Er ~      wdist + vdchn +  dem +                                #mrvbf + twi + 
+#             is.hydror + esp.Ar + esp.Br
+oc.Ar ~     wdist +  mrvbf + twi +  evisd + lstm + lstsd + dem +  #evim + vdchn + 
+            esp.Br + esp.Ar                                     #+ is.hydror                           #thick.A +
+thick.Ar ~  wdist + maxc + dem + vdchn +                          # slope + mrvbf + lstm + lstsd + river + twi + 
+            esp.Br + esp.Ar                                     #+ is.caco3r                            # + is.hydro
+esp.Ar ~    lstsd +  lstm + river + evim +                        #evisd + wdist + vdchn +  mrvbf + twi +  dem +
+            esp.Br 
+esp.Br ~    lstm + lstsd + vdchn +  mrvbf + twi + river + evisd     # + #  evim + wdist +  dem 
+                                                                      #is.caco3r 
+#Measurement error
+thick.A ~~  0.25*thick.A
+tb.A ~~     0.25*tb.A
 
 # tb.A ~1
 # sat.A ~1
@@ -145,38 +135,27 @@ sat.A ~~       bt
 # esp.B ~1
 '
 ##### fitting ####
-fit2 <- lavaan(model = third_model, data = d,
-               model.type = "sem", meanstructure = T, #meanstructure requesting intercepts
-               int.ov.free = F, int.lv.free = F, fixed.x = "default", #intercepts are estimated instead 0
+#fit3<- sem(third_model, d,meanstructure = T,std.lv = T, ordered = c("is.E","is.caco3","is.hydro"))
+
+fit3 <- lavaan(model = third_model, data = d,
+               model.type = "sem", meanstructure = "default",
+               int.ov.free = F, int.lv.free = F, fixed.x = "default",
                orthogonal = FALSE, std.lv = T, 
-               parameterization = "default", auto.fix.first = F, #WHEN LATENT VARIABLES R PRESENT
-               auto.fix.single = F, auto.var = T, auto.cov.lv.x = F, # auto.var If TRUE, the residual variances and the variances of exogenous latent variables are included in the model and set free.
-               auto.cov.y = T, auto.th = T, auto.delta = T, # ?? auto.th if T they are free, otherwise calculated from data ??
-               std.ov = FALSE, missing = "default", ordered = c("is.E","is.hydro", "is.caco3"),
-               sample.cov = NULL, sample.cov.rescale = "default",
-               sample.mean = NULL, sample.nobs = NULL, ridge = 1e-05,
-               group = NULL, group.label = NULL, group.equal = "", group.partial = "",
-               group.w.free = FALSE, cluster = NULL, 
-               constraints = "", estimator = "WLSMV",
-               likelihood = "default", link = "default", information = "default",
-               se = "default", test = "default", bootstrap = 1000L, mimic = "default",
-               representation = "default", do.fit = TRUE, control = list(),
-               WLS.V = NULL, NACOV = NULL, 
-               zero.add = "default", zero.keep.margins = "default", 
-               zero.cell.warn = TRUE, start = "default", 
-               slotOptions = NULL, slotParTable = NULL,
-               slotSampleStats = NULL, slotData = NULL, slotModel = NULL,
-               slotCache = NULL, verbose = FALSE, warn = TRUE, debug = FALSE)
-
-summary(fit2, standardized=F, modindices = F, fit.measures=F) 
-inspect(fit2,"std.lv") # standardized model parameters
-inspect(fit2,"sampstat") #Observed sample statistics
-inspect(fit2, "cor.lv") #The model-implied correlation matrix of the observed variables
-inspect(fit2,"start") # starting values for all model parameters
-inspect(fit2,"information") #variance covariance matrix of the standardized estimated model parameters
-inspect(fit2,"rsquare") #R-square value for all endogenous variables
-
-modi<-summary(fit2, standardized=F, modindices = T, fit.measures=F) 
+               parameterization = "default", auto.fix.first = F,
+               auto.fix.single = T, auto.var = T, auto.cov.lv.x = FALSE,
+               auto.cov.y = T, auto.th = T, auto.delta = FALSE,
+               std.ov = FALSE, missing = "default", #ordered = c("is.hydro","is.caco3", "is.E"),
+               constraints = "", estimator = "ML", #  "WLSMV",
+               zero.cell.warn = TRUE, start = "default")
+varTable(fit3)
+summary(fit3, standardized=F, modindices = F, fit.measures=F) 
+inspect(fit3,"std.lv") # standardized model parameters
+inspect(fit3,"sampstat") #Observed sample statistics
+inspect(fit3, "cov.lv") #The model-implied covariance matrix of the observed variables
+inspect(fit3,"start") # starting values for all model parameters
+inspect(fit3,"rsquare") #R-square value for all endogenous variables
+lavaanify(third_model)
+modi<-summary(fit3, standardized=F, modindices = T, fit.measures=F) 
 modi<-modi[modi$mi>3 & !is.na(modi$mi),]
 modi
 
