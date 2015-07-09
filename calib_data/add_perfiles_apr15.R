@@ -122,9 +122,20 @@ names(m)<- c("id", "xy")
 coord <- ca[,c(1,3)]
 data <- read.csv("perfiles_2015-04-17.csv")
 
+# standardize numbers
+data$perfil_numero <- gsub(" C", "" , data$perfil_numero, fixed=TRUE)
+data$perfil_numero <- gsub(" (FAO-UNESCO)", "" , data$perfil_numero, fixed=TRUE)
+data$perfil_numero <- gsub(" FAO", "" , data$perfil_numero, fixed=TRUE)
+data$perfil_numero <- gsub(" (FAO)", "" , data$perfil_numero, fixed=TRUE)
+data$perfil_numero <- gsub("-C", "" , data$perfil_numero, fixed=TRUE)
+data$perfil_numero <- gsub(" ", "" , data$perfil_numero, fixed=TRUE)
+data$perfil_numero <- gsub("C", "" , data$perfil_numero, fixed=TRUE)
+data$perfil_numero <- gsub("/", "-" , data$perfil_numero, fixed=TRUE)
+data$perfil_numero <- gsub("RP", "" , data$perfil_numero, fixed=TRUE)
+
 calib.data <- merge(x = coord,y = data, by.x = "id", by.y = "perfil_id", all.x = T)
 calib.data<- calib.data[!is.na(calib.data$analitico_registro),]
-length(unique(calib.data$id))
+length(unique(calib.data$perfil_numero))
 
 ### agregar script para adosar datos de calib.data a calib.data-0.1.1.csv
 
@@ -161,11 +172,25 @@ calib.data$Y <- q[seq(0,length(q), 2)]
 names(calib.data) <- header
 head(calib.data)
 setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration")
-D <- read.csv("calib.data-0.2.csv")
+D <-read.csv("calib.data-0.1.1.csv")
 length(unique(D$X))
-n <- as.data.frame(table(D$p_id))
+n <- as.data.frame(table(D$id.p))
 nodata <- as.character(n[n$Freq==1,][,1])
 #any(D$p_id != c("11/834 C", "12/778-C"))
 
-D[D$p_id== c("06/118 C","11/834 C","12/778-C"),]
-D1 <- D[D$p_id!= c("12/778-C","11/834 C"),]
+names(D)
+n_calib <- names(calib.data)
+n_calib <-gsub("perfil_","p_", n_calib)
+n_calib <-gsub("ubicacion_","u_", n_calib)
+n_calib <-gsub("analitico_","a_", n_calib)
+names(calib.data) <-n_calib
+
+names(calib.data)[1] <- "id.p"
+names(calib.data)[3] <- "a_registro"
+calib.data$id.h <- 2505+as.numeric(row.names(calib.data))
+calib.data<-calib.data[,c(98:100, 1, 3:66, 68:97)]
+nombres <-cbind(names(D),names(calib.data))
+
+calib.data.0.1.2 <-rbind(D,calib.data)
+write.csv(calib.data.0.1.2, "calib.data.0.1.2.csv")
+#go to rashape_data.R
