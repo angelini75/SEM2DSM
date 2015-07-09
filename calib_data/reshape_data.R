@@ -7,8 +7,8 @@
 # Note : 
 #     This section concerns about grouping same type of horizons by profile, making a 
 #     weighted mean of soil properties and taking min and max boundaries of horizons; 
-#   Imput data : calib.data-0.1.1.csv; rasters from /media/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling
-#   Output data : calib.data-2.0.csv.
+#   **Imput data : calib.data-0.1.2.csv; rasters from /media/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling**
+#   **Output data : calib.data-2.0.csv.
 
 # sessionInfo(@RStudio desktop) lenovo ThinkPad T430 (4 cores)
 # R version 3.0.2 (2013-09-25)
@@ -97,7 +97,7 @@ for(i in 1:length(ex)){
 # delete rows without horizon information
 d0 <-d[!is.na(d$top),] 
 # delete rows without analysis
-d0 <- d0[!is.na(d0$a_ph_h2o) & !is.na(d0$a_OC)]
+d0 <- d0[!is.na(d0$a_ph_h2o) & !is.na(d0$a_OC),]
 
 # bottom == NA <- top + 20 cm & misstiping errors
 d0[is.na(d0$bottom)& d0$top <100, 3:10]
@@ -163,7 +163,7 @@ d3 <-  cbind(ddply(d2,.(id.hor), summarise, a_S=sum(a_sum_bases))[,1:2],
 d4 <- merge(x= merge(x= unique(merge(x = limits,y = d2[,c(1:3,5,6,8)],by = "id.hor",all.x = F, all.y = T)), 
               y= d3, by= "id.hor", all= T),
               y= unique(d2[,c(5,35:40)]), by= "id.p", all.x=T, all.y=F)
-
+#write.csv(d4, "d4.csv")
 
 # to recover concretions and mottles
 d2$moteados[(d2$moteados)==""]<-NA
@@ -310,7 +310,7 @@ calib <- calib[!is.na(calib$Bt),]
 calib <- calib[!is.na(calib$a_OC.A),]
 
 setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration")
-write.csv(calib, "calib.data-2.0.csv")
+write.csv(calib, "calib.data-2.1.csv")
 
 #####################################checking_dataset###########################################################
 
