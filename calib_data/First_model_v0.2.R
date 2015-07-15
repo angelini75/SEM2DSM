@@ -26,47 +26,37 @@ summary(d$esp.B[d$d.caco3<30], omit.na=T)
 d$esp.B[is.na(d$esp.B)] <- 30.9
 
 nas<-d[!complete.cases(d),]
-#Ecov[,"is.E"] <- lapply(Ecov[,"is.E"], ordered)
-#names(Ecov)
 
-# normality test
-for(i in 1:length(d)){
-  print(names(d)[i])
-  print(shapiro.test(d[,i]))
-}
-paste(names(d),".r", " =~ ",names(d), sep="")
+
 # transformation
 d$esp.A <- log10(d$esp.A)
 d$esp.B <- log10(d$esp.B)
 d$is.hydro <- ordered(d$is.hydro)
 d$is.E <- ordered(d$is.E)
 d$is.caco3 <- ordered(d$is.caco3)
-#d[,c(4:10,12,15:27)]<- scale(d[,c(4:10,12,15:27)],)
-# d$river <- d$river/100000
-# d$evim <- d$evim/1000
-# d$evisd <- d$evisd/1000
-# d$wdist <- d$wdist/1000
-# d$lstm <- (d$lstm-290)/10
-# d$lstsd <- d$lstsd-6
-# d$vdchn <- d$vdchn/10
-# d$mrvbf <- d$mr/10
-# d$slope <- d$slope*10
-# d$thick.A <- d$thick.A/100
-# d$tb.A <- d$tb.A/100
-# d$sat.A <- d$sat.A/100
-# d$slope <- d$slope/10
-# d$twi <- d$twi/10
-# d$dem <- d$dem/100
-# d$maxc <- d$maxc/100
 
-e<- (((4-mean(d$thick.A))/sd(d$thick.A))^2)^(1/2)
+hist(d$thick.A,col = "lightblue")
+summary(d$thick.A)
 ##@## data normalization
+N<- data.frame(mean = rep(0,20),sd=rep(0,20))
+
+# save mean and sd
+
+dm <- d[,c(4:10,15:27)]
+for(i in 1:20){
+  N$mean[i] <- mean(dm[,i])
+  N$sd[i] <- sd(dm[,i])
+  rownames(N)[i] <-names(dm)[i]
+}
+
+
+
 n <- c(4:10,15:27)
 for(i in n){
   d[,i]<- (d[,i]-mean(d[,i]))/sd(d[,i])
 }
 
-boxplot(d[,c(4:10,15:27)])  
+#boxplot(d[,c(4:10,15:27)])  
 
 
 # step(lm(sat.A ~ dem+wdist+maxc+mrvbf+slope+twi+vdchn+lstm+lstsd+evim+evisd+river, d),direction = "both")
@@ -139,7 +129,7 @@ fit3 <- lavaan(model = third_model, data = d,
 varTable(fit3)
 summary(fit3, standardized=F, modindices = F, fit.measures=F) 
 inspect(fit3,"std.lv") # standardized model parameters
-inspect(fit3,"sampstat") #Observed sample statistics
+inspect(fit3,"partable") #Observed sample statistics
 inspect(fit3, "cov.lv") #The model-implied covariance matrix of the observed variables
 inspect(fit3,"start") # starting values for all model parameters
 inspect(fit3,"rsquare") #R-square value for all endogenous variables
@@ -151,88 +141,196 @@ modi
 write.csv(full_model, "full_model.csv")
 
 #################### PREDICTION #########################
+### rasters of external drivers, conversion to data frame and standardization
 
-#################Prediction 1A##############
+#install.packages("maptools")
+library(raster)
+library(maptools)
+library(sp)
+library(rgdal)
+
+setwd("/media/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
+# X <- 
+# Y <- 
+
+# sdat files (dem) 
+files <- list.files(pattern=".sdat$")
+header <- gsub(".sdat", "", files)
+header <- c("dem", "river", "wdist","maxc","mrvbf","slope","twi","vdchn","water") 
+pred <- read.csv("mask_231m2.csv")
+#files_posgar <- files[c(1:4,9,10,12,13)]
+# header <- header[c(1:4,9,10,12,13)]
+# files250p <- files[11]
+# header250p <- header[11]
+
+# tif files (modis)
+files_m <- list.files(pattern=".tif")
+# files250m <- files[c(7,8)]
+# header250m <- header[c(7,8)]
+# files1km <- files[c(5,6)]
+header_m <- c("lstm", "lstsd", "evim", "evisd")
+
+
+coordinates(pred) <- ~X+Y
+
+
+#define crs
+wgs84 <- CRS("+init=epsg:4326")
+posgar98 <- CRS("+init=epsg:22175")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
+# assign projection
+proj4string(pred) <- modis
+pred <- spTransform(pred, posgar98)
+
+# However, if you got the data from a RasterLayer (it looks like it)
+# you can avoid the above and simply do:
+# library(raster)
+# pts <- rasterToPoints(r, spatial=TRUE)
+
+# extract values from files (.sdat)
+stack <- list()
+for(i in 1:length(files)) {
+  pred@data[,length(pred@data)+1] <- NULL
+  stack[[i]] <- readGDAL(files[i])
+  proj4string(stack[[i]]) <- posgar98
+  pred@data[,length(pred@data)+1] <- over(pred, stack[[i]])[,1]
+  stack <- list()
+  names(pred@data)[length(pred@data)] <- header[i]
+}  
+
+## extract values from modis files 
+stack <- list()
+# reproject endo to modis projection
+pred <- spTransform( pred, modis)
+for(i in 1:length(files_m)) {
+  pred@data[,length(pred@data)+1] <- NULL
+  stack[[i]] <- readGDAL(files_m[i])
+  proj4string(stack[[i]]) <- modis # change projection
+  pred@data[,length(pred@data)+1] <- over(pred, stack[[i]])[,1]
+  stack <- list()
+  names(pred@data)[length(pred@data)] <- header_m[i]
+}  
+#image(raster(("mod13q1_tot_mean.tif")))
+
+# clean points out of study area
+pred <- spTransform(pred, posgar98)
+pred.df <- as.data.frame(pred)
+
+
+pred.df <- pred.df[complete.cases(pred.df),]
+pred.df <- pred.df[,c(2:16)]
+
+for(i in 1:14) {
+  pred.df[,length(pred.df)+1] <- NA
+  names(pred.df)[length(pred.df)] <- names(d)[i]
+}  
+pred.df <- pred.df[,c(16:29,1:15)]
+pred <- pred.df
+##@## data normalization
+setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
+D <-read.csv("calib.data-2.1.csv")[,-1]
+n <- c(15:27)
+for(i in n){
+  pred[,i]<- (pred[,i]-mean(D[,i]))/sd(D[,i])
+}
+names(D)[15:27]
+# for(i in n){
+#   boxplot(c(d[i],pred[i]))
+# }
+
+
+################# Prediction ##############
 ##setting up matrices
-co <- as.data.frame(coef(fit3))
-co$fun <- row.names(co)
-row.names(co)<-NULL
-{B <- inspect(fit3,"est")$beta[1:7,1:7]} #matrix of coeff. latent state variables
- 
-# B <-matrix(c(0,coef(fit3)["silt_1A_r~thick_1A_r"],coef(fit3)["OM_1A_r~thick_1A_r"],  
-#               coef(fit3)["thick_1A_r~silt_1A_r"],0,coef(fit3)["OM_1A_r~silt_1A_r"],
-#               coef(fit3)["thick_1A_r~OM_1A_r"],coef(fit3)["silt_1A_r~OM_1A_r"],0),
-#             ncol=3,nrow=3)
-#  B[is.na(B)] <- 0} #Matrix endogenous variables B
+B <- inspect(fit3,"est")$beta[1:7,1:7] #matrix of coeff. latent state variables
+I <-diag(nrow=7, ncol=7) #Identity matrix
+A <- inspect(fit3,"est")$beta[1:7,8:19] #matrix of coeff of external drivers
 
-{I<-diag(nrow=7, ncol=7)} #Identity matrix
-
-{A<- inspect(fit3,"est")$beta[1:7,8:19]} #matrix of coeff of external drivers
-# {A<-matrix(c(coef(fit3)["thick_1A_r~age_hy"],coef(fit3)["silt_1A_r~age_hy"],         
-#              coef(fit3)["OM_1A_r~age_hy"],coef(fit3)["thick_1A_r~VI"],
-#              coef(fit3)["silt_r~VI"],coef(fit3)["OM_1A_r~VI"]),
-#            nrow=3,ncol=2)
-#  A[is.na(A)] <- 0
-# } #Matrix exogenous variables
-
-
-##### ...to be continued.
-
-
-
-#Create test rasters
-age <- as.vector(seq(from=0,to=140,by=140/49))
-VI <- seq(from=100,to=40,by=-(100-40)/49)
-
-age_df=matrix(nrow=50,ncol=50)
-for (i in 1:50){
-  age_df[i,]<-age}
-VI_df=matrix(nrow=50,ncol=50)
-for (i in 1:50){
-  VI_df[,i]<-VI}
-
+save.image("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/prediction.RData")
+## go to RStudio server to run next step
 #################Prediction model###########################
 #For test data
-thick_pred<-matrix(nrow=50,ncol=50)
-silt_pred<-matrix(nrow=50,ncol=50)
-OM_pred<-matrix(nrow=50,ncol=50)
+N <- read.csv("N.csv")
+library(utils)
+pb = txtProgressBar(min = 0, max = length(pred[,1]), initial = 0, style = 3)
+pred <- pred[,15:29]
+# not to run
+# for(i in 1:length(pred[,1])) {
+#   p=matrix(c(pred$evim[i], pred$evisd[i],
+#              pred$lstm[i], pred$lstsd[i], pred$dem[i], 
+#              pred$wdist[i], pred$mrvbf[i], pred$vdchn[i],
+#              pred$twi[i], pred$river[i], pred$slope[i],
+#              pred$maxc[i]),nrow=12,ncol=1)
+#   n=c(0,0,0,0,0,0,0)
+#   n=(solve(I-B))%*%((A%*%p))
+#   pred$tb.Ar[i] <-  n[1]
+#   pred$sat.Ar[i] <-  n[2]
+#   pred$btr[i] <-  n[3]
+#   pred$oc.Ar[i] <-  n[4]
+#   pred$thick.Ar[i] <-  n[5]
+#   pred$esp.Br[i] <-  n[6]
+#   pred$esp.Ar[i] <-  n[7]
+#   setTxtProgressBar(pb,i)
+# }
 
-k=matrix(c(coef(fit3)["thick_1A_r~1"],coef(fit3)["silt_1A_r~1"],coef(fit3)["OM_1A_r~1"]),nrow=3,ncol=1)
-for (i in 1:50){
-  for (j in 1:50){
-    p=matrix(c(age_df[i,j],VI_df[i,j]),nrow=2,ncol=1)
-    n=c(0,0,0)
-    n=(solve(I-B))%*%((A%*%p)+k)
-    thick_pred[i,j]<-n[1]
-    silt_pred[i,j] <-n[2]
-    OM_pred[i,j] <-n[3]
-  }
+# result of the prediction
+pred.bk <-read.csv("pred.bk.csv")
+
+# #pred.bk <- pred
+pred <- pred.bk
+pred <- pred[,14:22]
+N <- N[c(2,3,7,6,1,5,4),]
+
+# as.data.frame(names(D))
+# as.data.frame(names(pred.bk))
+
+
+for(i in 3:9){
+  pred[,i]<- pred[,i]*N[i-2,3] + N[i-2,2]
 }
 
-thick_raster<-raster(x=thick_pred)  
-OM_raster<-raster(x=OM_pred)
-silt_raster<-raster(silt_pred)
 
-##On study area
-thick_1A<-age_valley
-silt_1A<-age_valley
-OM_1A<-age_valley
+library(sp)
+library(raster)
+pred.sp <- pred
+coordinates(pred.sp) <- ~X+Y
+# spplot(pred.sp)
 
-for (i in 1:nrow(age_valley)){
-  for (j in 1:ncol(age_valley)){
-    p=matrix(c(age_valley[i,j],VI_valley[i,j]),nrow=2,ncol=1)
-    n=c(0,0,0)
-    k=matrix(c(coef(fit3)["thick_1A_r~1"],coef(fit3)["silt_1A_r~1"],coef(fit3)["OM_1A_r~1"]),nrow=3,ncol=1)
-    n=(solve(I-B))%*%(A%*%p+k)
-    thick_1A[i,j]<-n[1]
-    silt_1A[i,j] <-n[2]
-    OM_1A[i,j] <-n[3]
-  }
-}
+y <- raster("mask_231m_posgar.tif")
+proj4string(y) <- posgar98
+proj4string(pred.sp) <- posgar98
+#pred.sp <- spTransform(pred.sp, modis)
+r <- rasterize(x = pred.sp,y = y,background= NA)
+plot(r)
+writeRaster(x = r,filename ="rusults.tif", overwrite=T,bylayer=TRUE,suffix=r@data@names)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #################Plotting results####################
 ##Study area
+
+
 terr<-readShapePoly("E:/thesis/Spitsbergen 2014/data veldwerk/gis-bestanden/study_area_individual terraces_estimate.shp")
 
 bmp(filename="E:/thesis/statistics/thick_1A.bmp",width=450,height=450)
