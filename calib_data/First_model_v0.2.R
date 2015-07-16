@@ -6,7 +6,7 @@ setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
 
 d <-read.csv("calib.data-2.1.csv")[,-1]
 
-############### PRE-PROCESS ################## 
+############### PRE-PROCESSING ################## 
 names(d)
 names(d)[c(5,6,9,10)]<- c("tb.A","sat.A", "oc.A","bt")
 d<-d[!is.na(d$oc.A),]
@@ -108,9 +108,6 @@ thick.Ar ~  dem + wdist + mrvbf + vdchn + twi + river + slope + maxc + evim + ev
 thick.A ~~  0.25*thick.A
 tb.A ~~     0.25*tb.A
 
-
-
-
 # intercepts
 '
 ##### fitting ####
@@ -150,27 +147,19 @@ library(sp)
 library(rgdal)
 
 setwd("/media/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
-# X <- 
-# Y <- 
 
 # sdat files (dem) 
 files <- list.files(pattern=".sdat$")
 header <- gsub(".sdat", "", files)
 header <- c("dem", "river", "wdist","maxc","mrvbf","slope","twi","vdchn","water") 
 pred <- read.csv("mask_231m2.csv")
-#files_posgar <- files[c(1:4,9,10,12,13)]
-# header <- header[c(1:4,9,10,12,13)]
-# files250p <- files[11]
-# header250p <- header[11]
+
 
 # tif files (modis)
 files_m <- list.files(pattern=".tif")
-# files250m <- files[c(7,8)]
-# header250m <- header[c(7,8)]
-# files1km <- files[c(5,6)]
 header_m <- c("lstm", "lstsd", "evim", "evisd")
 
-
+# pred to spatial data frame
 coordinates(pred) <- ~X+Y
 
 
@@ -183,7 +172,7 @@ modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +u
 proj4string(pred) <- modis
 pred <- spTransform(pred, posgar98)
 
-# However, if you got the data from a RasterLayer (it looks like it)
+# However, if you got the data from a RasterLayer
 # you can avoid the above and simply do:
 # library(raster)
 # pts <- rasterToPoints(r, spatial=TRUE)
@@ -194,7 +183,7 @@ for(i in 1:length(files)) {
   pred@data[,length(pred@data)+1] <- NULL
   stack[[i]] <- readGDAL(files[i])
   proj4string(stack[[i]]) <- posgar98
-  pred@data[,length(pred@data)+1] <- over(pred, stack[[i]])[,1]
+  pred@data[,length(pred@data)+1] <- over(pred, stack[[i]])[,1] # over intersects points with raster 
   stack <- list()
   names(pred@data)[length(pred@data)] <- header[i]
 }  
@@ -249,7 +238,7 @@ A <- inspect(fit3,"est")$beta[1:7,8:19] #matrix of coeff of external drivers
 save.image("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/prediction.RData")
 ## go to RStudio server to run next step
 #################Prediction model###########################
-#For test data
+
 N <- read.csv("N.csv")
 library(utils)
 pb = txtProgressBar(min = 0, max = length(pred[,1]), initial = 0, style = 3)
