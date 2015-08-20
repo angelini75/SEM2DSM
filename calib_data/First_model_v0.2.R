@@ -2,7 +2,7 @@ rm(list=ls())
 # install.packages("lavaan")
 # install.packages("lavaan", repos="http://www.da.ugent.be", type="source")
 library(lavaan)
-setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
+setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
 
 d <-read.csv("calib.data-2.1.csv")[,-1]
 
@@ -35,8 +35,8 @@ d$is.hydro <- ordered(d$is.hydro)
 d$is.E <- ordered(d$is.E)
 d$is.caco3 <- ordered(d$is.caco3)
 
-hist(d$thick.A,col = "lightblue")
-summary(d$thick.A)
+# hist(10^(d$esp.A),col = "lightblue")
+# summary(d$thick.A)
 ##@## data normalization
 N<- data.frame(mean = rep(0,20),sd=rep(0,20))
 
@@ -48,9 +48,12 @@ for(i in 1:20){
   N$sd[i] <- sd(dm[,i])
   rownames(N)[i] <-names(dm)[i]
 }
+# MEASUREMENT ERROR is a quarter of the standard deviation:
+for(i in 4:10){
+  print(paste(names(d)[i], round(sd(d[,i]/4),3),sep=" "))
+  }
 
-
-
+# normalization
 n <- c(4:10,15:27)
 for(i in n){
   d[,i]<- (d[,i]-mean(d[,i]))/sd(d[,i])
@@ -62,9 +65,11 @@ for(i in n){
 # step(lm(sat.A ~ dem+wdist+maxc+mrvbf+slope+twi+vdchn+lstm+lstsd+evim+evisd+river, d),direction = "both")
 # summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd, data = d))
 # summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd + tb.A + d.caco3 + river, data = d))
-summary(lm(formula = oc.A ~ mrvbf + lstm + lstsd + evisd, data = d))
+oc.fit<- lm(formula = oc.A ~ lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi, data = d)
+summary(oc.fit)
+x<-predict(oc.fit,data=d)
 
-summary(lm(formula = tb.A ~ wdist + lstm + evim + evisd + river, data = d))
+# summary(lm(formula = tb.A ~ wdist + lstm + evim + evisd + river, data = d))
 # summary(lm(formula = thick.A ~ dem + maxc + evisd, data = d))
 # summary(lm(formula = esp.B ~ mrvbf + twi + vdchn + lstsd + evim + evisd + 
 #              river, data = d))
@@ -104,11 +109,18 @@ esp.Br ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river
 thick.Ar ~  dem + wdist + mrvbf + vdchn + twi + river + slope + maxc + evim + evisd 
 
 
-# residual (co)variance
+# measurement error
 thick.A ~~  0.25*thick.A
-tb.A ~~     0.25*tb.A
+tb.A ~~     0.1*tb.A
+sat.A ~~    0.1*sat.A
+bt  ~~      0.1*bt
+oc.A ~~     0*oc.A
+esp.B ~~    0.1*esp.B
+esp.A ~~    0.1*esp.A
+
 
 # intercepts
+tb.Ar ~1
 '
 ##### fitting ####
 #fit3<- sem(third_model, d,meanstructure = T,std.lv = T, ordered = c("is.E","is.caco3","is.hydro"))
@@ -124,6 +136,7 @@ fit3 <- lavaan(model = third_model, data = d,
                constraints = "", estimator = "ML",
                zero.cell.warn = TRUE, start = "default")
 varTable(fit3)
+semPaths(fit3, "std", edge.label.cex = 0.5, curvePivot = TRUE, )
 summary(fit3, standardized=F, modindices = F, fit.measures=F) 
 inspect(fit3,"std.lv") # standardized model parameters
 inspect(fit3,"partable") #Observed sample statistics
@@ -139,14 +152,14 @@ write.csv(full_model, "full_model.csv")
 
 #################### PREDICTION #########################
 ### rasters of external drivers, conversion to data frame and standardization
-
+# install.packages(c("raster", "maptools", "sp", "rgdal"))
 #install.packages("maptools")
 library(raster)
 library(maptools)
 library(sp)
 library(rgdal)
 
-setwd("/media/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
+setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
 
 # sdat files (dem) 
 files <- list.files(pattern=".sdat$")
@@ -158,6 +171,9 @@ pred <- read.csv("mask_231m2.csv")
 # tif files (modis)
 files_m <- list.files(pattern=".tif")
 header_m <- c("lstm", "lstsd", "evim", "evisd")
+# for(i in 1:4){
+#   print(spplot(readGDAL(files_m[i])))
+# }
 
 # pred to spatial data frame
 coordinates(pred) <- ~X+Y
@@ -217,7 +233,7 @@ for(i in 1:14) {
 pred.df <- pred.df[,c(16:29,1:15)]
 pred <- pred.df
 ##@## data normalization
-setwd("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
+setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
 D <-read.csv("calib.data-2.1.csv")[,-1]
 n <- c(15:27)
 for(i in n){
@@ -235,7 +251,7 @@ B <- inspect(fit3,"est")$beta[1:7,1:7] #matrix of coeff. latent state variables
 I <-diag(nrow=7, ncol=7) #Identity matrix
 A <- inspect(fit3,"est")$beta[1:7,8:19] #matrix of coeff of external drivers
 
-save.image("/media/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/prediction.RData")
+save.image("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/prediction.RData")
 ## go to RStudio server to run next step
 #################Prediction model###########################
 
@@ -243,6 +259,23 @@ N <- read.csv("N.csv")
 library(utils)
 pb = txtProgressBar(min = 0, max = length(pred[,1]), initial = 0, style = 3)
 pred <- pred[,15:29]
+for(i in 1:length(pred[,1])) {
+  p=matrix(c(pred$evim[i], pred$evisd[i],
+             pred$lstm[i], pred$lstsd[i], pred$dem[i], 
+             pred$wdist[i], pred$mrvbf[i], pred$vdchn[i],
+             pred$twi[i], pred$river[i], pred$slope[i],
+             pred$maxc[i]),nrow=12,ncol=1)
+  n=c(0,0,0,0,0,0,0)
+  n=(solve(I-B))%*%((A%*%p)) # key equation
+#   pred$tb.Ar[i] <-  n[1]
+#   pred$sat.Ar[i] <-  n[2]
+#   pred$btr[i] <-  n[3]
+  pred$oc.Ar[i] <-  n[4]
+#   pred$thick.Ar[i] <-  n[5]
+#   pred$esp.Br[i] <-  n[6]
+#   pred$esp.Ar[i] <-  n[7]
+  setTxtProgressBar(pb,i)
+}
 # not to run
 # for(i in 1:length(pred[,1])) {
 #   p=matrix(c(pred$evim[i], pred$evisd[i],
@@ -251,7 +284,7 @@ pred <- pred[,15:29]
 #              pred$twi[i], pred$river[i], pred$slope[i],
 #              pred$maxc[i]),nrow=12,ncol=1)
 #   n=c(0,0,0,0,0,0,0)
-#   n=(solve(I-B))%*%((A%*%p))
+#   n=(solve(I-B))%*%((A%*%p)) # key equation
 #   pred$tb.Ar[i] <-  n[1]
 #   pred$sat.Ar[i] <-  n[2]
 #   pred$btr[i] <-  n[3]
@@ -297,6 +330,65 @@ writeRaster(x = r,filename ="rusults.tif", overwrite=T,bylayer=TRUE,suffix=r@dat
 
 
 
+
+
+
+###### WSC presentation OC prediction and comparison between SEM and linear regression
+# sem oc
+library(utils)
+pb = txtProgressBar(min = 0, max = length(pred[,1]), initial = 0, style = 3)
+pred <- pred[,15:29]
+for(i in 1:length(pred[,1])) {
+  p=matrix(c(pred$evim[i], pred$evisd[i],
+             pred$lstm[i], pred$lstsd[i], pred$dem[i], 
+             pred$wdist[i], pred$mrvbf[i], pred$vdchn[i],
+             pred$twi[i], pred$river[i], pred$slope[i],
+             pred$maxc[i]),nrow=12,ncol=1)
+  n=c(0,0,0,0,0,0,0)
+  n=(solve(I-B))%*%((A%*%p)) # key equation
+  #   pred$tb.Ar[i] <-  n[1]
+  #   pred$sat.Ar[i] <-  n[2]
+  #   pred$btr[i] <-  n[3]
+  pred$oc.Ar[i] <-  n[4]
+  #   pred$thick.Ar[i] <-  n[5]
+  #   pred$esp.Br[i] <-  n[6]
+  #   pred$esp.Ar[i] <-  n[7]
+  setTxtProgressBar(pb,i)
+}
+
+# lm oc
+oc.fit<- lm(formula = oc.A ~ lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi, data = d)
+summary(oc.fit)
+pred$oc.lm <-as.vector(predict(oc.fit,pred))
+
+
+as.data.frame(names(pred))
+write.csv(pred, "pred.bk.oc.csv")
+pred <- pred[,14:17]
+N <- N[c(4),]
+
+pred <- read.csv("pred.bk.oc.csv")
+pred <- pred[,-1]
+pred$oc.Ar<- pred$oc.Ar*N[6,3] + N[6,2]
+pred$oc.lm<- pred$oc.lm*N[6,3] + N[6,2]
+as.data.frame(names(pred))
+pred <- pred[,14:17]
+
+library(sp)
+library(raster)
+pred.sp <- pred
+coordinates(pred.sp) <- ~X+Y
+# spplot(pred.sp)
+
+y <- raster("mask_231m_posgar.tif")
+proj4string(y) <- posgar98
+proj4string(pred.sp) <- posgar98
+#pred.sp <- spTransform(pred.sp, modis)
+r <- rasterize(x = pred.sp,y = y,background= NA)
+plot(r)
+writeRaster(x = r,filename ="rusults.tif", overwrite=T,bylayer=TRUE,suffix=r@data@names)
+
+summary(oc.lm)
 
 
 
