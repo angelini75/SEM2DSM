@@ -95,7 +95,7 @@ esp.Ar =~ 1*esp.A
 
 # structural model
 tb.Ar ~     evim + evisd + lstm + lstsd + dem + wdist + mrvbf + vdchn + twi + river + 
-            oc.Ar 
+            oc.Ar + btr
 sat.Ar ~    evim + evisd + lstm + lstsd + dem + wdist + mrvbf + vdchn +  twi + river + 
             tb.Ar + oc.Ar                            
 btr ~       lstm +  lstsd + wdist + vdchn + twi + dem + river + mrvbf +
@@ -114,7 +114,7 @@ thick.A ~~  0.25*thick.A
 tb.A ~~     0.1*tb.A
 sat.A ~~    0.1*sat.A
 bt  ~~      0.1*bt
-oc.A ~~     0*oc.A
+oc.A ~~     0.1*oc.A
 esp.B ~~    0.1*esp.B
 esp.A ~~    0.1*esp.A
 
@@ -136,7 +136,6 @@ fit3 <- lavaan(model = third_model, data = d,
                constraints = "", estimator = "ML",
                zero.cell.warn = TRUE, start = "default")
 varTable(fit3)
-semPaths(fit3, "std", edge.label.cex = 0.5, curvePivot = TRUE, )
 summary(fit3, standardized=F, modindices = F, fit.measures=F) 
 inspect(fit3,"std.lv") # standardized model parameters
 inspect(fit3,"partable") #Observed sample statistics
@@ -327,201 +326,11 @@ plot(r)
 writeRaster(x = r,filename ="rusults.tif", overwrite=T,bylayer=TRUE,suffix=r@data@names)
 
 
-
-
-
-
-
-
-###### WSC presentation OC prediction and comparison between SEM and linear regression
-# sem oc
-library(utils)
-pb = txtProgressBar(min = 0, max = length(pred[,1]), initial = 0, style = 3)
-pred <- pred[,15:29]
-for(i in 1:length(pred[,1])) {
-  p=matrix(c(pred$evim[i], pred$evisd[i],
-             pred$lstm[i], pred$lstsd[i], pred$dem[i], 
-             pred$wdist[i], pred$mrvbf[i], pred$vdchn[i],
-             pred$twi[i], pred$river[i], pred$slope[i],
-             pred$maxc[i]),nrow=12,ncol=1)
-  n=c(0,0,0,0,0,0,0)
-  n=(solve(I-B))%*%((A%*%p)) # key equation
-  #   pred$tb.Ar[i] <-  n[1]
-  #   pred$sat.Ar[i] <-  n[2]
-  #   pred$btr[i] <-  n[3]
-  pred$oc.Ar[i] <-  n[4]
-  #   pred$thick.Ar[i] <-  n[5]
-  #   pred$esp.Br[i] <-  n[6]
-  #   pred$esp.Ar[i] <-  n[7]
-  setTxtProgressBar(pb,i)
-}
-
-# lm oc
-oc.fit<- lm(formula = oc.A ~ lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi, data = d)
-summary(oc.fit)
-pred$oc.lm <-as.vector(predict(oc.fit,pred))
-
-
-as.data.frame(names(pred))
-write.csv(pred, "pred.bk.oc.csv")
-pred <- pred[,14:17]
-N <- N[c(4),]
-
-pred <- read.csv("pred.bk.oc.csv")
-pred <- pred[,-1]
-pred$oc.Ar<- pred$oc.Ar*N[6,3] + N[6,2]
-pred$oc.lm<- pred$oc.lm*N[6,3] + N[6,2]
-as.data.frame(names(pred))
-pred <- pred[,14:17]
-
-library(sp)
-library(raster)
-pred.sp <- pred
-coordinates(pred.sp) <- ~X+Y
-# spplot(pred.sp)
-
-y <- raster("mask_231m_posgar.tif")
-proj4string(y) <- posgar98
-proj4string(pred.sp) <- posgar98
-#pred.sp <- spTransform(pred.sp, modis)
-r <- rasterize(x = pred.sp,y = y,background= NA)
-plot(r)
-writeRaster(x = r,filename ="rusults.tif", overwrite=T,bylayer=TRUE,suffix=r@data@names)
-
-summary(oc.lm)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #################Plotting results####################
-##Study area
 
-
-terr<-readShapePoly("E:/thesis/Spitsbergen 2014/data veldwerk/gis-bestanden/study_area_individual terraces_estimate.shp")
-
-bmp(filename="E:/thesis/statistics/thick_1A.bmp",width=450,height=450)
-plot(thick_1A,main="Thickness (cm)")
-plot(terr,add=TRUE)
-dev.off()
-
-bmp(filename="E:/thesis/statistics/silt_1A.bmp",width=450,height=450)
-plot(silt_1A,main="Silt (%)")
-plot(terr,add=TRUE)
-dev.off()
-
-silt_1A_total<-silt_1A*thick_1A/100*1651/100
-bmp(filename="E:/thesis/statistics/silt_1A_total.bmp",width=450,height=450)
-plot(silt_1A_total,main="Silt total (kg)")
-plot(terr,add=TRUE)
-dev.off()
-
-bmp(filename="E:/thesis/statistics/OM_1A.bmp",width=450,height=450)
-plot(OM_1A,main="Organic matter (%)")
-plot(terr,add=TRUE)
-dev.off()
-
-OM_1A_total<-thick_1A/100*(OM_1A/100)*1651
-bmp(filename="E:/thesis/statistics/OM_1A_total.bmp",width=450,height=450)
-plot(OM_1A_total,main="Organic matter (kg)")
-plot(terr,add=TRUE)
-dev.off()
-
-bmp(filename="direction where the file has to go",width=450,height=450)
-plot(plot van de grafiek)
-plot(eventuele dingen bijplotten)
-dev.off()
-
-
-
-
-##test rasters
-##test data
-library(ggplot2)
-library(raster)
-library(rasterVis)
-install.packages("lattice", dependencies = TRUE) 
-library(lattice)
-
-V_data$x<-V_data$age_hy/140
-V_data$y<-(V_data$VI-40)/(100-40)
-V<-subset(V_data,OM_1A>0,select=c(samp_nr))
-plot_points<-subset(V_data,OM_1A>0,select=c(x,y))
-plot_points<-as.matrix(plot_points)
-plot_pts<-SpatialPoints(plot_points,proj4string=CRS(as.character(NA)))
-plots<-SpatialPointsDataFrame(plot_points,V, proj4string=CRS(as.character(NA)))
-xy.coords(plot_points)
-pts <- sampleRandom(thick_raster, size=20, sp=TRUE)
-
-#thickness
-levelplot(thick_raster, xlab="age",ylab="vegetation index", main=paste("Thickness (cm)"),
-          col.regions = rev(terrain.colors(255)),
-          scales=list(x=list(at=seq(0,1,by=0.25),labels=c(0,3500,7000,10500,14000)),
-                      y=list(at=c(0,1/6,2/6,3/6,4/6,5/6,6/6),labels=c(0.4,0.5,0.6,0.7,0.8,0.9,1))),
-          cuts=254, margin=FALSE)+layer(sp.points(plot_points,pch=1,cex=2,col="black"))
-
-#silt
-levelplot(silt_raster, xlab="age",ylab="vegetation index", main=paste("Silt (%)"),
-          col.regions = rev(terrain.colors(255)),
-          scales=list(x=list(at=seq(0,1,by=0.25),labels=c(0,3500,7000,10500,14000)),
-                      y=list(at=c(0,1/6,2/6,3/6,4/6,5/6,6/6),labels=c(0.4,0.5,0.6,0.7,0.8,0.9,1))),
-          cuts=254, margin=FALSE)+layer(sp.points(plot_points,pch=1,cex=2,col="black"))
-
-#Organic matter
-levelplot(OM_raster, xlab="age",ylab="vegetation index", main=paste("Organic matter (%)"),
-          col.regions = rev(terrain.colors(255)),
-          scales=list(x=list(at=seq(0,1,by=0.25),labels=c(0,3500,7000,10500,14000)),
-                      y=list(at=c(0,1/6,2/6,3/6,4/6,5/6,6/6),labels=c(0.4,0.5,0.6,0.7,0.8,0.9,1))),
-          cuts=254, margin=FALSE)+layer(sp.points(plot_points,pch=1,cex=2,col="black"))
-
-
-
-
-
-
-########Plot SEM chart (made by Ype)########
-library("igraph")
-#PLOT THE MODEL:
-##variables of model
-attrb<-unique(c(fit3@ParTable$lhs,fit3@ParTable$rhs))
-
-##model connections
-el<-rbind(match(fit3@ParTable$rhs,attrb),match(fit3@ParTable$lhs,attrb),round(fit3@Fit@est,2))
-el<-el[,!(fit3@ParTable$op=="~~")]
-g2 <- add.edges(graph.empty(length(attrb)), el[1:2,], weight=el[3,])
-g2<-set.vertex.attribute(g2,"label", index=1:length(attrb), as.vector(attrb))
-
-## color of the variables:
-colv<-rep("orange",length(attrb))
-colv[which(is.na(match(1:7,el[2,])))]<-"yellow"
-colv[which(is.na(match(1:7,el[1,])))]<-"brown"
-### independent variables are yellow,
-### dependent variables that also are used as predictors are orange,
-### variables that are only predicted are brown. 
-
-## color of the connections: 
-cole<-get.edge.attribute(g2,"weight")
-cole[cole<0]<-(-4)
-cole[cole>0]<-2
-### red is positive correlation, 
-### blue is negative correlation
-
-## reorder the positions of the variables by hand
-plotnr<-tkplot(g2,vertex.color=colv,edge.color=abs(cole),vertex.label=get.vertex.attribute(g2,"label"),vertex.label=get.vertex.attribute(g2,"label"),edge.label=get.edge.attribute(g2,"weight"))
-coordinates<-tkplot.getcoords(plotnr)
-plot(g2,vertex.color=colv,edge.color=abs(cole),vertex.label=get.vertex.attribute(g2,"label"),vertex.label=get.vertex.attribute(g2,"label"),edge.label=get.edge.attribute(g2,"weight"),layout=coordinates)
-### This graph will also open in a separate window. Here you can 'drag and drop' the variables to optimize the layout of the model.
+#install.packages("semPlot")
+library(semPlot)
+semPaths(fit3,  "model","est",style ="lisrel")
+semPaths (fit3, "std",sizeLat = 4, sizeInt2 = 2,sizeMan = 3, sizeLat2 = 2, sizeInt = 1,sizeMan2 = 1.5,
+          edge.width = 2 , edge.label.bg=T,layout = "circle" , equalizeManifests =F, esize=2, asize=1, 
+          structural = T, intercepts = F, residuals = T, thresholds = F,reorder = T)
