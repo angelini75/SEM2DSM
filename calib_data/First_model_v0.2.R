@@ -3,7 +3,7 @@ rm(list=ls())
 # install.packages("lavaan", repos="http://www.da.ugent.be", type="source")
 library(lavaan)
 setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
-
+original <- read.csv("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/OLD/calib.data-1.0.csv")
 d <-read.csv("calib.data-2.1.csv")[,-1]
 
 ############### PRE-PROCESSING ################## 
@@ -48,10 +48,6 @@ for(i in 1:20){
   N$sd[i] <- sd(dm[,i])
   rownames(N)[i] <-names(dm)[i]
 }
-# MEASUREMENT ERROR is a quarter of the standard deviation:
-for(i in 4:10){
-  print(paste(names(d)[i], round(sd(d[,i]/4),3),sep=" "))
-  }
 
 # normalization
 n <- c(4:10,15:27)
@@ -111,12 +107,12 @@ thick.Ar ~  dem + wdist + mrvbf + vdchn + twi + river + slope + maxc + evim + ev
 
 # measurement error
 thick.A ~~  0.25*thick.A
-tb.A ~~     0.1*tb.A
-sat.A ~~    0.1*sat.A
-bt  ~~      0.1*bt
-oc.A ~~     0.1*oc.A
-esp.B ~~    0.1*esp.B
-esp.A ~~    0.1*esp.A
+tb.A ~~     0.20*tb.A
+sat.A ~~    0.20*sat.A
+bt  ~~      0.25*bt
+oc.A ~~     0.20*oc.A
+esp.B ~~    0.10*esp.B
+esp.A ~~    0.20*esp.A
 
 
 # intercepts
@@ -249,6 +245,7 @@ names(D)[15:27]
 B <- inspect(fit3,"est")$beta[1:7,1:7] #matrix of coeff. latent state variables
 I <-diag(nrow=7, ncol=7) #Identity matrix
 A <- inspect(fit3,"est")$beta[1:7,8:19] #matrix of coeff of external drivers
+V <- inspect(fit3,"est")$psi[1:7,1:7] #matrix of predicted error variance
 
 save.image("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/prediction.RData")
 ## go to RStudio server to run next step
@@ -295,22 +292,36 @@ for(i in 1:length(pred[,1])) {
 # }
 
 # result of the prediction
-pred.bk <-read.csv("pred.bk.csv")
+#pred.bk <-read.csv("pred.bk.csv")
+pred.bk <-pred
 
-# #pred.bk <- pred
-pred <- pred.bk
-pred <- pred[,14:22]
-N <- N[c(2,3,7,6,1,5,4),]
+#pred <- pred.bk[,-1]
+t(names(pred))
+pred <- pred[,14:16] #X, Y and OC
+#pred <- pred[,14:22]
+
+# N <- N[c(2,3,7,6,1,5,4),]
+N <- N[c(2,3,7,6,1,5,4),][4,] # mean and sd OC
 
 # as.data.frame(names(D))
 # as.data.frame(names(pred.bk))
 
+# 
+# for(i in 3:9){
+#   pred[,i]<- pred[,i]*N[i-2,3] + N[i-2,2]
+# }
 
-for(i in 3:9){
+for(i in 3:3){ # only for OC
   pred[,i]<- pred[,i]*N[i-2,3] + N[i-2,2]
 }
+save.image("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/prediction2.RData")
+##### estimation confidence limit of OC
+ci <- sqrt(V[4,4])*1.64
+pred$oc.up <-pred$oc.Ar+ ci
+pred$oc.lw <-pred$oc.Ar- ci
+summary(pred[,3:5])
 
-
+####rasterize results
 library(sp)
 library(raster)
 pred.sp <- pred
@@ -323,6 +334,7 @@ proj4string(pred.sp) <- posgar98
 #pred.sp <- spTransform(pred.sp, modis)
 r <- rasterize(x = pred.sp,y = y,background= NA)
 plot(r)
+
 writeRaster(x = r,filename ="rusults.tif", overwrite=T,bylayer=TRUE,suffix=r@data@names)
 
 
