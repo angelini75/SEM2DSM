@@ -288,6 +288,7 @@ print(summary(pred))
 
 ##### Estimation confidence interval ## No stapial #######
 Var.n <-IB%*%V%*%t(IB) # diagonal vaues are variance error
+diag(Var.n)
 CI <- Var.n^(1/2)*1.64
 CI.r <- matrix(0,nrow=7,ncol = 7)
 for(i in 1:7){
@@ -320,13 +321,14 @@ library(semPlot)
 #matrix to arrange nodes at graph
 layout <-as.matrix(read.csv("matrix_semplot.csv")[,-1])
 # plot sem using layout=layout
-semPaths(fit3,what = "est",whatLabels = "no", layout = layout,sizeLat = 4, sizeInt2 = 2,sizeMan =5, sizeLat2 = 2, sizeInt = 1,sizeMan2 = 1.5,
+semPaths(fit3,what = "std",whatLabels = "no", layout = layout,sizeLat = 4, cut =0.35,
+         sizeInt2 = 2,sizeMan =3.5, sizeLat2 = 2, sizeInt = 1,sizeMan2 = 1.5,nCharNodes=0, font=3,
          edge.width = 2,esize=1.5, asize=1,intercepts = F, reorder = F,equalizeManifests =T, residuals = F,layoutSplit=F,
-         structural = F, exoCov = F, exoVar=F,cardinal = F,levels = c(1,4,6,8),style = "OpenMX",#color = c("orange","blue"),
+         structural = F, exoCov = F, exoVar=F,cardinal = F,style = "lisrel",#color = c("orange","blue"),
          manifests = c("tb.A", "sat.A", "evim", "evisd", "lstm", "lstsd", "dem","bt", "wdist", "mrvbf", "vdchn", 
                        "twi", "river", "thick.A", "slope", "maxc", "oc.A", "esp.B", "esp.A"))
 
-
+semPlotModel(fit3)
 ## not run # extract original matrix
 # k<-as.data.frame(semPaths(fit3,what = "est",whatLabels = "no", layout = "tree",sizeLat = 4, sizeInt2 = 2,sizeMan =5, sizeLat2 = 2, sizeInt = 1,sizeMan2 = 1.5,
 #          edge.width = 2,esize=1.5, asize=1,intercepts = F, reorder = F,equalizeManifests =T, residuals = F,layoutSplit=F,
