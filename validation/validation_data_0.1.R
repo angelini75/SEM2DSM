@@ -24,7 +24,7 @@ replic$pHKCl.x <- as.numeric(replic$pHKCl.x)
 replic$pHKCl.y <- as.numeric(replic$pHKCl.y)
 replic$C_Ox.x <- replic$C_Ox.x*1.3
 replic$C_Ox.y <- replic$C_Ox.y*1.3
-fix(names) # as.data.frame(.Primitive("names"))
+#fix(names) # as.data.frame(.Primitive("names"))
 for(i in 3:18){
 print(paste("SD",names(replic)[i],
             round(sqrt(var(replic[,i]-replic[,i+16], na.rm=T)),3),
@@ -33,8 +33,47 @@ print(paste("SD",names(replic)[i],
 }
 sqrt(0.5*(0.283^2))
 
-
 #---
+## 
+#-------------------------------------#
+# normalization of horizon names
+hor.lab <- hor.lab.b[,c(1,3:6,28:43)]
+hor.lab$hor <- NA
+as.data.frame(t(table(hor.lab$horizonte)))
+hor.lab$hor[grep("^A$",hor.lab$horizonte)] <- "A"
+hor.lab$hor[grep("^a$",hor.lab$horizonte)] <- "A"
+hor.lab$hor[grep("A1",hor.lab$horizonte)] <- "A"
+hor.lab$hor[grep("A2",hor.lab$horizonte)] <- "A"
+hor.lab$hor[grep("^2A",hor.lab$horizonte)] <- "A"
+hor.lab$hor[grep("^An",hor.lab$horizonte)] <- "A"
+
+hor.lab$hor[grep("E",hor.lab$horizonte)] <- "E"
+
+hor.lab$hor[grep("AC",hor.lab$horizonte)] <- "AC"
+
+hor.lab$hor[grep("AB",hor.lab$horizonte)] <- "AB|BA"
+hor.lab$hor[grep("BA",hor.lab$horizonte)] <- "AB|BA"
+hor.lab$hor[grep("Ba",hor.lab$horizonte)] <- "AB|BA"
+hor.lab$hor[grep("B/A",hor.lab$horizonte)] <- "AB|BA"
+
+hor.lab$hor[grep("^Bt",hor.lab$horizonte)] <- "B"
+hor.lab$hor[grep("^2Bt",hor.lab$horizonte)] <- "B"
+
+hor.lab$hor[grep("^BC",hor.lab$horizonte)] <- "BC"
+hor.lab$hor[grep("Bc",hor.lab$horizonte)] <- "BC"
+hor.lab$hor[grep("^2BC",hor.lab$horizonte)] <- "BC"
+
+hor.lab$hor[grep("^C",hor.lab$horizonte)] <- "C"
+hor.lab$hor[grep("^c",hor.lab$horizonte)] <- "C"
+hor.lab$hor[grep("^2C",hor.lab$horizonte)] <- "C"
+
+as.data.frame(t(table(hor.lab$horizonte[is.na(hor.lab$hor)])))
+
+#-------------------------------------#
+
+
+
+
 repl.lab <- merge(repl,lab, by.x = "num_lab_r", by.y = "labid")
 hor.lab.b <- merge(hor,lab, by.x = "num_lab", by.y = "labid",all.x = T)
 
