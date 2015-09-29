@@ -97,14 +97,15 @@ hor.xy <- merge(hor.xy,sitios_strata, by="sitio", all.x=T)
 hor.lab <- merge(hor.xy,lab, by.x="num_lab", by.y = "labid", all.x = T)
 #correct strata 
 hor.lab$strata[hor.lab$sitio=="2acuic1"] <- "acuic1"
+hor.lab$strata[hor.lab$sitio=="co1-21"] <- "Co2"
 
 
-
-#-------------------------------------#
-#        Thickness A horizon          #
-#-------------------------------------#
-thick.A.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,12:15)])
-thick.A.val <- thick.A.val[complete.cases(thick.A.val),]
+#---------------------------------------#
+#        Thickness top horizon          #
+#---------------------------------------#
+# SP is Soil Property
+SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,12:15)])
+SP.val <- SP.val[complete.cases(SP.val),]
 
 library(sp)
 library(rgdal)
@@ -115,43 +116,41 @@ posgar98 <- CRS("+init=epsg:22175")
 #modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # load predicted
-thick.A.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/Thickness.sdat")
-
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/Thickness.sdat")
 # thickness to spatial data frame
-coordinates(thick.A.val)<- ~longitud+latitud
-
+coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
-proj4string(thick.A.val) <- wgs84
-thick.A.val <- spTransform(thick.A.val, posgar98)
-proj4string(thick.A.pred) <- posgar98
-thick.A.val@data[,length(thick.A.val@data)+1] <- over(x=thick.A.val,y=thick.A.pred)
-names(thick.A.val@data)<-c("hor","measured","strata","area","percentage","predicted")
+proj4string(SP.val) <- wgs84
+SP.val <- spTransform(SP.val, posgar98)
+proj4string(SP.pred) <- posgar98
+SP.val@data[,length(SP.val@data)+1] <- over(x=SP.val,y=SP.pred)
+names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
 
 
-sd(as.vector(thick.A.val@data$measured-thick.A.val@data$predicted), na.rm=T)/sqrt(length(thick.A.val@data$measured))
 par(pty="s")
-plot(thick.A.val@data$predicted~thick.A.val@data$measured,col = "dark red",xlim=c(10, 40), ylim=c(10, 40))
+par(mfrow = c(3, 2))
+plot(SP.val@data$predicted~SP.val@data$measured, main="Thickness top horizon", xlab= "measured (cm)",
+     ylab = "predicted (cm)", col = "dark red",xlim=c(10, 40), ylim=c(10, 40))
 abline(0,1)
+abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
 
 # Statistical Inference Stratified Simple Random Sampling
 # "Sampling for natural resource monitoring" de Gruiter, Brus, Knotters. pp.92
 # ME + confident interval 
 
-thick.A.val <- as.data.frame(thick.A.val)
-thick.A.val$residuals <-thick.A.val$measured-thick.A.val$predicted
-thick.A.val$residuals.sq <-(thick.A.val$measured-thick.A.val$predicted)^2
+SP.val <- as.data.frame(SP.val)
+SP.val$residuals <-SP.val$measured-SP.val$predicted
+SP.val$residuals.sq <-(SP.val$measured-SP.val$predicted)^2
 
 # Count n (samples per starta) and h (number of strata)
-nh <- cbind(strata=as.vector(as.data.frame(table(thick.A.val$strata))[,1]),
-            n=as.data.frame(table(thick.A.val$strata))[,2],
+nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
+            n=as.data.frame(table(SP.val$strata))[,2],
             h=1:12)
-thick.A.val<- merge(thick.A.val, nh, by="strata")
-
+SP.val<- merge(SP.val, nh, by="strata")
 
 library(dplyr)
 #vignette("introduction", package = "dplyr")
-
-X  <- group_by(thick.A.val, strata)
+X  <- group_by(SP.val, strata)
 # Mean error of the area
 N  <- as.numeric(length(X$residuals))
 H  <- 12
@@ -165,100 +164,497 @@ A <- sum(Ah)
 ah <- Ah/A
 zSt <- sum(ah*zh)
 paste("ME =", round(zSt,3))
-
 # variance of zSt
 VzSt <- sum((ah^2)*summarise(X, var(residuals))[2])
 VzSt
 # 95% confidence
 # lowwer limit
-ll<-zSt-qt(0.975,104)*sqrt(VzSt)
+ll<-zSt-qt(0.975,N-1)*sqrt(VzSt)
 # upper limit
-ul<-zSt+qt(0.975,104)* sqrt(VzSt)
-paste("ME (95%)=",round(ll,3),"<",round(zSt,3),"<",round(ul,3))
+ul<-zSt+qt(0.975,N-1)* sqrt(VzSt)
+
+ME<- paste(round(ll,3),"<",round(zSt,3),"<",round(ul,3))
 
 ############################################ MSE (mean squared error)
 zh.s <- as.data.frame(summarise(X, mean(residuals.sq)))[,2]
 sum(Nh*zh.s)/N
-
 # ME <- mean error of top horizon thickness of the area (considering area)
 zSt.s <- sum(ah*zh.s)
 paste("MSE =", round(zSt.s,3))
-
 # variance of zSt
 VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
 VzSt.s
 # 95% confidence using X-square distribution
 # # lowwer limit
-# ll<-zSt.s-qt(0.975,104)*sqrt(VzSt)
+ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
 # # upper limit
-# ul<-zSt+qt(0.975,104)* sqrt(VzSt)
-# paste("ME (95%)=",round(ll,3),"<",round(zSt,3),"<",round(ul,3))
+ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+
+# fill report table
+report<- data.frame(Soil_property = NA, ME=NA, RMSE= NA)
+report[1,1:3]<- c("Thick.A",ME,RMSE)
+
+#----------------------------------------#
+#        Organic Carbon A horizon        #
+#----------------------------------------#
+as.data.frame(names(hor.lab))
+SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,24,13:15)])
+SP.val <- SP.val[complete.cases(SP.val),]
+#define crs
+# wgs84 <- CRS("+init=epsg:4326")
+# posgar98 <- CRS("+init=epsg:22175")
+#modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
+# load predicted
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/OC.sdat")
+# thickness to spatial data frame
+coordinates(SP.val)<- ~longitud+latitud
+# extract values from  predicted
+proj4string(SP.val) <- wgs84
+SP.val <- spTransform(SP.val, posgar98)
+proj4string(SP.pred) <- posgar98
+SP.val@data[,length(SP.val@data)+1] <- over(x=SP.val,y=SP.pred)
+names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
+
+# plot residuals
+# par(pty="s")
+# par(mfrow = c(2, 2))
+plot(SP.val@data$predicted~SP.val@data$measured, main="Organic carbon top horizon", xlab= "measured (%)",
+     ylab = "predicted (%)", col = "dark red",xlim=c(1, 2.5), ylim=c(1, 2.5))
+abline(0,1)
+abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
+# Statistical Inference Stratified Simple Random Sampling
+# "Sampling for natural resource monitoring" de Gruiter, Brus, Knotters. pp.92
+# ME + confident interval 
+
+SP.val <- as.data.frame(SP.val)
+SP.val$residuals <-SP.val$measured-SP.val$predicted
+SP.val$residuals.sq <-(SP.val$measured-SP.val$predicted)^2
+
+# Count n (samples per starta) and h (number of strata)
+nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
+            n=as.data.frame(table(SP.val$strata))[,2],
+            h=1:12)
+SP.val<- merge(SP.val, nh, by="strata")
 
 
+library(dplyr)
+#vignette("introduction", package = "dplyr")
+X  <- group_by(SP.val, strata)
+summarise(X,n())
+# Mean error of the area
+N  <- as.numeric(length(X$residuals))
+H  <- 12
+Nh <- as.data.frame(summarise(X,n()))[,2]
+zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
+sum(Nh*zh)/N
+
+######################## ME <- mean error of top horizon thickness of the area (considering area)
+Ah <- as.data.frame(summarise(X, mean(area)))[,2]
+A <- sum(Ah)
+ah <- Ah/A
+zSt <- sum(ah*zh)
+paste("ME =", round(zSt,3))
+# variance of zSt
+VzSt <- sum((ah^2)*summarise(X, var(residuals))[2])
+VzSt
+# 95% confidence
+# lowwer limit
+ll<-zSt-qt(0.975,N-1)*sqrt(VzSt)
+# upper limit
+ul<-zSt+qt(0.975,N-1)* sqrt(VzSt)
+
+ME<- paste(round(ll,3),"<",round(zSt,3),"<",round(ul,3))
+
+############################################ MSE (mean squared error)
+zh.s <- as.data.frame(summarise(X, mean(residuals.sq)))[,2]
+sum(Nh*zh.s)/N
+# ME <- mean error of top horizon thickness of the area (considering area)
+zSt.s <- sum(ah*zh.s)
+paste("MSE =", round(zSt.s,3))
+# variance of zSt
+VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+VzSt.s
+# 95% confidence using X-square distribution
+# # lowwer limit
+ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # upper limit
+ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+
+# fill report table
+report[2,1:3]<- c("OC.A",ME,RMSE)
 
 
+#---------------------------------------#
+#        Total Bases top horizon        #
+#---------------------------------------#
+as.data.frame(names(hor.lab))
+SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,31,13:15)])
+SP.val <- SP.val[complete.cases(SP.val),]
+#define crs
+ wgs84 <- CRS("+init=epsg:4326")
+ posgar98 <- CRS("+init=epsg:22175")
+#modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
-# 
-# 
-# 
-# summary(lm(thick.A.val@data$predicted~thick.A.val@data$measured))
-# var(val.A@data$C_Ox*1.30-val.A@data$band1, na.rm=T)
-# 0.22^2
-# 
-# qt(0.975,93)
-# 
-# qt(0.975,1000000)
-# qt(0.975,10)
-# #-------------------------------------------------------------
-# 
-# library(sp)
-# 
-# strata<-readShapeSpatial("/media/marcos/L0135974_DATA/UserData/BaseARG/1_Sampling/Stratas/stratas_soil_distance_v2.shp")
-# proj4string(strata) <- posgar98
-# plot(strata)
-# #library(Rsenal)
-# #mapView(strata, burst = F)
-# SE.OC <- sd((val.A@data$OC-(val.A@data$band1-2.42))[complete.cases(val.A@data$OC-(val.A@data$band1-2.42))])
-# summary((val.A@data$OC-val.A@data$band1)[complete.cases(val.A@data$OC-val.A@data$band1)])
-# hist(((val@data$thick.A-val@data$band1)^2)^(1/2), add=T, col = "green")
-# 
-# 
-# 
-# 
-# ## recortes
-# 
-# # repl.lab <- merge(repl,lab, by.x = "num_lab_r", by.y = "labid")
-# # hor.lab.b <- merge(hor,lab, by.x = "num_lab", by.y = "labid",all.x = T)
-# # 
-# # hor.lab.c <- hor.lab.b[!is.na(hor.lab.b$num_lab_r),]
-# # hor.lab.c <- hor.lab.c[,c(1,3,27:43)]
-# # repl.lab <- repl.lab[,c(24,3,1,28:43)]
-# # hor.lab.c<- unique(hor.lab.c)
-# # repl.lab<- unique(repl.lab)
-# # 
-# # hor.lab.c$lab.p <- paste(hor.lab.c$num_lab,hor.lab.c$sitio, sep="&")
-# # repl.lab$lab.p <- paste(repl.lab$num_lab,repl.lab$sitio, sep="&")
-# 
-# # acc <-merge(hor.lab.c,repl.lab, by = "lab.p",all = T)
-# # acc <- acc[complete.cases(acc),]
-# # cor("CO_ox.x", "CO_ox.y", acc)
-# # 
-# # t.test(acc$CO_ox.y,acc$CO_ox.x,paired=TRUE)
-# # 
-# # summary(acc$CO_ox.y-acc$CO_ox.x)
-# # 
-# # 
-# # 
-# # hist(hor.lab.b$CO_ox)
-# # hist(acc$CO_ox.y-acc$CO_ox.x, add =T)
-# # summary(hor.lab.b$CO_ox)
-# 
-# 
-# #extract values for validation thick.A and OC
-# # hor.lab$id.h <- paste(hor.lab$sitio,hor.lab$hor, sep=".")
-# # 
-# # val.A <- merge(site[,c(2,5,6)], hor.lab[hor.lab$hor=="A", c(1,2,22,4,5,12,19,20,21,23)], 
-# #                by = "sitio", all = T)[c(-118:-128),]
-# # val.B <- merge(site[,c(2,5,6)], hor.lab[hor.lab$hor=="B", c(1,2,22,4,5,12,19,20,21,23)], 
-# #                by = "sitio", all = T)[c(-214:-224),]
-# #val <- val[complete.cases(val),]
+# load predicted
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/TB.sdat")
+# thickness to spatial data frame
+coordinates(SP.val)<- ~longitud+latitud
+# extract values from  predicted
+proj4string(SP.val) <- wgs84
+SP.val <- spTransform(SP.val, posgar98)
+proj4string(SP.pred) <- posgar98
+SP.val@data[,length(SP.val@data)+1] <- over(x=SP.val,y=SP.pred)
+names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
+
+# plot residuals
+# par(pty="s")
+# par(mfrow = c(2, 2))
+lim<-c(min(SP.val@data$measured)+0.5*sd(SP.val@data$measured),max(SP.val@data$measured)-0.5*sd(SP.val@data$measured))
+plot(SP.val@data$predicted~SP.val@data$measured, main="Total bases top horizon", xlab= "measured (cmol+/kg)",
+     ylab = "predicted (cmol+/kg)", col = "dark red",xlim=lim, ylim=lim)
+abline(0,1)
+abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
+# Statistical Inference Stratified Simple Random Sampling
+# "Sampling for natural resource monitoring" de Gruiter, Brus, Knotters. pp.92
+# ME + confident interval 
+
+SP.val <- as.data.frame(SP.val)
+SP.val$residuals <-SP.val$measured-SP.val$predicted
+SP.val$residuals.sq <-(SP.val$measured-SP.val$predicted)^2
+
+# Count n (samples per starta) and h (number of strata)
+nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
+            n=as.data.frame(table(SP.val$strata))[,2],
+            h=1:12)
+SP.val<- merge(SP.val, nh, by="strata")
+
+
+library(dplyr)
+#vignette("introduction", package = "dplyr")
+X  <- group_by(SP.val, strata)
+summarise(X,n())
+# Mean error of the area
+N  <- as.numeric(length(X$residuals))
+H  <- 12
+Nh <- as.data.frame(summarise(X,n()))[,2]
+zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
+sum(Nh*zh)/N
+
+######################## ME <- mean error of top horizon thickness of the area (considering area)
+Ah <- as.data.frame(summarise(X, mean(area)))[,2]
+A <- sum(Ah)
+ah <- Ah/A
+zSt <- sum(ah*zh)
+paste("ME =", round(zSt,3))
+# variance of zSt
+VzSt <- sum((ah^2)*summarise(X, var(residuals))[2])
+VzSt
+# 95% confidence
+# lowwer limit
+ll<-zSt-qt(0.975,N-1)*sqrt(VzSt)
+# upper limit
+ul<-zSt+qt(0.975,N-1)* sqrt(VzSt)
+
+ME<- paste(round(ll,3),"<",round(zSt,3),"<",round(ul,3))
+
+############################################ RMSE (root mean squared error)
+zh.s <- as.data.frame(summarise(X, mean(residuals.sq)))[,2]
+sum(Nh*zh.s)/N
+# ME <- mean error of top horizon thickness of the area (considering area)
+zSt.s <- sum(ah*zh.s)
+paste("MSE =", round(zSt.s,3))
+# variance of zSt
+VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+VzSt.s
+# 95% confidence using X-square distribution
+# # lowwer limit
+ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # upper limit
+ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+
+# fill report table
+report[3,1:3]<- c("TB.A",ME,RMSE)
+
+#-----------------------------------------#
+#        Base Saturation top horizon        #
+#-----------------------------------------#
+as.data.frame(names(hor.lab))
+SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,32,13:15)])
+SP.val <- SP.val[complete.cases(SP.val),]
+#define crs
+wgs84 <- CRS("+init=epsg:4326")
+posgar98 <- CRS("+init=epsg:22175")
+#modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
+# load predicted
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/Sat-A.sdat")
+# thickness to spatial data frame
+coordinates(SP.val)<- ~longitud+latitud
+# extract values from  predicted
+proj4string(SP.val) <- wgs84
+SP.val <- spTransform(SP.val, posgar98)
+proj4string(SP.pred) <- posgar98
+SP.val@data[,length(SP.val@data)+1] <- over(x=SP.val,y=SP.pred)
+names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
+
+# plot residuals
+# par(pty="s")
+# par(mfrow = c(2, 2))
+lim<-c(min(SP.val@data$measured)+0.5*sd(SP.val@data$measured),max(SP.val@data$measured)-0.5*sd(SP.val@data$measured))
+plot(SP.val@data$predicted~SP.val@data$measured, main="Base saturation top horizon", xlab= "measured (%)",
+     ylab = "predicted (%)", col = "dark red",xlim=lim, ylim=lim)
+abline(0,1)
+abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
+# Statistical Inference Stratified Simple Random Sampling
+# "Sampling for natural resource monitoring" de Gruiter, Brus, Knotters. pp.92
+# ME + confident interval 
+
+SP.val <- as.data.frame(SP.val)
+SP.val$residuals <-SP.val$measured-SP.val$predicted
+SP.val$residuals.sq <-(SP.val$measured-SP.val$predicted)^2
+
+# Count n (samples per starta) and h (number of strata)
+nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
+            n=as.data.frame(table(SP.val$strata))[,2],
+            h=1:12)
+SP.val<- merge(SP.val, nh, by="strata")
+
+
+library(dplyr)
+#vignette("introduction", package = "dplyr")
+X  <- group_by(SP.val, strata)
+summarise(X,n())
+# Mean error of the area
+N  <- as.numeric(length(X$residuals))
+H  <- 12
+Nh <- as.data.frame(summarise(X,n()))[,2]
+zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
+sum(Nh*zh)/N
+
+######################## ME <- mean error of top horizon thickness of the area (considering area)
+Ah <- as.data.frame(summarise(X, mean(area)))[,2]
+A <- sum(Ah)
+ah <- Ah/A
+zSt <- sum(ah*zh)
+paste("ME =", round(zSt,3))
+# variance of zSt
+VzSt <- sum((ah^2)*summarise(X, var(residuals))[2])
+VzSt
+# 95% confidence
+# lowwer limit
+ll<-zSt-qt(0.975,N-1)*sqrt(VzSt)
+# upper limit
+ul<-zSt+qt(0.975,N-1)* sqrt(VzSt)
+
+ME<- paste(round(ll,3),"<",round(zSt,3),"<",round(ul,3))
+
+############################################ RMSE (root mean squared error)
+zh.s <- as.data.frame(summarise(X, mean(residuals.sq)))[,2]
+sum(Nh*zh.s)/N
+# ME <- mean error of top horizon thickness of the area (considering area)
+zSt.s <- sum(ah*zh.s)
+paste("MSE =", round(zSt.s,3))
+# variance of zSt
+VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+VzSt.s
+# 95% confidence using X-square distribution
+# # lowwer limit
+ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # upper limit
+ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+
+# fill report table
+report[4,1:3]<- c("Sat.A",ME,RMSE)
+
+
+#-------------------------------#
+#        ESP top horizon        #
+#-------------------------------#
+as.data.frame(names(hor.lab))
+SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,33,13:15)])
+SP.val <- SP.val[complete.cases(SP.val),]
+#define crs
+wgs84 <- CRS("+init=epsg:4326")
+posgar98 <- CRS("+init=epsg:22175")
+#modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
+# load predicted
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/ESP-A.sdat")
+# thickness to spatial data frame
+coordinates(SP.val)<- ~longitud+latitud
+# extract values from  predicted
+proj4string(SP.val) <- wgs84
+SP.val <- spTransform(SP.val, posgar98)
+proj4string(SP.pred) <- posgar98
+SP.val@data[,length(SP.val@data)+1] <- over(x=SP.val,y=SP.pred)
+names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
+
+# plot residuals
+# par(pty="s")
+# par(mfrow = c(2, 2))
+lim<-c(min(SP.val@data$measured)+0*sd(SP.val@data$measured),max(SP.val@data$measured)-0*sd(SP.val@data$measured))
+plot(SP.val@data$predicted~SP.val@data$measured, main="ESP top horizon", xlab= "measured (%)",
+     ylab = "predicted (%)", col = "dark red",xlim=lim, ylim=lim)
+abline(0,1)
+abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
+# Statistical Inference Stratified Simple Random Sampling
+# "Sampling for natural resource monitoring" de Gruiter, Brus, Knotters. pp.92
+# ME + confident interval 
+
+SP.val <- as.data.frame(SP.val)
+SP.val$residuals <-SP.val$measured-SP.val$predicted
+SP.val$residuals.sq <-(SP.val$measured-SP.val$predicted)^2
+
+# Count n (samples per starta) and h (number of strata)
+nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
+            n=as.data.frame(table(SP.val$strata))[,2],
+            h=1:12)
+SP.val<- merge(SP.val, nh, by="strata")
+
+
+library(dplyr)
+#vignette("introduction", package = "dplyr")
+X  <- group_by(SP.val, strata)
+summarise(X,n())
+# Mean error of the area
+N  <- as.numeric(length(X$residuals))
+H  <- 12
+Nh <- as.data.frame(summarise(X,n()))[,2]
+zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
+sum(Nh*zh)/N
+
+######################## ME <- mean error of top horizon thickness of the area (considering area)
+Ah <- as.data.frame(summarise(X, mean(area)))[,2]
+A <- sum(Ah)
+ah <- Ah/A
+zSt <- sum(ah*zh)
+paste("ME =", round(zSt,3))
+# variance of zSt
+VzSt <- sum((ah^2)*summarise(X, var(residuals))[2])
+VzSt
+# 95% confidence
+# lowwer limit
+ll<-zSt-qt(0.975,N-1)*sqrt(VzSt)
+# upper limit
+ul<-zSt+qt(0.975,N-1)* sqrt(VzSt)
+
+ME<- paste(round(ll,3),"<",round(zSt,3),"<",round(ul,3))
+
+############################################ RMSE (root mean squared error)
+zh.s <- as.data.frame(summarise(X, mean(residuals.sq)))[,2]
+sum(Nh*zh.s)/N
+# ME <- mean error of top horizon thickness of the area (considering area)
+zSt.s <- sum(ah*zh.s)
+paste("MSE =", round(zSt.s,3))
+# variance of zSt
+VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+VzSt.s
+# 95% confidence using X-square distribution
+# # lowwer limit
+ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # upper limit
+ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+
+# fill report table
+report[5,1:3]<- c("ESP.A",ME,RMSE)
+
+
+#-----------------------------#
+#        ESP B horizon        #
+#-----------------------------#
+as.data.frame(names(hor.lab))
+SP.val <- unique(hor.lab[hor.lab$hor=="B",c(7:9,33,13:15)])
+SP.val <- SP.val[complete.cases(SP.val),]
+#define crs
+wgs84 <- CRS("+init=epsg:4326")
+posgar98 <- CRS("+init=epsg:22175")
+#modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
+# load predicted
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/ESP-B.sdat")
+# thickness to spatial data frame
+coordinates(SP.val)<- ~longitud+latitud
+# extract values from  predicted
+proj4string(SP.val) <- wgs84
+SP.val <- spTransform(SP.val, posgar98)
+proj4string(SP.pred) <- posgar98
+SP.val@data[,length(SP.val@data)+1] <- over(x=SP.val,y=SP.pred)
+names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
+
+# plot residuals
+# par(pty="s")
+# par(mfrow = c(2, 2))
+lim<-c(min(SP.val@data$measured)+0*sd(SP.val@data$measured),max(SP.val@data$measured)-0*sd(SP.val@data$measured))
+plot(SP.val@data$predicted~SP.val@data$measured, main="ESP B horizon", xlab= "measured (%)",
+     ylab = "predicted (%)", col = "dark red",xlim=lim, ylim=lim)
+abline(0,1)
+abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
+# Statistical Inference Stratified Simple Random Sampling
+# "Sampling for natural resource monitoring" de Gruiter, Brus, Knotters. pp.92
+# ME + confident interval 
+
+SP.val <- as.data.frame(SP.val)
+SP.val$residuals <-SP.val$measured-SP.val$predicted
+SP.val$residuals.sq <-(SP.val$measured-SP.val$predicted)^2
+
+# Count n (samples per starta) and h (number of strata)
+nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
+            n=as.data.frame(table(SP.val$strata))[,2],
+            h=1:12)
+SP.val<- merge(SP.val, nh, by="strata")
+
+
+library(dplyr)
+#vignette("introduction", package = "dplyr")
+X  <- group_by(SP.val, strata)
+summarise(X,n())
+# Mean error of the area
+N  <- as.numeric(length(X$residuals))
+H  <- 12
+Nh <- as.data.frame(summarise(X,n()))[,2]
+zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
+sum(Nh*zh)/N
+
+######################## ME <- mean error of top horizon thickness of the area (considering area)
+Ah <- as.data.frame(summarise(X, mean(area)))[,2]
+A <- sum(Ah)
+ah <- Ah/A
+zSt <- sum(ah*zh)
+paste("ME =", round(zSt,3))
+# variance of zSt
+VzSt <- sum((ah^2)*summarise(X, var(residuals))[2])
+VzSt
+# 95% confidence
+# lowwer limit
+ll<-zSt-qt(0.975,N-1)*sqrt(VzSt)
+# upper limit
+ul<-zSt+qt(0.975,N-1)* sqrt(VzSt)
+
+ME<- paste(round(ll,3),"<",round(zSt,3),"<",round(ul,3))
+
+############################################ RMSE (root mean squared error)
+zh.s <- as.data.frame(summarise(X, mean(residuals.sq)))[,2]
+sum(Nh*zh.s)/N
+# ME <- mean error of top horizon thickness of the area (considering area)
+zSt.s <- sum(ah*zh.s)
+paste("MSE =", round(zSt.s,3))
+# variance of zSt
+VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+VzSt.s
+# 95% confidence using X-square distribution
+# # lowwer limit
+ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # upper limit
+ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+
+# fill report table
+report[6,1:3]<- c("ESP.B",ME,RMSE)
+
+write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report.csv")
