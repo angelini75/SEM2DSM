@@ -116,7 +116,7 @@ posgar98 <- CRS("+init=epsg:22175")
 #modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/Thickness.sdat")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_thick.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -207,7 +207,7 @@ SP.val <- SP.val[complete.cases(SP.val),]
 #modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/OC.sdat")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_oc.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -299,7 +299,7 @@ SP.val <- SP.val[complete.cases(SP.val),]
 #modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/TB.sdat")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_tb.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -391,7 +391,7 @@ posgar98 <- CRS("+init=epsg:22175")
 #modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/Sat-A.sdat")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_sat.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -484,7 +484,7 @@ posgar98 <- CRS("+init=epsg:22175")
 #modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/ESP-A.sdat")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_esp.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -577,7 +577,7 @@ posgar98 <- CRS("+init=epsg:22175")
 #modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/ESP-B.sdat")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_esp.Br.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -657,4 +657,4 @@ RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
 # fill report table
 report[6,1:3]<- c("ESP.B",ME,RMSE)
 
-write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report.csv")
+write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report2.csv")
