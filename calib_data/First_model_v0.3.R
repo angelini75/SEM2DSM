@@ -222,7 +222,7 @@ for(i in 1:length(files_m)) {
 #image(raster(("mod13q1_tot_mean.tif")))
 
 # clean points out of study area
-pred <- spTransform(pred, posgar98)
+# pred <- spTransform(pred, posgar98)
 pred.df <- as.data.frame(pred)
 
 
@@ -303,16 +303,31 @@ library(sp)
 library(raster)
 pred.sp <- as.data.frame(pred)
 coordinates(pred.sp) <- ~X+Y
+proj4string(pred.sp) <- modis
+#pred.sp <- spTransform(pred.sp, modis)
 #spplot(pred.sp)
 
-y <- raster("mask_231m_posgar.tif")
-proj4string(y) <- posgar98
-proj4string(pred.sp) <- posgar98
+
+y <- raster("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/mod13q1_tot_mean.tif")
+y[!y %in% NA] <- 0
+proj4string(y) <- modis
+names(y)<-"mask"
+plot(y)
+res(y)
 #pred.sp <- spTransform(pred.sp, modis)
 r <- rasterize(x = pred.sp,y = y,background= NA)
 plot(r[[3]])
-
-writeRaster(x = r,filename ="rusults2.tif", overwrite=T,bylayer=TRUE,suffix=r@data@names)
+ADE<- readShapePoly("/media/marcos/L0135974_DATA/UserData/BaseARG/study area/ADE_MODIS.shp")
+plot(ADE)
+r<-mask(x = r,mask = ADE)
+TWI <- raster("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/TWI250.sdat")
+proj4string(TWI) <- posgar98
+#rp[!rp %in% NA] <- 0
+res(rp)
+rp <- projectRaster(from = r,to = TWI,res = res(TWI), crs = posgar98, method = 'bilinear')
+plot(rp[[2:8]])
+raster::NAvalue(rp)<--99999
+writeRaster(x = rp[[2:8]],filename ="oktober.tif", overwrite=T,bylayer=TRUE,suffix=names(rp)[2:8])
 
 
 #################Plotting results####################
