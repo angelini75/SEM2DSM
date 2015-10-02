@@ -658,3 +658,58 @@ RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
 report[6,1:3]<- c("ESP.B",ME,RMSE)
 
 write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report2.csv")
+
+
+
+############# comparison between datasets
+
+library(dplyr)
+as.data.frame(names(hor.lab))
+# validation dataset
+val <- hor.lab[,c(2,4,7,12,32,24,31,33)]
+val$hor<- as.factor(val$hor)
+#val<-group_by(val,sitio,hor, add=T)
+val.A<-group_by(val[val$hor=="A",], sitio)
+val.A<-summarise(val.A,H=first(horizonte),THICK=mean(thick),SAT=mean(Sat),
+                 CO=mean(C_Ox),TB=mean(Total_bases),ESP.A=mean(ESP))
+val.B<-group_by(val[val$hor=="B",], sitio)
+val.B<-summarise(val.B,ESP.B=mean(ESP))
+val<-merge(val.A,val.B,by="sitio", all=T)
+
+val$TB[is.na(val$TB)&!is.na(val$THICK)] <- 20
+val$SAT[is.na(val$SAT)&!is.na(val$THICK)] <- 100
+val$ESP.A[is.na(val$ESP.A)&!is.na(val$THICK)] <- 16.3
+val$ESP.B[is.na(val$ESP.B)&!is.na(val$THICK)] <- 30.9
+names(val)
+val<- val[,c(3,6,4,7,8,5)]
+# calibration dataset
+cal<-read.csv("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/calib.data-2.1.csv")[,-1]
+as.data.frame(names(cal))
+cal<- cal[,c(4:9)]
+names(cal)<- c("Thick.A (cm)","TB.A (cmol+/kg)","Sat.A (%)","log(ESP.A %)","log(ESP.B %)","OC.A (%)")
+names(val)<- c("Thick.A (cm)","TB.A (cmol+/kg)","Sat.A (%)","log(ESP.A %)","log(ESP.B %)","OC.A (%)")
+cal$`log(ESP.A %)`<-log(cal$`log(ESP.A %)`)
+cal$`log(ESP.B %)`<-log(cal$`log(ESP.B %)`)
+val$`log(ESP.A %)`<-log(val$`log(ESP.A %)`)
+val$`log(ESP.B %)`<-log(val$`log(ESP.B %)`)
+
+library(reshape2)
+library(ggplot2)
+c<- data.frame(value=NA,L1=NA,V3=NA)
+for(i in 1:6){
+  a<-list(cal[,i],val[,i])
+  b<- melt(a)
+  b<- b[!is.na(b$value),]
+  b[,3]<- names(cal)[i]
+  c<- rbind(c,as.data.frame(b))
+}
+c$L1[c$L1==1] <- "calibration"
+c$L1[c$L1==2] <- "validation"
+c<-c[!(c$values<60 & c$Property== "Sat.A (%)"),]
+names(c)<- c("values","Dataset","Property")
+c<-c[complete.cases(c),]
+c<-group_by(c,Property)
+
+ggplot() +  facet_wrap(~Property,scales = 'free_y') + 
+  geom_jitter(data = c, mapping = aes(x=Dataset, y=values, color=Dataset), alpha = I(1/4))+
+  geom_boxplot(data=c, mapping=aes(x=Dataset, y=values, color=Dataset), alpha = I(1/2))
