@@ -97,14 +97,14 @@ hor.xy <- merge(hor.xy,sitios_strata, by="sitio", all.x=T)
 hor.lab <- merge(hor.xy,lab, by.x="num_lab", by.y = "labid", all.x = T)
 #correct strata 
 hor.lab$strata[hor.lab$sitio=="2acuic1"] <- "acuic1"
-hor.lab$strata[hor.lab$sitio=="co1-21"] <- "Co2"
+#hor.lab$strata[hor.lab$sitio=="co1-21"] <- "Co2"
 
 
-#---------------------------------------#
-#        Thickness top horizon          #
-#---------------------------------------#
+#-------------------------------------#
+#        Thickness A horizon          #
+#-------------------------------------#
 # SP is Soil Property
-SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,12:15)])
+SP.val <- unique(hor.lab[hor.lab$hor=="A",c(7:9,12:15)])
 SP.val <- SP.val[complete.cases(SP.val),]
 
 library(sp)
@@ -147,12 +147,13 @@ nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
             n=as.data.frame(table(SP.val$strata))[,2],
             h=1:12)
 SP.val<- merge(SP.val, nh, by="strata")
-
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="acuic3",])
 library(dplyr)
 #vignette("introduction", package = "dplyr")
 X  <- group_by(SP.val, strata)
+summarise(X,n())
 # Mean error of the area
-N  <- as.numeric(length(X$residuals))
+N  <- as.numeric(length(X$residuals))-1
 H  <- 12
 Nh <- as.data.frame(summarise(X,n()))[,2]
 zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
@@ -181,15 +182,18 @@ sum(Nh*zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
 zSt.s <- sum(ah*zh.s)
 paste("MSE =", round(zSt.s,3))
-# variance of zSt
-VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
-VzSt.s
-# 95% confidence using X-square distribution
-# # lowwer limit
-ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
-# # upper limit
-ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
-RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+paste("RMSE =", round(sqrt(zSt.s),3))
+MSE <- zSt.s
+RMSE <- sqrt(zSt.s)
+# # variance of zSt
+# VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+# VzSt.s
+# # 95% confidence using X-square distribution
+# # # lowwer limit
+# ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # # upper limit
+# ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+# RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
 
 # fill report table
 report<- data.frame(Soil_property = NA, ME=NA, RMSE= NA)
@@ -199,7 +203,7 @@ report[1,1:3]<- c("Thick.A",ME,RMSE)
 #        Organic Carbon A horizon        #
 #----------------------------------------#
 as.data.frame(names(hor.lab))
-SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,24,13:15)])
+SP.val <- unique(hor.lab[hor.lab$hor=="A",c(7:9,24,13:15)])
 SP.val <- SP.val[complete.cases(SP.val),]
 #define crs
 # wgs84 <- CRS("+init=epsg:4326")
@@ -238,13 +242,13 @@ nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
             h=1:12)
 SP.val<- merge(SP.val, nh, by="strata")
 
-
-library(dplyr)
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="acuic3",])
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="albic1",])
 #vignette("introduction", package = "dplyr")
 X  <- group_by(SP.val, strata)
 summarise(X,n())
 # Mean error of the area
-N  <- as.numeric(length(X$residuals))
+N  <- as.numeric(length(X$residuals))-2
 H  <- 12
 Nh <- as.data.frame(summarise(X,n()))[,2]
 zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
@@ -273,25 +277,28 @@ sum(Nh*zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
 zSt.s <- sum(ah*zh.s)
 paste("MSE =", round(zSt.s,3))
-# variance of zSt
-VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
-VzSt.s
-# 95% confidence using X-square distribution
-# # lowwer limit
-ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
-# # upper limit
-ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
-RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+paste("RMSE =", round(sqrt(zSt.s),3))
+MSE <- zSt.s
+RMSE <- sqrt(zSt.s)
+# # variance of zSt
+# VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+# VzSt.s
+# # 95% confidence using X-square distribution
+# # # lowwer limit
+# ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # # upper limit
+# ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+# RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
 
 # fill report table
 report[2,1:3]<- c("OC.A",ME,RMSE)
 
 
-#---------------------------------------#
-#        Total Bases top horizon        #
-#---------------------------------------#
+#-------------------------------------#
+#        Total Bases A horizon        #
+#-------------------------------------#
 as.data.frame(names(hor.lab))
-SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,31,13:15)])
+SP.val <- unique(hor.lab[hor.lab$hor=="A",c(7:9,31,13:15)])
 SP.val <- SP.val[complete.cases(SP.val),]
 #define crs
  wgs84 <- CRS("+init=epsg:4326")
@@ -330,14 +337,13 @@ nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
             n=as.data.frame(table(SP.val$strata))[,2],
             h=1:12)
 SP.val<- merge(SP.val, nh, by="strata")
-
-
-library(dplyr)
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="acuic3",])
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="albic1",])
 #vignette("introduction", package = "dplyr")
 X  <- group_by(SP.val, strata)
 summarise(X,n())
 # Mean error of the area
-N  <- as.numeric(length(X$residuals))
+N  <- as.numeric(length(X$residuals))-2
 H  <- 12
 Nh <- as.data.frame(summarise(X,n()))[,2]
 zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
@@ -366,24 +372,26 @@ sum(Nh*zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
 zSt.s <- sum(ah*zh.s)
 paste("MSE =", round(zSt.s,3))
-# variance of zSt
-VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
-VzSt.s
-# 95% confidence using X-square distribution
-# # lowwer limit
-ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
-# # upper limit
-ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
-RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+MSE <- zSt.s
+RMSE <- sqrt(zSt.s)
+# # variance of zSt
+# VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+# VzSt.s
+# # 95% confidence using X-square distribution
+# # # lowwer limit
+# ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # # upper limit
+# ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+# RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
 
 # fill report table
 report[3,1:3]<- c("TB.A",ME,RMSE)
 
 #-----------------------------------------#
-#        Base Saturation top horizon        #
+#        Base Saturation A horizon        #
 #-----------------------------------------#
 as.data.frame(names(hor.lab))
-SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,32,13:15)])
+SP.val <- unique(hor.lab[hor.lab$hor=="A",c(7:9,32,13:15)])
 SP.val <- SP.val[complete.cases(SP.val),]
 #define crs
 wgs84 <- CRS("+init=epsg:4326")
@@ -423,13 +431,14 @@ nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
             h=1:12)
 SP.val<- merge(SP.val, nh, by="strata")
 
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="acuic3",])
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="albic1",])
 
-library(dplyr)
 #vignette("introduction", package = "dplyr")
 X  <- group_by(SP.val, strata)
 summarise(X,n())
 # Mean error of the area
-N  <- as.numeric(length(X$residuals))
+N  <- as.numeric(length(X$residuals))-2
 H  <- 12
 Nh <- as.data.frame(summarise(X,n()))[,2]
 zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
@@ -458,25 +467,27 @@ sum(Nh*zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
 zSt.s <- sum(ah*zh.s)
 paste("MSE =", round(zSt.s,3))
-# variance of zSt
-VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
-VzSt.s
-# 95% confidence using X-square distribution
-# # lowwer limit
-ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
-# # upper limit
-ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
-RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+MSE <- zSt.s
+RMSE <- sqrt(zSt.s)
+# # variance of zSt
+# VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+# VzSt.s
+# # 95% confidence using X-square distribution
+# # # lowwer limit
+# ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # # upper limit
+# ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+# RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
 
 # fill report table
 report[4,1:3]<- c("Sat.A",ME,RMSE)
 
 
-#-------------------------------#
-#        ESP top horizon        #
-#-------------------------------#
+#-----------------------------#
+#        ESP A horizon        #
+#-----------------------------#
 as.data.frame(names(hor.lab))
-SP.val <- unique(hor.lab[hor.lab$mintop==0,c(7:9,33,13:15)])
+SP.val <- unique(hor.lab[hor.lab$hor=="A",c(7:9,33,13:15)])
 SP.val <- SP.val[complete.cases(SP.val),]
 #define crs
 wgs84 <- CRS("+init=epsg:4326")
@@ -515,14 +526,13 @@ nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
             n=as.data.frame(table(SP.val$strata))[,2],
             h=1:12)
 SP.val<- merge(SP.val, nh, by="strata")
-
-
-library(dplyr)
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="acuic3",])
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="albic1",])
 #vignette("introduction", package = "dplyr")
 X  <- group_by(SP.val, strata)
 summarise(X,n())
 # Mean error of the area
-N  <- as.numeric(length(X$residuals))
+N  <- as.numeric(length(X$residuals))-2
 H  <- 12
 Nh <- as.data.frame(summarise(X,n()))[,2]
 zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
@@ -551,15 +561,17 @@ sum(Nh*zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
 zSt.s <- sum(ah*zh.s)
 paste("MSE =", round(zSt.s,3))
-# variance of zSt
-VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
-VzSt.s
-# 95% confidence using X-square distribution
-# # lowwer limit
-ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
-# # upper limit
-ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
-RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+MSE<- zSt.s
+RMSE<- sqrt(zSt.s)
+# # variance of zSt
+# VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+# VzSt.s
+# # 95% confidence using X-square distribution
+# # # lowwer limit
+# ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # # upper limit
+# ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+# RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
 
 # fill report table
 report[5,1:3]<- c("ESP.A",ME,RMSE)
@@ -608,14 +620,13 @@ nh <- cbind(strata=as.vector(as.data.frame(table(SP.val$strata))[,1]),
             n=as.data.frame(table(SP.val$strata))[,2],
             h=1:12)
 SP.val<- merge(SP.val, nh, by="strata")
+SP.val<- rbind(SP.val,SP.val[SP.val$strata=="Co2",])
 
-
-library(dplyr)
 #vignette("introduction", package = "dplyr")
 X  <- group_by(SP.val, strata)
 summarise(X,n())
 # Mean error of the area
-N  <- as.numeric(length(X$residuals))
+N  <- as.numeric(length(X$residuals))-1
 H  <- 12
 Nh <- as.data.frame(summarise(X,n()))[,2]
 zh <- as.data.frame(summarise(X, mean(residuals)))[,2]
@@ -644,15 +655,17 @@ sum(Nh*zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
 zSt.s <- sum(ah*zh.s)
 paste("MSE =", round(zSt.s,3))
-# variance of zSt
-VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
-VzSt.s
-# 95% confidence using X-square distribution
-# # lowwer limit
-ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
-# # upper limit
-ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
-RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+MSE<- zSt.s
+RMSE <- sqrt(zSt.s)
+# # variance of zSt
+# VzSt.s <- sum((ah^2)*summarise(X, var(residuals.sq))[2])
+# VzSt.s
+# # 95% confidence using X-square distribution
+# # # lowwer limit
+# ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
+# # # upper limit
+# ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
+# RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
 
 # fill report table
 report[6,1:3]<- c("ESP.B",ME,RMSE)
@@ -705,11 +718,12 @@ for(i in 1:6){
 }
 c$L1[c$L1==1] <- "calibration"
 c$L1[c$L1==2] <- "validation"
-c<-c[!(c$values<60 & c$Property== "Sat.A (%)"),]
 names(c)<- c("values","Dataset","Property")
 c<-c[complete.cases(c),]
 c<-group_by(c,Property)
+c<-c[!(c$values<60 & c$Property== "Sat.A (%)"),]
 
 ggplot() +  facet_wrap(~Property,scales = 'free_y') + 
-  geom_jitter(data = c, mapping = aes(x=Dataset, y=values, color=Dataset), alpha = I(1/4))+
+  #geom_jitter(data = c, mapping = aes(x=Dataset, y=values, color=Dataset), alpha = I(1/4))+
   geom_boxplot(data=c, mapping=aes(x=Dataset, y=values, color=Dataset), alpha = I(1/2))
+
