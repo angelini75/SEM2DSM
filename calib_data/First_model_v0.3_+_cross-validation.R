@@ -227,6 +227,8 @@ paste(round(MSE,1),"ll:",round(ll.s,1),"ul:", round(ul.s,1))
 report[i/2,1:3]<- c(names(res)[i-1],ME,RMSE)
 }
 
+write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report_cross-validation.csv")
+
 sqrt(ll.s)
 
 
