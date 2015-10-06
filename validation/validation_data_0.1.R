@@ -129,8 +129,8 @@ names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
 
 par(pty="s")
 par(mfrow = c(3, 2))
-plot(SP.val@data$predicted~SP.val@data$measured, main="Thickness top horizon", xlab= "measured (cm)",
-     ylab = "predicted (cm)", col = "dark red",xlim=c(10, 40), ylim=c(10, 40))
+plot(SP.val@data$predicted~SP.val@data$measured, main="Thickness A horizon (cm)", xlab= "measured",
+     ylab = "predicted", col = "dark red",xlim=c(10, 40), ylim=c(10, 40))
 abline(0,1)
 abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
 
@@ -224,8 +224,8 @@ names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
 # plot residuals
 # par(pty="s")
 # par(mfrow = c(2, 2))
-plot(SP.val@data$predicted~SP.val@data$measured, main="Organic carbon top horizon", xlab= "measured (%)",
-     ylab = "predicted (%)", col = "dark red",xlim=c(1, 2.5), ylim=c(1, 2.5))
+plot(SP.val@data$predicted~SP.val@data$measured, main="Organic carbon A horizon (%)", xlab= "measured",
+     ylab = "predicted", col = "dark red",xlim=c(1, 2.5), ylim=c(1, 2.5))
 abline(0,1)
 abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
 # Statistical Inference Stratified Simple Random Sampling
@@ -320,8 +320,8 @@ names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
 # par(pty="s")
 # par(mfrow = c(2, 2))
 lim<-c(min(SP.val@data$measured)+0.5*sd(SP.val@data$measured),max(SP.val@data$measured)-0.5*sd(SP.val@data$measured))
-plot(SP.val@data$predicted~SP.val@data$measured, main="Total bases top horizon", xlab= "measured (cmol+/kg)",
-     ylab = "predicted (cmol+/kg)", col = "dark red",xlim=lim, ylim=lim)
+plot(SP.val@data$predicted~SP.val@data$measured, main="Total bases A horizon (cmol+/kg)", xlab= "measured",
+     ylab = "predicted", col = "dark red",xlim=lim, ylim=lim)
 abline(0,1)
 abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
 # Statistical Inference Stratified Simple Random Sampling
@@ -413,8 +413,8 @@ names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
 # par(pty="s")
 # par(mfrow = c(2, 2))
 lim<-c(min(SP.val@data$measured)+0.5*sd(SP.val@data$measured),max(SP.val@data$measured)-0.5*sd(SP.val@data$measured))
-plot(SP.val@data$predicted~SP.val@data$measured, main="Base saturation top horizon", xlab= "measured (%)",
-     ylab = "predicted (%)", col = "dark red",xlim=lim, ylim=lim)
+plot(SP.val@data$predicted~SP.val@data$measured, main="Base saturation A horizon (%)", xlab= "measured",
+     ylab = "predicted", col = "dark red",xlim=lim, ylim=lim)
 abline(0,1)
 abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
 # Statistical Inference Stratified Simple Random Sampling
@@ -509,8 +509,8 @@ names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
 # par(pty="s")
 # par(mfrow = c(2, 2))
 lim<-c(min(SP.val@data$measured)+0*sd(SP.val@data$measured),max(SP.val@data$measured)-0*sd(SP.val@data$measured))
-plot(SP.val@data$predicted~SP.val@data$measured, main="ESP top horizon", xlab= "measured (%)",
-     ylab = "predicted (%)", col = "dark red",xlim=lim, ylim=lim)
+plot(SP.val@data$predicted~SP.val@data$measured, main="ESP A horizon (%)", xlab= "measured",
+     ylab = "predicted", col = "dark red",xlim=lim, ylim=lim)
 abline(0,1)
 abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
 # Statistical Inference Stratified Simple Random Sampling
@@ -603,8 +603,8 @@ names(SP.val@data)<-c("hor","measured","strata","area","percentage","predicted")
 # par(pty="s")
 # par(mfrow = c(2, 2))
 lim<-c(min(SP.val@data$measured)+0*sd(SP.val@data$measured),max(SP.val@data$measured)-0*sd(SP.val@data$measured))
-plot(SP.val@data$predicted~SP.val@data$measured, main="ESP B horizon", xlab= "measured (%)",
-     ylab = "predicted (%)", col = "dark red",xlim=lim, ylim=lim)
+plot(SP.val@data$predicted~SP.val@data$measured, main="ESP B horizon (%)", xlab= "measured",
+     ylab = "predicted", col = "dark red",xlim=lim, ylim=lim)
 abline(0,1)
 abline(lm(SP.val@data$predicted~SP.val@data$measured), col="red")
 # Statistical Inference Stratified Simple Random Sampling
