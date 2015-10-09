@@ -5,16 +5,24 @@ setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/1_Sampling/Data")
 # load data
 hor <- read.csv("Ficha_campo_hor.csv")
 site <- read.csv("Ficha_campo_sitio.csv")
-lab <- read.csv("Lab_data.csv")
+lab <- read.csv("Lab_data_mod.csv")
+lab$X0CaCO3<-as.character(lab$X0CaCO3)
+lab$X0CaCO3[lab$X0CaCO3==""]<-0
+lab$X0CaCO3[lab$X0CaCO3=="*"]<-1
+lab$X0CaCO3[lab$X0CaCO3=="**"]<-2
+lab$X0CaCO3[lab$X0CaCO3=="***"]<-3
+lab$X0CaCO3<-as.numeric(lab$X0CaCO3)
+#hist(lab$pHKCl)
 
 # clean and transform C oxidable to OC
 lab<- lab[c(-367,-366),]
 lab$C_Ox<-lab$C_Ox*1.3
 
-# Horizons A1 and A2, same site, two analysis
-hor$num_lab[hor$num_lab==64561 & !is.na(hor$num_lab) ][2]<-64562
-lab$labid[lab$labid==64561& !is.na(lab$labid)][2] <-64562
-
+# # Horizons A1 and A2, same site, two analysis
+# #hor$num_lab[hor$num_lab==64561 & !is.na(hor$num_lab) ][2]<-64562
+# #lab$labid[lab$labid==64561& !is.na(lab$labid)][2] <-64562
+# hor$num_lab_r[hor$num_lab_r==64599& !is.na(hor$num_lab_r) ]<- 64559
+lab[lab$labid==65012,] <- lab[lab$labid==64879,]
 repl <- hor[!is.na(hor$num_lab_r),]
 #--- MEASUREMENT ERROR AS STANDARD DEVIATION OF THE ERROR
 replic <- unique(repl[,c(23,27)])
@@ -24,14 +32,49 @@ replic$pHKCl.x <- as.numeric(replic$pHKCl.x)
 replic$pHKCl.y <- as.numeric(replic$pHKCl.y)
 replic$C_Ox.x <- replic$C_Ox.x*1.3
 replic$C_Ox.y <- replic$C_Ox.y*1.3
+replic <- replic[replic$num_lab!=64553,]
+replic <- replic[replic$num_lab!=65012,]
 #fix(names) # as.data.frame(.Primitive("names"))
+measurement.error <- data.frame(Property=NA,MEANe=NA,VARe=NA,SDe=NA)
 for(i in 3:18){
-print(paste("SD",names(replic)[i],
-            round(sqrt(var(replic[,i]-replic[,i+16], na.rm=T)),3),
-            "Mean",round(mean(replic[,i]-replic[,i+16], na.rm=T),3),
-            sep= ": "))
+measurement.error[i-2,] <- c(names(replic)[i], mean(replic[,i]-replic[,i+16], na.rm=T),
+            2*var(replic[,i]-replic[,i+16], na.rm=T),sqrt(2*var(replic[,i]-replic[,i+16], na.rm=T)))
 }
-sqrt(0.5*(0.283^2))
+measurement.error[,2] <- as.numeric(measurement.error[,2])
+measurement.error[,3] <- as.numeric(measurement.error[,3])
+measurement.error[,4] <- as.numeric(measurement.error[,4])
+write.csv(measurement.error,"measurement.error.csv")
+
+e <- matrix(NA,nrow = 35,ncol = 17)
+e <- as.data.frame(e)
+e[,1] <- replic[,2]
+names(e)[1] <- names(replic)[2]
+for(i in 3:18){
+  e[,i-1] <- replic[,i]-replic[,i+16]
+  names(e)[i-1] <- names(replic)[i]
+}
+summary(e)
+hist(e$Total_bases.x)
+E<-e[e$pHw.x > 1.5 | e$pHw.x < -1.5,]
+E <- E[!is.na(E$Sat_w.x),]
+summary(E)
+
+m <- matrix(NA,nrow = 35,ncol = 17)
+m <- as.data.frame(m)
+m[,1] <- replic[,2]
+names(m)[1] <- names(replic)[2]
+
+for(i in 3:18){
+  m[,i-1] <- (replic[,i]+replic[,i+16])/2
+  names(m)[i-1] <- names(replic)[i]
+}
+
+
+##### replace horizons with duplo analysis (2 measurements per sample) by mean(analysis[i])
+s<-m$num_lab
+for(i in 1:length(s)){
+  lab[lab$labid== s[i],] <- as.vector(as.matrix(m[m$num_lab==s[i],]))
+}
 
 #---
 ## 
