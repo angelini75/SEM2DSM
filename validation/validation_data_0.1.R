@@ -43,6 +43,13 @@ measurement.error[i-2,] <- c(names(replic)[i], mean(replic[,i]-replic[,i+16], na
 measurement.error[,2] <- as.numeric(measurement.error[,2])
 measurement.error[,3] <- as.numeric(measurement.error[,3])
 measurement.error[,4] <- as.numeric(measurement.error[,4])
+
+# comapre VARe/Var(property)
+
+measurement.error$var.ratio <- NA
+for(i in 1:length(measurement.error$VARe)){
+  measurement.error$var.ratio[i] <- measurement.error[i,3]/var(lab[,i+1], na.rm=T)
+}
 write.csv(measurement.error,"measurement.error.csv")
 
 e <- matrix(NA,nrow = 35,ncol = 17)
