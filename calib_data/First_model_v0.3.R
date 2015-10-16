@@ -27,6 +27,21 @@ d$esp.B[is.na(d$esp.B)] <- 30.9
 
 nas<-d[!complete.cases(d),]
 
+# statistics of calibration data
+D<-d[,4:10]
+d.stat<- matrix(data = NA,nrow = 6,ncol = 7,
+                dimnames = list(c("Min","Median","Mean", "Max", "SD","SS"),names(D)))
+d.stat[1,]<- apply(X = D,FUN = min,2) # 2 means by column
+d.stat[2,]<- apply(X = D,FUN = median,2)
+d.stat[3,]<- apply(X = D,FUN = mean,2)
+d.stat[4,]<- apply(X = D,FUN = max,2)
+d.stat[5,]<- apply(X = D,FUN = sd,2)
+
+for(i in 1:7){
+  d.stat[6,i] <- sum((mean(D[,i])-D[,i])^2 )
+}
+write.csv(d.stat,"summary.calibdata.csv")
+
 
 # transformation
 d$esp.A <- log10(d$esp.A)
@@ -172,7 +187,7 @@ pred <- read.csv("mask_231m2.csv")
 
 
 # tif files (modis)
-files_m <- list.files(pattern=".tif")
+files_m <- list.files(pattern=".tif$")
 header_m <- c("lstm", "lstsd", "evim", "evisd")
 # for(i in 1:4){
 #   print(spplot(readGDAL(files_m[i])))
@@ -281,14 +296,10 @@ N <- N[c(2,3,7,6,1,5,4),]
 for(i in 3:9){
   pred[,i]<- pred[,i]*N[i-2,3] + N[i-2,2]
 }
-# from log10(ESP) to ESP
-pred[,8]<- 10^pred[,8]
-pred[,9]<- 10^pred[,9]
-print(summary(pred))
 
 ##### Estimation confidence interval ## No stapial #######
 Var.n <-IB%*%V%*%t(IB) # diagonal vaues are variance error
-diag(Var.n)
+Var<-diag(Var.n)
 CI <- Var.n^(1/2)*1.64
 CI.r <- matrix(0,nrow=7,ncol = 7)
 for(i in 1:7){
@@ -297,6 +308,12 @@ for(i in 1:7){
 CI.r<-diag(CI.r)
 names(CI.r)<-as.character(N[,1])
 CI.r
+
+# from log10(ESP) to ESP
+pred[,8]<- 10^(pred[,8]+(Var[6]*N$sd[6]^2)*0.5)
+pred[,9]<- 10^(pred[,9]+(Var[7]*N$sd[7]^2)*0.5)
+print(summary(pred))
+
 
 ####rasterize results###
 library(sp)
@@ -326,6 +343,13 @@ proj4string(TWI) <- posgar98
 res(rp)
 rp <- projectRaster(from = r,to = TWI,res = res(TWI), crs = posgar98, method = 'bilinear')
 plot(rp[[2:8]])
+s<- as.data.frame(summary(rp[[2:8]],digits=4))
+names(s) <- names(rp[[2:8]])
+s[7,] <- cellStats(stat = sd, rp[[2:8]])
+rownames(s)[7] <- "sd"
+write.csv(s,"result.statistics.csv")
+
+
 raster::NAvalue(rp)<--99999
 writeRaster(x = rp[[2:8]],filename ="oktober.tif", overwrite=T,bylayer=TRUE,suffix=names(rp)[2:8])
 

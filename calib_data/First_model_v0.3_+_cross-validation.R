@@ -135,6 +135,8 @@ names(pred)[32:38] <-c("tb.Ar","sat.Ar","btr","oc.Ar","thick.Ar","esp.Br","esp.A
 
 pb = txtProgressBar(min = 0, max = length(d[,1]), initial = 0, style = 3)
 
+
+Var <- matrix(nrow = 0,ncol = 7,dimnames = list(NULL,c("tb.Ar","sat.Ar","btr","oc.Ar","thick.Ar","esp.Br","esp.Ar")))
 for(i in 1:length(d[,1])){
 calib <- d[-i,]
 pred[i,] <- d[i,]
@@ -164,9 +166,16 @@ for(j in i) {
   p= as.vector(as.matrix(pred[j,c(26,27,24,25,15,17,19,22,21,16,20,18)]))
   p=matrix(p,nrow=12,ncol=1)
   pred[j,32:38]=t(IB%*%A%*%p) # key equation
-}
+  }
+##### Estimation confidence interval ## No stapial #######
+Var.n <-IB%*%V%*%t(IB) # diagonal vaues are variance error
+Var <- rbind(Var,diag(Var.n))
+#bar time
 setTxtProgressBar(pb,i)
 }
+summary(Var)
+Var <- apply(Var,MARGIN = 2,FUN = mean)
+
 as.data.frame(names(pred))
 res <- as.data.frame(cbind(pred[,4],pred[,36],pred[,5],pred[,32],pred[,6],pred[,33],
          pred[,7],pred[,37],pred[,8],pred[,38],pred[,9],pred[,35],pred[,10],pred[,34]))
@@ -175,10 +184,15 @@ names(res)[c(2,4,6,8,10,12,14)] <- paste(names(res)[c(2,4,6,8,10,12,14)],"p",sep
 
 M<- N[rep(1:7, each=2),]
 
+# Un-standardize
 for(i in 1:14){
   res[,i]<- res[,i]*M[i,3] + M[i,2]
 }
-res[,7:10] <- 10^res[,7:10]
+#back-transform
+res[,7] <- 10^(res[,7])
+res[,8] <- 10^(res[,8]+(Var[7]*N$sd[4]^2)*0.5)
+res[,9] <- 10^(res[,9])
+res[,10] <- 10^(res[,10]+(Var[6]*N$sd[5]^2)*0.5)
 
 par()
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
@@ -193,7 +207,7 @@ abline(lm(res[,i]~res[,i-1]), col="blue")
 }
 
 
-report<- data.frame(Soil_property = NA, ME=NA, RMSE= NA)
+report<- data.frame(Soil_property = NA, ME=NA, RMSE= NA, SS=NA)
 N  <- as.numeric(length(res$thick.A))
 
 for(i in l){
@@ -223,13 +237,21 @@ ll.s <- qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)*sqrt(VSE
 ul.s <- qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)*sqrt(VSE)
 paste(round(MSE,1),"ll:",round(ll.s,1),"ul:", round(ul.s,1))
 
+############################################ SS (Sum of squares)
+SS <- sum((res[,i]-res[,i-1])^2)
+
 # fill report table
-report[i/2,1:3]<- c(names(res)[i-1],ME,RMSE)
+report[i/2,1:4]<- c(names(res)[i-1],ME,RMSE,SS)
 }
 
+d.stat <- read.csv("summary.calibdata.csv")
+report$R2 <- t(1-(as.numeric(report[,4])/d.stat[6,2:8]))
+names(report)
 write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report_cross-validation.csv")
 
-sqrt(ll.s)
+
+
+
 
 
 
