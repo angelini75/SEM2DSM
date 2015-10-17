@@ -213,7 +213,7 @@ pred <- spTransform(pred, posgar98)
 
 # extract values from files (.sdat)
 stack <- list()
-for(i in 1:length(files)) {
+for(i in seq_along(files)) {
   pred@data[,length(pred@data)+1] <- NULL
   stack[[i]] <- readGDAL(files[i])
   proj4string(stack[[i]]) <- posgar98
@@ -226,7 +226,7 @@ for(i in 1:length(files)) {
 stack <- list()
 # reproject endo to modis projection
 pred <- spTransform( pred, modis)
-for(i in 1:length(files_m)) {
+for(i in seq_along(files_m)) {
   pred@data[,length(pred@data)+1] <- NULL
   stack[[i]] <- readGDAL(files_m[i])
   proj4string(stack[[i]]) <- modis # change projection
@@ -282,7 +282,7 @@ pred <- cbind(pred,matrix(NA,nrow=dim(pred)[1],ncol = 7)) #add colums for predic
 dimnames(pred)[[2]][16:22] <-c("tb.Ar","sat.Ar","btr","oc.Ar","thick.Ar","esp.Br","esp.Ar") #names of soil properties
 
 # (IB%*%A%*%p) product of matrices per pixel (equation 4 paper)
-for(i in 1:length(pred[,1])) {
+for(i in seq_along(pred[,1])) {
   p=matrix(pred[i,c(12,13,10,11,1,3,5,8,7,2,6,4)],nrow=12,ncol=1)
   pred[i,16:22]=t(IB%*%A%*%p) # key equation
   setTxtProgressBar(pb,i)
