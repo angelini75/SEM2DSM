@@ -299,14 +299,24 @@ boxplot(pred[,3:9])
 ##### Estimation prediction interval ## No stapial #######
 Var.n <-IB%*%V%*%t(IB) # diagonal vaues are variance error
 Var<-diag(Var.n)
-CI <- Var.n^(1/2)*1.64
+CI <- 1.64 * (Var.n ^ 0.5)
+
 CI.r <- matrix(0,nrow=7,ncol = 7)
 for(i in 1:7){
   CI.r[i,i]<- CI[i,i]*M[i,2]
 }
 CI.r<-diag(CI.r)
 names(CI.r)<-rownames(M)
-CI.r
+CI.r[8:9] <- NA
+CI.r[8] <- CI.r[7]
+names(CI.r) <- c(names(CI.r)[1:5], "ll.esp.B", "ul.esp.B", "ll.esp.A", "ul.esp.A")
+CI.r[7] <- 10 ^(CI.r[6] + (Var[6] * M$sd[6]^2) * 0.5)
+CI.r[6] <- 10 ^(CI.r[6] - (Var[6] * M$sd[6]^2) * 0.5)
+CI.r[9] <- 10 ^(CI.r[8] + (Var[7] * M$sd[7]^2) * 0.5)
+CI.r[8] <- 10 ^(CI.r[8] - (Var[7] * M$sd[7]^2) * 0.5)
+
+write.table(file = "PI.csv",x = CI.r, sep = "\t")
+
 
 # from log10(ESP) to ESP
 pred[,8]<- 10^(pred[,8]+(Var[6]*M$sd[6]^2)*0.5)
