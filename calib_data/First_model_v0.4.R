@@ -296,7 +296,7 @@ for(i in 3:9){
 }
 
 boxplot(pred[,3:9])
-##### Estimation prediction interval ## No stapial #######
+##### Estimation prediction interval withd ## No stapial #######
 Var.n <-IB%*%V%*%t(IB) # diagonal vaues are variance error
 Var<-diag(Var.n)
 CI <- 1.64 * (Var.n ^ 0.5)
@@ -323,6 +323,8 @@ pred[,8]<- 10^(pred[,8]+(Var[6]*M$sd[6]^2)*0.5)
 pred[,9]<- 10^(pred[,9]+(Var[7]*M$sd[7]^2)*0.5)
 print(summary(pred))
 
+prediction.mean<-apply(pred[,3:9],MARGIN = 2,FUN = mean)
+write.table(file = "prediction.mean.csv",x = prediction.mean, sep = ",")
 
 ####rasterize results###
 library(sp)
@@ -330,6 +332,7 @@ library(raster)
 pred.sp <- as.data.frame(pred)
 coordinates(pred.sp) <- ~X+Y
 proj4string(pred.sp) <- modis
+
 #pred.sp <- spTransform(pred.sp, modis)
 #spplot(pred.sp)
 
