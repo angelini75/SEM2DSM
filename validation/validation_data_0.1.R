@@ -34,6 +34,18 @@ replic$pHKCl.y <- as.numeric(replic$pHKCl.y)
 replic <- replic[replic$num_lab != 64553,]
 replic <- replic[replic$num_lab != 65012,]
 
+par(pty = "s")
+par(mfrow = c(3, 3))
+for (i in 3:18) {
+  lim <- c(min(rbind(replic[,i],replic[,i+16]), na.rm = T), 
+           max(rbind(replic[,i],replic[,i+16]), na.rm = T))
+  plot(replic[,i] ~ replic[,i + 16], main = names(replic)[i], 
+       xlab = "measurement 1", ylab = "measurement 2", 
+       col = "dark red", xlim = lim, ylim = lim)
+  abline(0,1)
+  abline(lm(replic[,i] ~ replic[,i + 16]), col = "blue")
+}
+
 
 error <- replic[,1:18]
 for (i in 3:18) {
@@ -45,9 +57,9 @@ for (i in 3:18) {
 summary(error)
 measurement.error <- data.frame(Property = NA, MEANe = NA, VARe = NA, SDe = NA, S.Var = NA)
 for (i in 3:18) {
-measurement.error[i - 2,] <- c(names(error)[i], mean(error[,i], na.rm = T),
-            0.5 * var(error[,i], na.rm = T), sqrt(0.5 * var(error[,i], na.rm = T)),
-            var(replic[,i], na.rm = T))
+  measurement.error[i - 2,] <- c(names(error)[i], mean(error[,i], na.rm = T),
+                                 0.5 * var(error[,i], na.rm = T), sqrt(0.5 * var(error[,i], na.rm = T)),
+                                 var(replic[,i], na.rm = T))
 }
 measurement.error[,2] <- as.numeric(measurement.error[,2])
 measurement.error[,3] <- as.numeric(measurement.error[,3])
@@ -167,8 +179,8 @@ d.A <- unique(hor.lab[hor.lab$hor == "A",c(12,24,31,32,33)])
 d.B <- data.frame(ESP.B = unique(hor.lab[hor.lab$hor == "B",c(33)]))
 
 d.stat <- matrix(data = NA,nrow = 6,ncol = 6,
-                dimnames = list(c("Min", "Median", "Mean", "Max", "SD", "SS"),
-                                c(names(d.A),names(d.B))))
+                 dimnames = list(c("Min", "Median", "Mean", "Max", "SD", "SS"),
+                                 c(names(d.A),names(d.B))))
 d.stat[1,1:5] <- apply(X = d.A,FUN = min,2, na.rm = T)
 d.stat[1,6] <- apply(X = d.B,FUN = min,2, na.rm = T)
 d.stat[2,1:5] <- apply(X = d.A,FUN = median,2, na.rm = T)
@@ -721,7 +733,7 @@ val$hor<- as.factor(val$hor)
 #val<-group_by(val,sitio,hor, add=T)
 val.A<-group_by(val[val$hor=="A",], sitio)
 val.A<-dplyr::summarise(val.A,H=first(horizonte),THICK=mean(thick),SAT=mean(Sat),
-                 CO=mean(C_Ox),TB=mean(Total_bases),ESP.A=mean(ESP))
+                        CO=mean(C_Ox),TB=mean(Total_bases),ESP.A=mean(ESP))
 val.B<-group_by(val[val$hor=="B",], sitio)
 val.B<-dplyr::summarise(val.B,ESP.B=mean(ESP))
 val<-merge(val.A,val.B,by="sitio", all=T)
