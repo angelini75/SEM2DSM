@@ -46,7 +46,7 @@ summary(error)
 measurement.error <- data.frame(Property = NA, MEANe = NA, VARe = NA, SDe = NA, S.Var = NA)
 for (i in 3:18) {
 measurement.error[i - 2,] <- c(names(error)[i], mean(error[,i], na.rm = T),
-            2 * var(error[,i], na.rm = T), sqrt(2 * var(error[,i], na.rm = T)),
+            0.5 * var(error[,i], na.rm = T), sqrt(0.5 * var(error[,i], na.rm = T)),
             var(replic[,i], na.rm = T))
 }
 measurement.error[,2] <- as.numeric(measurement.error[,2])
