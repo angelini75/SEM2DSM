@@ -238,7 +238,7 @@ abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
 # ME + confident interval 
 
 SP.val <- as.data.frame(SP.val)
-SP.val$residuals <- SP.val$measured - SP.val$predicted
+SP.val$residuals <- SP.val$measured - SP.val$predicted 
 SP.val$residuals.sq <- (SP.val$measured - SP.val$predicted) ^ 2 
 SS <- sum(SP.val$residuals.sq)
 
@@ -253,20 +253,20 @@ library(dplyr)
 X  <- group_by(SP.val, strata)
 dplyr::summarise(X,n())
 # Mean error of the area
-N  <- as.numeric(length(X$residuals)) - 1
-H  <- 12
-Nh <- as.data.frame(dplyr::summarise(X,n()))[,2]
-zh <- as.data.frame(dplyr::summarise(X, mean(residuals)))[,2]
+N  <- as.numeric(length(X$residuals)) - 1 #number of samples
+H  <- 12 #number of strata
+Nh <- as.data.frame(dplyr::summarise(X,n()))[,2] # number of samples per strata
+zh <- as.data.frame(dplyr::summarise(X, mean(residuals)))[,2] # samle mean of the stratum h
 sum(Nh*zh)/N
 
 ######################## ME <- mean error of top horizon thickness of the area (considering area)
-Ah <- as.data.frame(dplyr::summarise(X, mean(area)))[,2]
-A <- sum(Ah)
-ah <- Ah/A
-zSt <- sum(ah*zh)
+Ah <- as.data.frame(dplyr::summarise(X, mean(area)))[,2] # area of the stratum h
+A <- sum(Ah) # total area
+ah <- Ah/A # weights 
+zSt <- sum(ah * zh) # mean error
 paste("ME =", round(zSt,3))
 # variance of zSt
-VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2])
+VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2]) # error variance
 VzSt
 # 95% confidence
 # lowwer limit
@@ -277,10 +277,10 @@ ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
 ME <- paste(round(ll, 3), "<", round(zSt, 3), "<", round(ul, 3))
 
 ############################################ MSE (mean squared error)
-zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2]
+zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2] # sample mean of squared errors
 sum(Nh * zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
-zSt.s <- sum(ah * zh.s)
+zSt.s <- sum(ah * zh.s) # mean of squared error
 paste("MSE =", round(zSt.s, 3))
 paste("RMSE =", round(sqrt(zSt.s), 3))
 MSE <- zSt.s
