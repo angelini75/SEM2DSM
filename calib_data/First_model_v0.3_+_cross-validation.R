@@ -104,16 +104,16 @@ tb.Ar ~     evim + evisd + lstm + lstsd + dem + wdist + mrvbf + vdchn + twi + ri
 sat.Ar ~    evim + evisd + lstm + lstsd + dem + wdist + mrvbf + vdchn +  twi + river + 
             tb.Ar + oc.Ar                            
 btr ~       lstm +  lstsd + wdist + vdchn + twi + dem + river + mrvbf +
-            esp.Br + esp.Ar
+            b*esp.Br + b*esp.Ar
 oc.Ar ~     lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi +
-            esp.Br + esp.Ar + btr + thick.Ar
-esp.Ar ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river + 
+            a*esp.Br + a*esp.Ar + btr + thick.Ar
+esp.Ar ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river + evisd +
             esp.Br 
-esp.Br ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river 
+esp.Br ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river + evisd
             
 thick.Ar ~  dem + wdist + mrvbf + vdchn + twi + river + slope + maxc + evim + evisd
 
-
+#a == -0.5
 
 # measurement error
 thick.A ~~  0.25*thick.A
@@ -149,7 +149,7 @@ Var <- matrix(nrow = 0, ncol = 7, dimnames = list(NULL,
 for (i in 1:length(d[,1])) {
 calib <- d[-i,]
 pred[i,] <- d[i,]
-fit3 <- lavaan(model = third_model, data = calib,
+fit3 <- lavaan(model = third_model, data = d,
                model.type = "sem", meanstructure = "default",
                int.ov.free = FALSE, int.lv.free = FALSE, fixed.x = "default",
                orthogonal = FALSE, std.lv = FALSE, 
@@ -159,6 +159,10 @@ fit3 <- lavaan(model = third_model, data = calib,
                std.ov = FALSE, missing = "default",
                constraints = "", estimator = "ML",
                zero.cell.warn = TRUE, start = "default")
+summary(fit3)
+modi<-summary(fit3, standardized=F, modindices = T, fit.measures=F) 
+modi<-modi[modi$mi>3 & !is.na(modi$mi),]
+modi
 
 ################# Matrices ##############
 ##setting up matrices
@@ -255,10 +259,30 @@ for (i in l) {
 #d.stat <- read.csv("summary.calibdata.csv")
 report$R2 <- 1 - (as.numeric(report[,4]) / d.stat[6,1:7])
 
+#########Plot
+library(semPlot)
+#matrix to arrange nodes at graph
+layout <-as.matrix(read.csv("matrix_semplot.csv")[,-1])
+# plot sem using layout=layout
+
+layout[]
+
+semPaths(fit3,what = "std",whatLabels = "no", layout = layout,sizeLat = 4, cut =0.35,
+         sizeInt2 = 2,sizeMan =3.5, sizeLat2 = 2, sizeInt = 1,sizeMan2 = 1.5,nCharNodes=0, font=3,
+         edge.width = 2,esize=1.5, asize=1,intercepts = F, reorder = F,equalizeManifests =T, residuals = F,layoutSplit=F,
+         structural = F, exoCov = F, exoVar=F,cardinal = F,style = "lisrel",#color = c("orange","blue"),
+         manifests = c("tb.A", "sat.A", "evim", "evisd", "lstm", "lstsd", "dem","bt", "wdist", "mrvbf", "vdchn", 
+                       "twi", "river", "thick.A", "slope", "maxc", "oc.A", "esp.B", "esp.A"))
+
+semPlotModel(fit3)
+semPaths(fit3)
+
+str(fit3)
+
 write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report_cross-validation.csv")
 
 
-
+semPaths
 
 
 
