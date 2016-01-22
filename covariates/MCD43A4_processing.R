@@ -1,5 +1,5 @@
 ############### #### ### ## # - ALTERNATIVE WAY TO DOWNLOAD MODIS DATA - # ## ### #### ###############
-####                     #### For MOD13Q1 product EVI 16-days 250 m res. ####
+####                     #### For MCD43A4 product reflectance bands 500 m res. ####
 
 # Purpose        : Download 15 years tiles MODIS product (MOD13Q1); mosaic them; substract AOI; calculate mean and sd per period; 
 # Maintainer     : Marcos Angelini  (marcos.angelini@wur.nl); 
@@ -12,70 +12,63 @@
 # sessionInfo(@RStudio Server) http://h2335862.stratoserver.net:8787/ (12 cores)
 # R version 3.1.1 (2014-07-10)
 # Platform: x86_64-unknown-linux-gnu (64-bit)
+# fileh12v12 <- list.files(path = "h12v12/",pattern = ".hdf$",)
+# fileh13v12 <- list.files(path = "h13v12/",pattern = ".hdf$",)
+# file1 <- cbind(tile = "h12", file = fileh12v12, size = file.size(paste0(path = "h12v12/",fileh12v12))/1000000)
+# file2 <- cbind(tile = "h13",file = fileh12v12, size = file.size(paste0(path = "h12v12/",fileh12v12))/1000000)
+# file3 <- as.data.frame(rbind(file1,file2))
+# file3$size <- as.character(file3$size)  
+# file3$size <- as.double(file3$size)  
+# miss <- as.character(file3$file[file3$size<20])
+# files<-read.csv("save_results_csv.csv") 
+# name(files)
+# files <- files[files$Producer.Granule.ID == miss,]
+# 
+# rm(list=ls())
+# setwd("/home/marcos/MCD43A4") # @RStudio desktop
+# #setwd("~/modis") # @RStudio server
+# #library(raster)
+# library(rgdal)
+# #library(gdalUtils)
+# library(doParallel)
+# name <- function(x) { as.data.frame(names(x))} 
+# 
+# ### from REVERB it is posible to get a csv file with a query result
+# # http://reverb.echo.nasa.gov/reverb/#utf8=%E2%9C%93&spatial_map=satellite&spatial_type=rectangle
+# # it can be directly read from ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/ (Curl package)
+# # be aware of repeated files
+# 
+
+setwd(dir = "sftp://mangelini@85.214.221.253/home/mangelini/bigdir")
+
+f <-list.files("output/h12v12/", pattern = ".hdf$")
+f <- gsub(pattern = "h12v12_",replacement = "",x = f)
+mask.ext <- raster(xmn=-5672223,ymn=-3899255,xmx= -5384129,ymx= -3693436,nrow=100,ncol=100)
+mask.ext[] <- runif(100*100)
+pj <- projection(hdfImage[[1]])
+pb <- txtProgressBar(min = 0, max = length(f), initial = 0, style = 3)
+
+for(i in 1:length(f)){
+hdfImage <- list() 
+hdfImage[[1]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:","output/h12v12/","h12v12_",f[i], ":MOD_Grid_BRDF:Nadir_Reflectance_Band3"))
+hdfImage[[2]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:","output/h13v12/","h13v12_",f[i], ":MOD_Grid_BRDF:Nadir_Reflectance_Band3"))
+n <- merge(raster(hdfImage[[1]]),raster(hdfImage[[2]]))
+m <- crop(x = n,y = mask.ext)
+raster::writeRaster(x = m, filename = paste0("/home/marcos/MCD43A4/B3/",f[i],".B3.tif"), overwrite=TRUE)
+setTxtProgressBar(pb,i)
+}
+# create a random raster over the space:        
 
 
-rm(list=ls())
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/MODIS") # @RStudio desktop
-#setwd("~/modis") # @RStudio server
-#library(raster)
-library(rgdal)
-#library(gdalUtils)
-library(doParallel)
+# plot it with the boundaries we want to clip against:
+plot(n)
+plot(mask.ext,add=TRUE)
 
-### from REVERB it is posible to get a csv file with a query result
-# http://reverb.echo.nasa.gov/reverb/#utf8=%E2%9C%93&spatial_map=satellite&spatial_type=rectangle
-# it can be directly read from ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/ (Curl package)
-# be aware of repeated files
-files<-read.csv("save_results_csv_2.csv") 
-
-# to be aware
-paste(length(files$Granule.UR)," files here!", sep="")
-paste(sum(as.numeric(gsub(",",".",files$Size)))/1000, "Gb!")
-
-# URL of each HDF4 file
-files$id <- 1:length(files[,1])
-files$Online.Access.URLs <- as.character(files$Online.Access.URLs)
-granule <- files[,c(2,10)]
-write.table(granule, "granule.txt",row.names = F,col.names = F,quote = F, sep=".")
-
-# espesifications of each file
-granuleID <- read.csv("granule.txt", sep=".", header=F)
-names(granuleID) <- c("product", "date","tile","ver","proj","format","id")
-
-## Tiles
-granuleID$date <- as.character(granuleID$date)
-granuleID$tile <- as.character(granuleID$tile)
-tile1 <- unique(granuleID$tile)[1]
-tile2 <- unique(granuleID$tile)[2]
-
-# create directory to save files per tiles
-dir.create("output/")
-dir.create(path = paste("output/", unique(granuleID$tile)[1],"/", sep= ""),showWarnings = T)
-dir.create(path = paste("output/", unique(granuleID$tile)[2],"/", sep= ""),showWarnings = T)
-
-### be careful, big data downloading 
-# download data from tile j
-for (j in 1:2){
-n <- as.numeric(rownames(granuleID[granuleID$tile == unique(granuleID$tile)[j],]))
-# parallel processing 6 cores with doParallel package (it allows to open several downloads at once)
-# miss-connection could be solved with try() function
-hdfImage <- list()
-registerDoParallel(cores=6) # each core takes a i value
-foreach(i= n)  %dopar%{
-  download.file(files$Online.Access.URLs[i],destfile = paste("output/",granuleID$tile[i],"/",
-                     granuleID$tile[i],"_",granuleID$date[i], ".hdf", sep=""), mode="wb")
-  
-# some issues with HDF4 images http://markmail.org/thread/thlchxcqf364wl5p
-  # extracting MODIS_Grid_16DAY_250m_500m_VI:250m 16 days EVI from HDF file
-  # %dopar% does not work here 
-  foreach(i= n)  %do%{
-    hdfImage[[i]] <- readGDAL(paste("HDF4_EOS:EOS_GRID:", paste("output/",granuleID$tile[i],"/", granuleID$tile[i],
-                                                                "_",granuleID$date[i], ".hdf", sep=""), 
-                                    ":MODIS_Grid_16DAY_250m_500m_VI:250m 16 days EVI", sep = ""))
-  }
-  # convert HDF to GeoTIFF
-  image(hdfImage[[i]])
-  writeGDAL(hdfImage[[i]], paste("output/",granuleID$tile[i],"/", granuleID$tile[i], "_",granuleID$date[i], ".tif", sep=""),
+# now use the mask function
+rr <- mask(mask = mask.ext,x =  n)
+plot(raster::)
+# convert HDF to GeoTIFF
+  writeGDAL(hdfImage[[1]], paste("output/TIFF", f[1],"B3", ".tif", sep=""),
             drivername = "GTiff", type = "Float32", mvFlag = NA, options=NULL, copy_drivername = "GTiff", setStatistics=FALSE) 
   
   # delete data to prevent large list
@@ -138,16 +131,14 @@ require(RCurl)
 readdir<-function(fil){
   filenames <- try(getURL(fil,ftp.use.epsv = FALSE, dirlistonly = TRUE))
   filenames <- paste(fil, strsplit(filenames, "\r*\n")[[1]], sep = "")
-  files <- filenames[grepl('\\.', substr(filenames,30,nchar(filenames)) )|
-                       grepl('readme', substr(filenames,30,nchar(filenames)) )|
-                       grepl('README', substr(filenames,30,nchar(filenames)) )]
+  files <- filenames[grepl('\\.', substr(filenames,30,nchar(filenames)) )|grepl('readme', substr(filenames,30,nchar(filenames)) )|grepl('README', substr(filenames,30,nchar(filenames)) )]
   dirs <- setdiff(filenames, files)
   return(dirs)
 }
 # get MODIS periods
 period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/","",
-                readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/"))
-period
+               readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/"))
+
 # in case I need projection from my study area I read this (tiff)image
 #t_pj <- projection(readGDAL("./h12v12/target_pj"))
 

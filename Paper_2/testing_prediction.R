@@ -2,6 +2,7 @@ rm(list=ls())
 # install.packages("lavaan")
 # install.packages("lavaan", repos="http://www.da.ugent.be", type="source")
 #library(lavaan)
+library(corrgram)
 setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
 d <-read.csv("calib.data-3.1.csv")[,-1]
 name <- function(x) { as.data.frame(names(x))}
@@ -95,7 +96,9 @@ for(i in 1:33){
   rep[i,2] <- as.numeric(k$adj.r.squared)
   rep[i,3] <- as.character(m)[2]
 }
-
+rep <-  as.data.frame(rep)
+rep$adjr2 <- round(rep$adjr2,3)
+write.csv(rep, "/home/marcos/Documents/Second_paper_Marcos/Paper_2/rep.csv")
 summary(lm(log(arena.mf.C) ~ river + maxc + slope + lstm + X + Y, d))
 
 install.packages("C50")

@@ -1,0 +1,135 @@
+---
+title: "Summary linear regression models"
+author: "Marcos Angelini"
+date: "January 12, 2016"
+output: html_document
+---
+### Introduction
+In our first paper we got very low accuracy in predicted soil properties. They were: organic carbon and thickness of A horizon, total bases and base saturation at A horizon, clay ratio between B and A horizons and exchange sodium percentage at A and B horizons. Some reasons of the low accuracy were: high measurement error and low correlation between covariates and soil properties, particularly with those from A horizons.
+
+For these reasons, we want to explore if there are potential soil properties that could be predicted with reasonable accuracy. In order to test this, this document shows the summary of stepwise linear regresion models of the main soil properties: **pH**, organic carbon (**OC**), **CEC**, total bases (**tb**), **clay**, silt between 2 and 20 μm (**silt20**) and very fine sand between 50 and75 µm (**sanf.mf**).
+
+### Soil Properties
+
+Soil dataset is organised by horizon. id.p is the profile number, id.p.h is the profile number and original horizon and another two columns contain Latitude (Y) and Longitude (X).
+
+```{r load data, echo=FALSE,results='hide',message=FALSE}
+
+setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration")
+rm(list=ls())
+library(corrgram)
+library(dplyr)
+library(ape)
+library(aqp)
+name <- function(x) { as.data.frame(names(x))} 
+library(psych)
+d <- read.csv("calib.data-4.3.csv")[,-1]
+p <- unique(d)
+# p$top[p$id.p.h=="350_B1"]  <- 25
+# p[p$id.p==568,1:10][2,4] <- 18
+# p[p$id.p==576,1:10][5,4] <- 42
+# p[p$id.p==710,1:10][7,c(4,5)] <- c(160,180)
+# p[p$id.p==687,1:10][c(5,6),c(4,5)] <- c(145,100,190,145)
+# p$hor[p$hor== "AB|BA"] <- "AB.BA"
+#p$name <- as.factor(p$hor)
+
+```
+
+
+
+### Covariates
+Covariates are: 
+
+* dem: altitude
+  + slope
+  + twi
+  + vertical distance to channel network (vdchn)
+  + maximum curvature (maxm)
+  + multi resolution index valley bottom (mrvbf)
+* distance to Parana river (river)
+* distance to water bodies (wdist)
+* water mask (water, 0 land, > 0 inside-water body distance)
+* env is a factor of 3 categories estimated from EVI images
+* 14-years mean EVI (evim) and standard deviation (evisd)
+* Land surface temperature mean (lstm) and standard deviation (lstsd)
+* Seasonal mean EVI (XX1, XX2 and XX3)
+
+```{r, results='dataset'}
+# Soil dataset.
+knitr::kable(d[1:10,1:15])
+# summary(d[,c(21:34,83:85)]), lm=T)
+```
+
+"[step(lm(sand.mf ~ dem * river + wdist + maxc + mrvbf + slope + hor +
+          twi + vdchn + water + lstm * lstsd + evim * evisd + env +
+          X * Y + XX1 * XX2 * XX3, p[p$hor == "A" | p$hor == "B" | p$hor == "C", ]),direction = "both")]"
+
+```{r,echo=FALSE,results='hide'}
+step(lm(clay ~ dem * river + wdist * water + maxc + mrvbf + slope + hor +
+          twi + vdchn +  lstm * lstsd + evim * evisd + env +
+          X * Y + XX1 * XX2 * XX3 + XD1 * XD2 + XD3 +
+          M1.B2 + M1.B3 + M1.B4 + M1.B5 + M1.B7 + M2.B2 + M2.B3 + M2.B4 + M2.B5 +
+          M2.B7 + M3.B2 + M3.B3 + M3.B4 + M3.B5 + M3.B7 + M.all.B2 * M.all.B3 *
+          M.all.B4 * M.all.B5 * M.all.B7 + S1.B2 + S1.B3 + S1.B4 + S1.B5 + S1.B7 +
+          S2.B2 + S2.B3 + S2.B4 + S2.B5 + S2.B7 + S3.B2 + S3.B3 + S3.B4 + S3.B5 +
+          S3.B7 + S.all.B2 + S.all.B3 + S.all.B4 + S.all.B5 + S.all.B7,
+          p[p$hor == "A" | p$hor == "B" | p$hor == "C", ]),direction = "both")
+```
+
+### pH
+```{r}
+summary(lm(formula = phw ~ dem + river + mrvbf + hor + twi + vdchn + 
+    lstsd + X + Y + XX1 + XX2 + XX3 + XD1 + XD2 + dem:river + 
+    X:Y + XX1:XX2 + XX1:XX3 + XX2:XX3 + XD1:XD2 + XX1:XX2:XX3, 
+    data = p[p$hor == "A" | p$hor == "B" | p$hor == "C", ]))
+```
+
+
+### OC
+```{r}
+summary(lm(formula = OC ~ dem + river + water + mrvbf + slope + hor + 
+    lstsd + Y + XX3 + XD3 + evim + dem:river, data = p[p$hor == 
+    "A" | p$hor == "B" | p$hor == "C", ]))
+```
+
+### CEC
+```{r}
+summary(lm(formula = CEC ~ dem + river + wdist + mrvbf + hor + lstm + 
+    lstsd + X + Y + XX1 + XX2 + XX3 + XD1 + XD2 + dem:river + 
+    XX1:XX2 + XX1:XX3 + XX2:XX3 + XX1:XX2:XX3, data = p[p$hor == 
+    "A" | p$hor == "B" | p$hor == "C", ]))
+```
+
+### tb
+```{r}
+summary(lm(formula = tb ~ dem + river + wdist + water + maxc + hor + 
+    twi + lstm + lstsd + evim + env + X + Y + XX1 + XX2 + XD1 + 
+    XD2 + dem:river + XX1:XX2 + XD1:XD2 + X:Y, data = p[p$hor == 
+    "A" | p$hor == "B" | p$hor == "C", ]))
+```
+
+### Clay
+```{r}
+summary(lm(formula = clay ~ dem + wdist + hor + lstm + lstsd + X + Y + 
+    XX1 + XX2 + XX3 + XD2 + lstm:lstsd + XX1:XX2 + XX1:XX3 + 
+    XX2:XX3 + XX1:XX2:XX3, data = p[p$hor == "A" | p$hor == "B" | 
+    p$hor == "C", ]))
+```
+
+### Silt
+```{r}
+summary(lm(formula = silt20 ~ dem + river + wdist + water + maxc + hor + 
+    twi + vdchn + lstm + lstsd + env + X + Y + XX1 + XX2 + XX3 + 
+    XD1 + XD2 + XD3 + dem:river + wdist:water + lstm:lstsd + 
+    X:Y + XX1:XX2 + XX1:XX3 + XX2:XX3 + XD1:XD2 + XX1:XX2:XX3, 
+    data = p[p$hor == "A" | p$hor == "B" | p$hor == "C", ]))
+```
+
+### Sand
+```{r}
+summary(lm(formula = sand.mf ~ dem + river + wdist + water + maxc + mrvbf + 
+    hor + vdchn + lstsd + evim + evisd + env + X + Y + XX1 + 
+    XX2 + XX3 + XD1 + XD2 + XD3 + dem:river + wdist:water + evim:evisd + 
+    X:Y + XX1:XX2 + XX1:XX3 + XX2:XX3 + XD1:XD2 + XX1:XX2:XX3, 
+    data = p[p$hor == "A" | p$hor == "B" | p$hor == "C", ]))
+```
