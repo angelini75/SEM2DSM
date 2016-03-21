@@ -274,7 +274,7 @@ posgar98 <- CRS("+init=epsg:22175")
 #modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_thick.Ar.tif")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/march.lm_thick.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val) <- ~ longitud + latitud
 # extract values from  predicted
@@ -358,7 +358,7 @@ SP.val <- unique(hor.lab[hor.lab$hor == "A", c(8:10,44,14:16)])
 SP.val <- SP.val[complete.cases(SP.val),]
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_oc.Ar.tif")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/march.lm_oc.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val) <- ~longitud+latitud
 # extract values from  predicted
@@ -441,7 +441,7 @@ SP.val <- unique(hor.lab[hor.lab$hor == "A", c(8:10,32,14:16)])
 SP.val <- SP.val[complete.cases(SP.val),]
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_tb.Ar.tif")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/march.lm_tb.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -522,7 +522,7 @@ SP.val <- unique(hor.lab[hor.lab$hor == "A", c(8:10,33,14:16)])
 SP.val <- SP.val[complete.cases(SP.val),]
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_sat.Ar.tif")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/march.lm_sat.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -614,7 +614,7 @@ SP.val <- unique(hor.lab[hor.lab$hor == "A",c(8:10,34,14:16)])
 SP.val <- SP.val[complete.cases(SP.val),]
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_esp.Ar.tif")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/march.lm_esp.Ar.tif")
 # thickness to spatial data frame
 coordinates(SP.val) <- ~longitud+latitud
 # extract values from  predicted
@@ -695,7 +695,7 @@ SP.val <- unique(hor.lab[hor.lab$hor == "B",c(8:10,34,14:16)])
 SP.val <- SP.val[complete.cases(SP.val),]
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_esp.Br.tif")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/march.lm_esp.Br.tif")
 # thickness to spatial data frame
 coordinates(SP.val) <- ~longitud+latitud
 # extract values from  predicted
@@ -797,7 +797,7 @@ SP.val <- SP.val[,c(2:4,8,5:7)]
 SP.val <- SP.val[complete.cases(SP.val),]
 
 # load predicted
-SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/oktober_btr.tif")
+SP.pred <- readGDAL("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/march.lm_btr.tif")
 # thickness to spatial data frame
 coordinates(SP.val)<- ~longitud+latitud
 # extract values from  predicted
@@ -903,9 +903,9 @@ d.stat[7,4] <- 92
 d.stat[7,5] <- 92
 d.stat[7,7] <- 100
 
-write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report.validation.2.csv")
-write.csv(d.stat, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/summary.valdata.csv")
-write.csv(d.stat1, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/d.stat.val.csv")
+write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report.validation.lm.csv")
+# write.csv(d.stat, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/summary.valdata.csv")
+# write.csv(d.stat1, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/d.stat.val.csv")
 ############# comparison between datasets
 library(dplyr)
 as.data.frame(names(hor.lab))
