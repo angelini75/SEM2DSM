@@ -4,7 +4,7 @@ rm(list=ls())
 library(lavaan)
 setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
 d <-read.csv("calib.data-2.1.csv")[,-1]
-
+d$sat.A[d$id.p==480] <- 88 #error in dataset
 ############### PRE-PROCESSING ################## 
 names(d)
 names(d)[c(5,6,9,10)]<- c("tb.A","sat.A", "oc.A","bt")
@@ -67,8 +67,7 @@ for(i in 1:ncol(D)){
   D[,i]<- (d[,n[i]]-mean(d[,n[i]]))/sd(d[,n[i]])
 }
 
-D
-boxplot(D)  
+D <- as.data.frame(D)
 
 
 # step(lm(sat.A ~ dem+wdist+maxc+mrvbf+slope+twi+vdchn+lstm+lstsd+evim+evisd+river, d),direction = "both")
@@ -90,79 +89,6 @@ boxplot(D)
 
 ############### FITTING MODEL ######################
 
-#### Third Model####
-third_model <- '
-# measurement model
-tb.Ar =~ 1*tb.A
-sat.Ar =~ 1*sat.A
-btr =~ 1*bt
-oc.Ar =~ 1*oc.A
-thick.Ar =~ 1*thick.A
-esp.Br =~ 1*esp.B
-esp.Ar =~ 1*esp.A
-
-# structural model
-tb.Ar ~     evim + evisd + lstm + lstsd + dem + wdist + mrvbf + vdchn + twi + river + 
-            oc.Ar + btr
-sat.Ar ~    evim + evisd + lstm + lstsd + dem + wdist + mrvbf + vdchn +  twi + river + 
-            tb.Ar + oc.Ar                            
-btr ~       lstm +  lstsd + wdist + vdchn + twi + dem + river + mrvbf +
-            esp.Br + esp.Ar
-oc.Ar ~     lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi +
-            esp.Br + esp.Ar + btr + thick.Ar
-esp.Ar ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river + 
-            esp.Br 
-esp.Br ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river 
-            
-thick.Ar ~  dem + wdist + mrvbf + vdchn + twi + river + slope + maxc + evim + evisd
-
-
-
-# measurement error
-thick.A ~~  0.25*thick.A
-tb.A ~~     0.20*tb.A
-sat.A ~~    0.20*sat.A
-bt  ~~      0.25*bt
-oc.A ~~     0.20*oc.A
-esp.B ~~    0.10*esp.B
-esp.A ~~    0.20*esp.A
-# thick.A ~~  0.25*thick.A
-# tb.A ~~     0.1*tb.A
-# sat.A ~~    0.1*sat.A
-# bt  ~~      0.1*bt
-# oc.A ~~     0.1*oc.A
-# esp.B ~~    0.10*esp.B
-# esp.A ~~    0.1*esp.A
-# intercepts
-# tb.Ar ~1
-'
-##### fitting ####
-#fit3<- sem(third_model, d,meanstructure = T,std.lv = T, ordered = c("is.E","is.caco3","is.hydro"))
-D <- as.data.frame(D)
-fit3 <- lavaan(model = third_model, data = D,
-               model.type = "sem", meanstructure = "default",
-               int.ov.free = FALSE, int.lv.free = FALSE, fixed.x = "default",
-               orthogonal = FALSE, std.lv = FALSE, 
-               parameterization = "default", auto.fix.first = F,
-               auto.fix.single = T, auto.var = T, auto.cov.lv.x = FALSE,
-               auto.cov.y = T, auto.th = T, auto.delta = FALSE,
-               std.ov = FALSE, missing = "default",
-               constraints = "", estimator = "ML",
-               zero.cell.warn = TRUE, start = "default")
-varTable(fit3)
-summary(fit3, standardized=F, modindices = F, fit.measures=T) 
-inspect(fit3,"std.lv") # standardized model parameters
-inspect(fit3,"partable") #Observed sample statistics
-inspect(fit3, "cov.lv") #The model-implied covariance matrix of the observed variables
-inspect(fit3,"start") # starting values for all model parameters
-inspect(fit3,"rsquare") #R-square value for all endogenous variables
-full_model <- lavaanify(third_model)
-modi<-summary(fit3, standardized=F, modindices = T, fit.measures=F) 
-modi<-modi[modi$mi>3 & !is.na(modi$mi),]
-modi
-
-write.csv(full_model, "full_model.csv")
-
 #################### Multiple linear regression #########
 
 tk <- lm(thick.A ~  dem + wdist + mrvbf + vdchn + twi + river + slope + maxc + evim + evisd, D)
@@ -173,27 +99,7 @@ ea <- lm(esp.A ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river, D
 eb <- lm(esp.B ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river, D)
 bt <- lm(bt ~       lstm +  lstsd + wdist + vdchn + twi + dem + river + mrvbf, D)
 
-
-result <- data.frame(thick=summary(tk)$adj.r.squared,
-                     oc=summary(oc)$adj.r.squared,
-                     tb=summary(tb)$adj.r.squared,
-                     sat=summary(sa)$adj.r.squared,
-                     espA=summary(ea)$adj.r.squared,
-                     espB=summary(eb)$adj.r.squared,
-                     bt=summary(bt)$adj.r.squared)
-
-print(round(result,3))
-
-tk <- lm(thick.A ~  dem + wdist + mrvbf + vdchn + twi + river + slope + maxc + evim + evisd, D)
-oc <- lm(oc.A ~     lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi +
-           esp.B + esp.A + bt + thick.A, D)
-tb <- lm(tb.A ~     evim + evisd + lstm + lstsd + dem + wdist + mrvbf + vdchn + twi + river + 
-           oc.A + bt, D)
-sa <- lm(sat.A ~    evim + evisd + lstm + lstsd + dem + wdist + mrvbf + vdchn +  twi + river +
-           tb.A + oc.A, D)
-ea <- lm(esp.A ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river + esp.B, D)
-eb <- lm(esp.B ~    lstm +  lstsd + dem + wdist + mrvbf + vdchn + twi + river, D)
-bt <- lm(bt ~       lstm +  lstsd + wdist + vdchn + twi + dem + river + mrvbf + esp.B + esp.A, D)
+models <- list(tk, oc,tb,sa,ea,eb,bt)
 
 #################### PREDICTION #########################
 
@@ -293,70 +199,64 @@ for(i in n){
 # }
 
 
-################# Matrices ##############
-##setting up matrices
-B <- inspect(fit3,"est")$beta[1:7,1:7] #matrix of coeff. latent state variables
-I <-diag(nrow=7, ncol=7) #Identity matrix
-A <- inspect(fit3,"est")$beta[1:7,8:19] #matrix of coeff of external drivers
-V <- inspect(fit3,"est")$psi[1:7,1:7] #matrix of predicted error variance
-IB<-solve(I-B)
 
 ################# Running Prediction ###########################
 #N <- read.csv("N.csv")
 library(utils)
-pb = txtProgressBar(min = 0, max = length(pred[,1]), initial = 0, style = 3)
+library(pastecs)
+stat.desc(pred)
+pred <- pred[,c(1,6,2:5,7:22)]
+names(pred)[1:7] <- paste0(names(pred)[1:7],"r")
 
-pred <- pred[,8:22] # only external drivers  + X,Y
-pred <- as.matrix(pred) # conversion to matrix to improve processing speed
-pred <- cbind(pred,matrix(NA,nrow=dim(pred)[1],ncol = 7)) #add colums for predicted values
-dimnames(pred)[[2]][16:22] <-c("tb.Ar","sat.Ar","btr","oc.Ar","thick.Ar","esp.Br","esp.Ar") #names of soil properties
 
-# (IB%*%A%*%p) product of matrices per pixel (equation 4 paper)
-for(i in seq_along(pred[,1])) {
-  p=matrix(pred[i,c(12,13,10,11,1,3,5,8,7,2,6,4)],nrow=12,ncol=1)
-  pred[i,16:22]=t(IB%*%A%*%p) # key equation
-  setTxtProgressBar(pb,i)
-}
-
-t(dimnames(pred)[[2]])
-pred <- pred[,14:22] #remove external drivers
+for(i in 1:7) {
+  pred[,i] <- predict(models[[i]], pred[,8:20])
+  }
+name(pred)
+pred <- pred[,c(1:7,21:22)] #remove external drivers
 as.data.frame(rownames(N))
 # from unstandardize soil properties
-M <- N[c(2,3,7,6,1,5,4),] 
-for(i in 3:9){
-  pred[,i]<- pred[,i]*M$sd[i-2]+M$mean[i-2]
-}
-
-boxplot(pred[,3:9])
-##### Estimation prediction interval withd ## No stapial #######
-Var.n <-IB%*%V%*%t(IB) # diagonal vaues are variance error
-Var<-diag(Var.n)
-CI <- 1.64 * (Var.n ^ 0.5)
-
-CI.r <- matrix(0,nrow=7,ncol = 7)
+M <- N[c(1,6,2:5,7),] 
+name(pred)
 for(i in 1:7){
-  CI.r[i,i]<- CI[i,i]*M[i,2]
+  pred[,i]<- pred[,i]*M$sd[i]+M$mean[i]
 }
-CI.r<-diag(CI.r)
-names(CI.r)<-rownames(M)
-CI.r[8:9] <- NA
-CI.r[8] <- CI.r[7]
-names(CI.r) <- c(names(CI.r)[1:5], "ll.esp.B", "ul.esp.B", "ll.esp.A", "ul.esp.A")
-CI.r[7] <- 10 ^(CI.r[6] + (Var[6] * M$sd[6]^2) * 0.5)
-CI.r[6] <- 10 ^(CI.r[6] - (Var[6] * M$sd[6]^2) * 0.5)
-CI.r[9] <- 10 ^(CI.r[8] + (Var[7] * M$sd[7]^2) * 0.5)
-CI.r[8] <- 10 ^(CI.r[8] - (Var[7] * M$sd[7]^2) * 0.5)
 
-write.table(file = "PI.csv",x = CI.r, sep = "\t")
+stat.desc(pred[,1:7])
+
+## 
+summary(models[[1]])
+
+# ##### Estimation prediction interval withd ## No stapial #######
+# Var.n <-IB%*%V%*%t(IB) # diagonal vaues are variance error
+# Var<-diag(Var.n)
+# CI <- 1.64 * (Var.n ^ 0.5)
+# 
+# CI.r <- matrix(0,nrow=7,ncol = 7)
+# for(i in 1:7){
+#   CI.r[i,i]<- CI[i,i]*M[i,2]
+# }
+# CI.r<-diag(CI.r)
+# names(CI.r)<-rownames(M)
+# CI.r[8:9] <- NA
+# CI.r[8] <- CI.r[7]
+# names(CI.r) <- c(names(CI.r)[1:5], "ll.esp.B", "ul.esp.B", "ll.esp.A", "ul.esp.A")
+# CI.r[7] <- 10 ^(CI.r[6] + (Var[6] * M$sd[6]^2) * 0.5)
+# CI.r[6] <- 10 ^(CI.r[6] - (Var[6] * M$sd[6]^2) * 0.5)
+# CI.r[9] <- 10 ^(CI.r[8] + (Var[7] * M$sd[7]^2) * 0.5)
+# CI.r[8] <- 10 ^(CI.r[8] - (Var[7] * M$sd[7]^2) * 0.5)
+# 
+# write.table(file = "PI.csv",x = CI.r, sep = "\t")
 
 
 # from log10(ESP) to ESP
-pred[,8]<- 10^(pred[,8]+(Var[6]*M$sd[6]^2)*0.5)
-pred[,9]<- 10^(pred[,9]+(Var[7]*M$sd[7]^2)*0.5)
-print(summary(pred))
+pred[,5]<- 10^(pred[,5]+ 0.5 * var(pred[,5])^2)
+pred[,6]<- 10^(pred[,6]+ 0.5 * var(pred[,6])^2)
 
-prediction.mean<-apply(pred[,3:9],MARGIN = 2,FUN = mean)
-write.table(file = "prediction.mean.csv",x = prediction.mean, sep = ",")
+stat.desc(pred[,1:7])
+
+prediction.mean<-apply(pred[,1:7],MARGIN = 2,FUN = mean)
+#write.table(file = "prediction.mean.csv",x = prediction.mean, sep = ",")
 
 ####rasterize results###
 library(sp)
@@ -377,7 +277,7 @@ plot(y)
 res(y)
 #pred.sp <- spTransform(pred.sp, modis)
 r <- rasterize(x = pred.sp,y = y,background= NA)
-plot(r[[3]])
+#plot(r[[3]])
 ADE<- readShapePoly("/media/marcos/L0135974_DATA/UserData/BaseARG/study area/ADE_MODIS.shp")
 plot(ADE)
 r<-mask(x = r,mask = ADE)
@@ -391,11 +291,11 @@ s<- as.data.frame(summary(rp[[2:8]],digits=4))
 names(s) <- names(rp[[2:8]])
 s[7,] <- cellStats(stat = sd, rp[[2:8]])
 rownames(s)[7] <- "sd"
-write.csv(s,"result.statistics.csv")
+write.csv(s,"result.statistics.lm.csv")
 
 
 raster::NAvalue(rp)<--99999
-writeRaster(x = rp[[2:8]],filename ="oktober.tif", overwrite=T,bylayer=TRUE,suffix=names(rp)[2:8])
+writeRaster(x = rp[[2:8]],filename ="march.lm.tif", overwrite=T,bylayer=TRUE,suffix=names(rp)[2:8])
 
 
 #################Plotting results####################
