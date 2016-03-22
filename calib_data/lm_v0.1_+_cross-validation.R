@@ -51,53 +51,26 @@ nas<-d[!complete.cases(d),]
 # transformation
 d$esp.A <- log10(d$esp.A)
 d$esp.B <- log10(d$esp.B)
-d$is.hydro <- ordered(d$is.hydro)
-d$is.E <- ordered(d$is.E)
-d$is.caco3 <- ordered(d$is.caco3)
 
-# hist(10^(d$esp.A),col = "lightblue")
-# summary(d$thick.A)
-##@## data normalization
-N <- data.frame(mean = rep(0,20), sd = rep(0,20))
 
 # save mean and sd
-
+N <- data.frame(mean = rep(0,20), sd = rep(0,20), SStot=rep(0,20))
 dm <- d[,c(4:10,15:27)]
 for(i in 1:20){
   N$mean[i] <- mean(dm[,i])
   N$sd[i] <- sd(dm[,i])
+  N$SStot[i] <- sum((mean(dm[,i])-dm[,i])^2)
   rownames(N)[i] <- names(dm)[i]
 }
-N
+N <- data.frame(name=rownames(N),mean=N$mean,sd=N$sd, SStot=N$SStot)
+
 # normalization
 n <- c(4:10,15:27)
 for(i in n){
   d[,i] <- (d[,i] - mean(d[,i])) / sd(d[,i])
 }
 
-#step(lm(sat.A ~ dem+wdist+maxc+mrvbf+slope+twi+vdchn+lstm+lstsd+evim+evisd+river, d),direction = "both")
-# summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd, data = d))
-# summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd + tb.A + d.caco3 + river, data = d))
-# oc.fit<- lm(formula = oc.A ~ lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi, data = d)
-# summary(oc.fit)
-# x<-predict(oc.fit,data=d)
-# summary(lm(formula = tb.A ~ wdist + lstm + evim + evisd + river, data = d))
-# summary(lm(formula = thick.A ~ dem + maxc + evisd, data = d))
-# summary(lm(formula = esp.B ~ mrvbf + twi + vdchn + lstsd + evim + evisd + 
-#              river, data = d))
-# summary(lm(formula = esp.A ~ dem + mrvbf + twi + vdchn + lstsd + evim + 
-#              esp.B, data = d))
-# summary(lm(formula = sat.A ~ maxc + lstm + lstsd + evim + evisd, data = d))
-# summary(lm(formula = d.caco3 ~ dem + mrvbf + vdchn + lstm + lstsd + evim + 
-#             evisd + river, data = d))
-#N <- read.csv("N.csv")
-
 ############### FITTING MODEL ######################
-
-
-
-##### fitting ####
-#fit3<- sem(third_model, d,meanstructure = T,std.lv = T, ordered = c("is.E","is.caco3","is.hydro"))
 name(d)
 d <- d[,c(1:4,9,5,6:8,10,11:29)]
 library(utils)
@@ -143,19 +116,19 @@ res <- pred[,c(1,4:10,30:36)]
 M <- N[c(1,6,2:5,7),]
 # Un-standardize
 for (i in 2:8) { 
-  res[,i] <- res[,i] * M[i-1,2] + M[i-1,1]
+  res[,i] <- res[,i] * M$sd[i-1] + M$mean[i-1]
 }
 for (i in 9:15) { 
-  res[,i] <- res[,i] * M[i-8,2] + M[i-8,1]
+  res[,i] <- res[,i] * M$sd[i-8] + M$mean[i-8]
 }
 
 #back-transform
-res$esp.A  <- 10 ^ (res$esp.A)
-res$esp.Ar <- 10 ^ (res$esp.Ar + var(res$esp.Ar) * 0.5)
-res$esp.B  <- 10 ^ (res$esp.B)
-res$esp.Br <- 10 ^ (res$esp.Br + var(res$esp.Br) * 0.5)
+# res$esp.A  <- 10 ^ (res$esp.A)
+# res$esp.Ar <- 10 ^ (res$esp.Ar + var(res$esp.Ar) * 0.5)
+# res$esp.B  <- 10 ^ (res$esp.B)
+# res$esp.Br <- 10 ^ (res$esp.Br + var(res$esp.Br) * 0.5)
 
-par()
+#par()
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
 l <- c(2:8)
 for (i in l) {
@@ -188,38 +161,10 @@ report
 # D <- D[,c(1,6,2:5,7)]
 M
 for(i in 1:7){
-report$R2[i] <- 1 - (as.numeric(report$SS[i]) / sum((mean(res[,i+1])-res[,i+1]) ^ 2))
+report$R2[i] <- 1 - (as.numeric(report$SS[i]) / M$SStot[i])
 }
 
 report
 
 write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report.lm.cros-val.csv")
-
-#########Plot
-library(semPlot)
-#matrix to arrange nodes at graph
-layout <-as.matrix(read.csv("matrix_semplot.csv")[,-1])
-# plot sem using layout=layout
-
-layout[]
-
-semPaths(fit3,what = "std",whatLabels = "no", layout = layout,sizeLat = 4, cut =0.35,
-         sizeInt2 = 2,sizeMan =3.5, sizeLat2 = 2, sizeInt = 1,sizeMan2 = 1.5,nCharNodes=0, font=3,
-         edge.width = 2,esize=1.5, asize=1,intercepts = F, reorder = F,equalizeManifests =T, residuals = F,layoutSplit=F,
-         structural = F, exoCov = F, exoVar=F,cardinal = F,style = "lisrel",#color = c("orange","blue"),
-         manifests = c("tb.A", "sat.A", "evim", "evisd", "lstm", "lstsd", "dem","bt", "wdist", "mrvbf", "vdchn", 
-                       "twi", "river", "thick.A", "slope", "maxc", "oc.A", "esp.B", "esp.A"))
-
-semPlotModel(fit3)
-semPaths(fit3)
-
-str(fit3)
-
-write.csv(report, "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/report_cross-validation.csv")
-
-
-semPaths
-
-
-
 

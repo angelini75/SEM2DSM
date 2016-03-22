@@ -8,6 +8,7 @@ d <-read.csv("calib.data-2.1.csv")[,-1]
 ############### PRE-PROCESSING ################## 
 names(d)
 names(d)[c(5,6,9,10)]<- c("tb.A","sat.A", "oc.A","bt")
+d$sat.A[d$id.p==480] <- 88 #error in dataset
 d<-d[!is.na(d$oc.A),]
 d$sat.A[is.na(d$sat.A)] <- 100 # it is assumed 100% saturation when CaCO3 is present 
 d$d.caco3[is.na(d$d.caco3)] <- 300 # it is assumed that CaCO3 is very deep when it is absent within the solum 

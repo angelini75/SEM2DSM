@@ -14,6 +14,9 @@ d <- d[!is.na(d$oc.A),]
 d$sat.A[d$id.p==480] <- 88 #error in dataset
 # statistics of calibration data
 D<-d[,4:10]
+D$esp.A <- log10(D$esp.A)
+D$esp.B <- log10(D$esp.B)
+D <- D[,c(1,6,2:5,7)]
 d.stat<- matrix(data = NA,nrow = 6,ncol = 7,
                 dimnames = list(c("Min","Median","Mean", "Max", "SD","SS"),names(D)))
 d.stat[1,]<- apply(X = D,FUN = min,2, na.rm=T) # 2 means by column
@@ -49,52 +52,26 @@ name(d)
 #order of soil properties: thick, oc, tb, sat, esp.a, esp.b, bt
 d <- d[,c(1:3,4,9,5:8,10,11:29)]
 
-
 # transformation
 d$esp.A <- log10(d$esp.A)
 d$esp.B <- log10(d$esp.B)
-d$is.hydro <- ordered(d$is.hydro)
-d$is.E <- ordered(d$is.E)
-d$is.caco3 <- ordered(d$is.caco3)
-
-# hist(10^(d$esp.A),col = "lightblue")
-# summary(d$thick.A)
-##@## data normalization
-N <- data.frame(mean = rep(0,20), sd = rep(0,20))
 
 # save mean and sd
-
+N <- data.frame(mean = rep(0,20), sd = rep(0,20), SStot=rep(0,20))
 dm <- d[,c(4:10,15:27)]
 for(i in 1:20){
   N$mean[i] <- mean(dm[,i])
   N$sd[i] <- sd(dm[,i])
+  N$SStot[i] <- sum((mean(dm[,i])-dm[,i])^2)
   rownames(N)[i] <- names(dm)[i]
 }
+N <- data.frame(name=rownames(N),mean=N$mean,sd=N$sd, SStot=N$SStot)
 
 # normalization
 n <- c(4:10,15:27)
 for(i in n){
   d[,i] <- (d[,i] - mean(d[,i])) / sd(d[,i])
 }
-
-#step(lm(sat.A ~ dem+wdist+maxc+mrvbf+slope+twi+vdchn+lstm+lstsd+evim+evisd+river, d),direction = "both")
-# summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd, data = d))
-# summary(lm(formula = bt ~ dem + maxc + slope + lstm + evisd + tb.A + d.caco3 + river, data = d))
-# oc.fit<- lm(formula = oc.A ~ lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi, data = d)
-# summary(oc.fit)
-# x<-predict(oc.fit,data=d)
-# summary(lm(formula = tb.A ~ wdist + lstm + evim + evisd + river, data = d))
-# summary(lm(formula = thick.A ~ dem + maxc + evisd, data = d))
-# summary(lm(formula = esp.B ~ mrvbf + twi + vdchn + lstsd + evim + evisd + 
-#              river, data = d))
-# summary(lm(formula = esp.A ~ dem + mrvbf + twi + vdchn + lstsd + evim + 
-#              esp.B, data = d))
-# summary(lm(formula = sat.A ~ maxc + lstm + lstsd + evim + evisd, data = d))
-# summary(lm(formula = d.caco3 ~ dem + mrvbf + vdchn + lstm + lstsd + evim + 
-#             evisd + river, data = d))
-#N <- read.csv("N.csv")
-N <- data.frame(name=rownames(N),mean=N$mean,sd=N$sd)
-
 
 ############### FITTING MODEL ######################
 
@@ -214,10 +191,10 @@ for (i in 1:14) {
   res[,i] <- res[,i] * M[i,3] + M[i,2]
 }
 #back-transform
-res$esp.A <- 10 ^ (res$esp.A)
-res$esp.A.p <- 10 ^(res$esp.A.p + (Var[5] ^ 2) * 0.5)
-res$esp.B <- 10 ^ (res$esp.B)
-res$esp.B.p <- 10 ^ (res$esp.B.p + (Var[6] ^ 2) * 0.5)
+# res$esp.A <- 10 ^ (res$esp.A)
+# res$esp.A.p <- 10 ^(res$esp.A.p + (Var[5] ^ 2) * 0.5)
+# res$esp.B <- 10 ^ (res$esp.B)
+# res$esp.B.p <- 10 ^ (res$esp.B.p + (Var[6] ^ 2) * 0.5)
 
 #par()
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
@@ -232,7 +209,6 @@ abline(lm(res[,i] ~ res[,i - 1]), col = "blue")
 
 
 report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA, mean_theta = NA, median_th = NA)
-
 for (i in l) {
 ######################## ME <- mean error 
   ME  <-  mean(res[,i] - res[,i - 1])
@@ -240,7 +216,7 @@ for (i in l) {
   RMSE <- sqrt(mean((res[,i] - res[,i - 1]) ^ 2))
   MSE <- mean((res[,i] - res[,i - 1]) ^ 2)
 ############################################ SS (Sum of squares)
-  SS <- sum((res[,i] - res[,i - 1]) ^ 2)
+  SS <- sum((res[,i-1] - res[,i]) ^ 2)
 # fill report table
   report[i / 2,1:4] <- c(names(res)[i - 1], ME, RMSE, SS)
 }
@@ -253,7 +229,7 @@ for(i in 1:7){
 }
 report
 #d.stat <- read.csv("summary.calibdata.csv")
-report$R2 <- 1 - (as.numeric(report[,4]) / d.stat[6,])
+report$R2 <- 1 - (as.numeric(report$SS) / N$SStot[1:7])
 report
 
 
