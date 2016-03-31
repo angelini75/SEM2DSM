@@ -127,6 +127,10 @@ Var <- matrix(nrow = 0, ncol = 7, dimnames = list(NULL,
 
 resids <- pred[32:38]
 theta <- pred[,c(32:38)]
+a <- pred[,c(32:38)] #observed
+b <- pred[,c(32:38)] #predicted
+v <- pred[,c(32:38)] #variance(s)
+resids <- pred[,c(32:38)] #residuals
 
 for (i in 1:length(d[,1])) {
 calib <- d[-i,]
@@ -164,11 +168,11 @@ IB <- solve(I - B)
   # calculate standarised squared standard error
   ## theta is standarised squared standard error
   ## theta = ((observed-predicted)²)/error variance=(standard error^2)
-  a <- pred[i,c(4:10)] # observed values
-  b <- pred[i,c(32:38)] # predicted values
-  v <- diag(V) # error variance
-  resids <- a-b
-  theta[i,] <- (resids^2)/v
+  a[i,] <- pred[i,c(4:10)] # observed values
+  b[i,] <- pred[i,c(32:38)] # predicted values
+  v[i,] <- diag(IB%*%V%*%t(IB)) # error variance
+  resids[i,] <- a[i,] - b[i,] # residuals
+  theta[i,] <- (resids[i,]^2)/v[i,] #theta
 
 ##### Estimation confidence interval ## No stapial #######
 Var.n <- IB %*% V %*% t(IB) # diagonal vaues are variance error
