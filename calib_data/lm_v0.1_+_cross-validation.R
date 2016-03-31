@@ -107,7 +107,7 @@ models <- list(tk,oc,tb,sa,ea,eb,bt)
 for(j in 1:7){
   pred[i,29+j] <- predict(models[[j]],pred[i,])
   resids[i,1+j] <- pred[i,29+j] - d[i,3+j]
-  theta[i,1+j] <- ((resids[i,1+j])^2)/summary(tk)$sigma^2
+  theta[i,1+j] <- ((resids[i,1+j])^2)/summary(models[[j]])$sigma^2
   }
  }
 

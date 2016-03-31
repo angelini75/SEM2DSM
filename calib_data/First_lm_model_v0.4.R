@@ -44,22 +44,17 @@ write.csv(d.stat,"summary.calibdata.csv")
 # transformation
 d$esp.A <- log10(d$esp.A)
 d$esp.B <- log10(d$esp.B)
-d$is.hydro <- ordered(d$is.hydro)
-d$is.E <- ordered(d$is.E)
-d$is.caco3 <- ordered(d$is.caco3)
-
-#### data normalization
-N<- data.frame(mean = rep(0,20),sd=rep(0,20))
 
 # save mean and sd
+N <- data.frame(mean = rep(0,20), sd = rep(0,20), SStot=rep(0,20))
 dm <- d[,c(4:10,15:27)]
 for(i in 1:20){
   N$mean[i] <- mean(dm[,i])
   N$sd[i] <- sd(dm[,i])
-  rownames(N)[i] <-names(dm)[i]
+  N$SStot[i] <- sum((mean(dm[,i])-dm[,i])^2)
+  rownames(N)[i] <- names(dm)[i]
 }
-## CHECK RESULT
-N[which(rownames(N) == "oc.A"),] == c(mean(d$oc.A),sd(d$oc.A))
+N <- data.frame(name=rownames(N),mean=N$mean,sd=N$sd, SStot=N$SStot)
 
 # normalization
 n <- c(4:10,15:27)
@@ -102,14 +97,14 @@ bt <- lm(bt ~       lstm +  lstsd + wdist + vdchn + twi + dem + river + mrvbf, D
 
 models <- list(tk, oc,tb,sa,ea,eb,bt)
 
-summary(tk)$sigma
-summary(oc)$sigma
-summary(tb)$sigma
-summary(sa)$sigma
-summary(ea)$sigma
-summary(eb)$sigma
-summary(bt)$sigma
-
+# save error variance 
+Var <- data.frame(property=NA, variance=NA)
+NAMES <- rownames(N)[c(1,6,2:5,7)]
+for(i in 1:7){
+Var[i,1] <- NAMES[i]
+Var$variance[i] <- (summary(models[[i]])$sigma^2)#*N$sd[i]^2
+}
+write.csv(Var, "lm.variance.error.csv")
 
 #################### PREDICTION #########################
 
@@ -260,8 +255,8 @@ summary(models[[1]])
 
 
 # from log10(ESP) to ESP
-pred[,5]<- 10^(pred[,5]+ 0.5 * var(pred[,5])^2)
-pred[,6]<- 10^(pred[,6]+ 0.5 * var(pred[,6])^2)
+# pred[,5]<- 10^(pred[,5]+ 0.5 * var(pred[,5])^2)
+# pred[,6]<- 10^(pred[,6]+ 0.5 * var(pred[,6])^2)
 
 stat.desc(pred[,1:7])
 
@@ -283,13 +278,13 @@ y <- raster("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/m
 y[!y %in% NA] <- 0
 proj4string(y) <- modis
 names(y)<-"mask"
-plot(y)
-res(y)
+# plot(y)
+# res(y)
 #pred.sp <- spTransform(pred.sp, modis)
 r <- rasterize(x = pred.sp,y = y,background= NA)
 #plot(r[[3]])
 ADE<- readShapePoly("/media/marcos/L0135974_DATA/UserData/BaseARG/study area/ADE_MODIS.shp")
-plot(ADE)
+# plot(ADE)
 r<-mask(x = r,mask = ADE)
 TWI <- raster("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/TWI250.sdat")
 proj4string(TWI) <- posgar98
