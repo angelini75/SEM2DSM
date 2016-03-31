@@ -17,7 +17,7 @@ lab$X0CaCO3 <- as.numeric(lab$X0CaCO3)
 
 # clean and transform C oxidable to OC
 lab$oc <- lab$C_Ox * 1.3
-
+lab$ESP <- log10(lab$ESP)
 # # Horizons A1 and A2, same site, two analysis
 # #hor$num_lab[hor$num_lab==64561 & !is.na(hor$num_lab) ][2]<-64562
 # #lab$labid[lab$labid==64561& !is.na(lab$labid)][2] <-64562
@@ -257,6 +257,8 @@ d.stat1[,7] <- NA
 d.stat1[,7] <- stat.desc(d.B)
 names(d.stat1)[7] <- "esp.B"
 
+Var <- read.csv("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/lm.variance.error.csv")[,-1]
+Ns <- read.csv("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/N.march2016.csv")[,-1]
 #################### VALIDATION ####################
 library(sp)
 library(rgdal)
@@ -297,6 +299,7 @@ abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
 
 SP.val <- as.data.frame(SP.val)
 SP.val$residuals <- SP.val$measured - SP.val$predicted 
+write.csv(SP.val, "res.thick.csv")
 SP.val$residuals.sq <- (SP.val$measured - SP.val$predicted) ^ 2 
 SS <- sum(SP.val$residuals.sq)
 
@@ -328,11 +331,11 @@ VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2]) # error variance
 VzSt
 # 95% confidence
 # lowwer limit
-ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
+ME.ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
 # upper limit
-ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
+ME.ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
 
-ME <- paste(round(ll, 3), "<", round(zSt, 3), "<", round(ul, 3))
+ME <- zSt
 
 ############################################ MSE (mean squared error)
 zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2] # sample mean of squared errors
@@ -344,9 +347,13 @@ paste("RMSE =", round(sqrt(zSt.s), 3))
 MSE <- zSt.s
 RMSE <- sqrt(zSt.s)
 
+theta_mean <- mean(SP.val$residuals.sq / (Var$variance[Var$property=="thick.A"] * Ns$sd[Ns$name=="thick.A"]^2))
+theta_median <- median(SP.val$residuals.sq / (Var$variance[Var$property=="thick.A"] * Ns$sd[Ns$name=="thick.A"]^2))
+
 # fill report table
-report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA)
-report[1,1:4] <- c("Thick.A",ME,RMSE,SS)
+report <- data.frame(Soil_property = NA, ME.ll=NA, ME = NA, ME.ul=NA, RMSE = NA, SS = NA, theta_mean = NA, theta_median = NA)
+report[1,1:8] <- c("Thick.A",ME.ll,ME,ME.ul,RMSE,SS, theta_mean, theta_median)
+
 
 #----------------------------------------#
 #        Organic Carbon A horizon        #
@@ -379,6 +386,7 @@ abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
 
 SP.val <- as.data.frame(SP.val)
 SP.val$residuals <- SP.val$measured - SP.val$predicted
+write.csv(SP.val, "res.oc.csv")
 SP.val$residuals.sq <- (SP.val$measured - SP.val$predicted) ^ 2
 SS <- sum(SP.val$residuals.sq) 
 
@@ -411,24 +419,27 @@ VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2])
 VzSt
 # 95% confidence
 # lowwer limit
-ll <- zSt - qt(0.975,N - 1) * sqrt(VzSt)
+ME.ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
 # upper limit
-ul <- zSt + qt(0.975,N - 1) * sqrt(VzSt)
+ME.ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
 
-ME <- paste(round(ll, 3), "<", round(zSt, 3), "<", round(ul, 3))
+ME <- zSt
 
 ############################################ MSE (mean squared error)
-zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2]
-sum(Nh*zh.s)/N
+zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2] # sample mean of squared errors
+sum(Nh * zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
-zSt.s <- sum(ah * zh.s)
-paste("MSE =", round(zSt.s,3))
-paste("RMSE =", round(sqrt(zSt.s),3))
+zSt.s <- sum(ah * zh.s) # mean of squared error
+paste("MSE =", round(zSt.s, 3))
+paste("RMSE =", round(sqrt(zSt.s), 3))
 MSE <- zSt.s
 RMSE <- sqrt(zSt.s)
 
+theta_mean <- mean(SP.val$residuals.sq / (Var$variance[Var$property=="oc.A"] * Ns$sd[Ns$name=="oc.A"]^2))
+theta_median <- median(SP.val$residuals.sq / (Var$variance[Var$property=="oc.A"] * Ns$sd[Ns$name=="oc.A"]^2))
+
 # fill report table
-report[2,1:4] <- c("OC.A",ME,RMSE,SS)
+report[2,1:8] <- c("oc.A",ME.ll,ME,ME.ul,RMSE,SS, theta_mean, theta_median)
 
 
 #-------------------------------------#
@@ -464,6 +475,7 @@ abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
 
 SP.val <- as.data.frame(SP.val)
 SP.val$residuals <- SP.val$measured - SP.val$predicted
+write.csv(SP.val, "res.tb.csv")
 SP.val$residuals.sq <- (SP.val$measured - SP.val$predicted) ^ 2 
 SS <- sum(SP.val$residuals.sq)
 
@@ -495,23 +507,27 @@ VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2])
 VzSt
 # 95% confidence
 # lowwer limit
-ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
+ME.ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
 # upper limit
-ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
+ME.ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
 
-ME <- paste(round(ll, 3), "<", round(zSt, 3), "<", round(ul, 3))
+ME <- zSt
 
-############################################ RMSE (root mean squared error)
-zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2]
-sum(Nh * zh.s) / N
+############################################ MSE (mean squared error)
+zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2] # sample mean of squared errors
+sum(Nh * zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
-zSt.s <- sum(ah * zh.s)
-paste("MSE =", round(zSt.s,3))
+zSt.s <- sum(ah * zh.s) # mean of squared error
+paste("MSE =", round(zSt.s, 3))
+paste("RMSE =", round(sqrt(zSt.s), 3))
 MSE <- zSt.s
 RMSE <- sqrt(zSt.s)
 
+theta_mean <- mean(SP.val$residuals.sq / (Var$variance[Var$property=="tb.A"] * Ns$sd[Ns$name=="tb.A"]^2))
+theta_median <- median(SP.val$residuals.sq / (Var$variance[Var$property=="tb.A"] * Ns$sd[Ns$name=="tb.A"]^2))
+
 # fill report table
-report[3,1:4] <- c("TB.A", ME, RMSE, SS)
+report[3,1:8] <- c("tb.A",ME.ll,ME,ME.ul,RMSE,SS, theta_mean, theta_median)
 
 #-----------------------------------------#
 #        Base Saturation A horizon        #
@@ -545,6 +561,7 @@ abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
 
 SP.val <- as.data.frame(SP.val)
 SP.val$residuals <- SP.val$measured - SP.val$predicted
+write.csv(SP.val, "res.sat.csv")
 SP.val$residuals.sq <- (SP.val$measured-SP.val$predicted) ^ 2 
 SS <- sum(SP.val$residuals.sq)
 
@@ -577,32 +594,27 @@ VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2])
 VzSt
 # 95% confidence
 # lowwer limit
-ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
+ME.ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
 # upper limit
-ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
+ME.ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
 
-ME <- paste(round(ll, 3),"<" ,round(zSt, 3), "<", round(ul, 3))
+ME <- zSt
 
-############################################ RMSE (root mean squared error)
-zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2]
-sum(Nh * zh.s) / N
+############################################ MSE (mean squared error)
+zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2] # sample mean of squared errors
+sum(Nh * zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
-zSt.s <- sum(ah * zh.s)
-paste("MSE =", round(zSt.s,3))
+zSt.s <- sum(ah * zh.s) # mean of squared error
+paste("MSE =", round(zSt.s, 3))
+paste("RMSE =", round(sqrt(zSt.s), 3))
 MSE <- zSt.s
 RMSE <- sqrt(zSt.s)
-# # variance of zSt
-# VzSt.s <- sum((ah^2)*dplyr::summarise(X, var(residuals.sq))[2])
-# VzSt.s
-# # 95% confidence using X-square distribution
-# # # lowwer limit
-# ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
-# # # upper limit
-# ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
-# RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+
+theta_mean <- mean(SP.val$residuals.sq / (Var$variance[Var$property=="sat.A"] * Ns$sd[Ns$name=="sat.A"]^2))
+theta_median <- median(SP.val$residuals.sq / (Var$variance[Var$property=="sat.A"] * Ns$sd[Ns$name=="sat.A"]^2))
 
 # fill report table
-report[4,1:4] <- c("Sat.A", ME, RMSE, SS)
+report[4,1:8] <- c("sat.A",ME.ll,ME,ME.ul,RMSE,SS, theta_mean, theta_median)
 
 
 #-----------------------------#
@@ -627,7 +639,7 @@ names(SP.val@data) <- c("hor","measured","strata","area","percentage","predicted
 # plot residuals
 lim <- c(min(SP.val@data$measured) + 0 * sd(SP.val@data$measured), 
          max(SP.val@data$measured) - 0 * sd(SP.val@data$measured))
-plot(SP.val@data$predicted ~ SP.val@data$measured, main = "ESP A horizon (%)", xlab = "measured",
+plot(SP.val@data$predicted ~ SP.val@data$measured, main = "ESP A horizon (log(%))", xlab = "measured",
      ylab = "predicted", col = "dark red", xlim = lim, ylim = lim)
 abline(0,1)
 abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
@@ -637,6 +649,7 @@ abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
 
 SP.val <- as.data.frame(SP.val)
 SP.val$residuals <- SP.val$measured - SP.val$predicted
+write.csv(SP.val, "res.espA.csv")
 SP.val$residuals.sq <- (SP.val$measured - SP.val$predicted) ^ 2 
 SS <- sum(SP.val$residuals.sq)
 
@@ -668,23 +681,27 @@ VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2])
 VzSt
 # 95% confidence
 # lowwer limit
-ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
+ME.ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
 # upper limit
-ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
+ME.ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
 
-ME <- paste(round(ll, 3), "<", round(zSt, 3), "<", round(ul, 3))
+ME <- zSt
 
-############################################ RMSE (root mean squared error)
-zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2]
-sum(Nh * zh.s) / N 
+############################################ MSE (mean squared error)
+zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2] # sample mean of squared errors
+sum(Nh * zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
-zSt.s <- sum(ah * zh.s)
-paste("MSE =", round(zSt.s,3))
+zSt.s <- sum(ah * zh.s) # mean of squared error
+paste("MSE =", round(zSt.s, 3))
+paste("RMSE =", round(sqrt(zSt.s), 3))
 MSE <- zSt.s
 RMSE <- sqrt(zSt.s)
 
+theta_mean <- mean(SP.val$residuals.sq / (Var$variance[Var$property=="esp.A"] * Ns$sd[Ns$name=="esp.A"]^2))
+theta_median <- median(SP.val$residuals.sq / (Var$variance[Var$property=="esp.A"] * Ns$sd[Ns$name=="esp.A"]^2))
+
 # fill report table
-report[5,1:4] <- c("ESP.A", ME, RMSE, SS)
+report[5,1:8] <- c("esp.A",ME.ll,ME,ME.ul,RMSE,SS, theta_mean, theta_median)
 
 #-----------------------------#
 #        ESP B horizon        #
@@ -710,7 +727,7 @@ names(SP.val@data) <- c("hor","measured","strata","area","percentage","predicted
 # par(mfrow = c(2, 2))
 lim <- c(min(SP.val@data$measured) + 0 * sd(SP.val@data$measured),
          max(SP.val@data$measured) - 0 * sd(SP.val@data$measured))
-plot(SP.val@data$predicted ~ SP.val@data$measured, main = "ESP B horizon (%)", xlab = "measured",
+plot(SP.val@data$predicted ~ SP.val@data$measured, main = "ESP B horizon (log(%))", xlab = "measured",
      ylab = "predicted", col = "dark red", xlim = lim, ylim = lim)
 abline(0,1)
 abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
@@ -720,7 +737,8 @@ abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
 
 SP.val <- as.data.frame(SP.val)
 SP.val$residuals <- SP.val$measured - SP.val$predicted
-SP.val$residuals.sq <- (SP.val$measured - SP.val$predicted) ^ 2 
+#write.csv(SP.val, "res.espB.csv")
+SP.val$residuals.sq <- (SP.val$measured - SP.val$predicted)^2 
 SS <- sum(SP.val$residuals.sq)
 
 # Count n (samples per starta) and h (number of strata)
@@ -751,23 +769,27 @@ VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2])
 VzSt
 # 95% confidence
 # lowwer limit
-ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
+ME.ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
 # upper limit
-ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
+ME.ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
 
-ME <- paste(round(ll, 3), "<", round(zSt, 3), "<",round(ul, 3))
+ME <- zSt
 
-############################################ RMSE (root mean squared error)
-zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2]
-sum(Nh * zh.s) / N
+############################################ MSE (mean squared error)
+zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2] # sample mean of squared errors
+sum(Nh * zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
-zSt.s <- sum(ah * zh.s)
+zSt.s <- sum(ah * zh.s) # mean of squared error
 paste("MSE =", round(zSt.s, 3))
+paste("RMSE =", round(sqrt(zSt.s), 3))
 MSE <- zSt.s
 RMSE <- sqrt(zSt.s)
 
+theta_mean <- mean(SP.val$residuals.sq / (Var$variance[Var$property=="esp.B"] * Ns$sd[Ns$name=="esp.B"]^2))
+theta_median <- median(SP.val$residuals.sq / (Var$variance[Var$property=="esp.B"] * Ns$sd[Ns$name=="esp.B"]^2))
+
 # fill report table
-report[6,1:4] <- c("ESP.B",ME,RMSE,SS)
+report[6,1:8] <- c("esp.B",ME.ll,ME,ME.ul,RMSE,SS, theta_mean, theta_median)
 
 
 #-----------------------------------------#
@@ -820,6 +842,7 @@ abline(lm(SP.val@data$predicted ~ SP.val@data$measured), col = "red")
 
 SP.val <- as.data.frame(SP.val)
 SP.val$residuals <- SP.val$measured - SP.val$predicted
+write.csv(SP.val, "res.bt.csv")
 SP.val$residuals.sq <- (SP.val$measured-SP.val$predicted) ^ 2 
 SS <- sum(SP.val$residuals.sq)
 
@@ -852,32 +875,29 @@ VzSt <- sum((ah ^ 2) * dplyr::summarise(X, var(residuals))[2])
 VzSt
 # 95% confidence
 # lowwer limit
-ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
+ME.ll <- zSt - qt(0.975, N - 1) * sqrt(VzSt)
 # upper limit
-ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
+ME.ul <- zSt + qt(0.975, N - 1) * sqrt(VzSt)
 
-ME <- paste(round(ll, 3),"<" ,round(zSt, 3), "<", round(ul, 3))
+ME <- zSt
 
-############################################ RMSE (root mean squared error)
-zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2]
-sum(Nh * zh.s) / N
+############################################ MSE (mean squared error)
+zh.s <- as.data.frame(dplyr::summarise(X, mean(residuals.sq)))[,2] # sample mean of squared errors
+sum(Nh * zh.s)/N
 # ME <- mean error of top horizon thickness of the area (considering area)
-zSt.s <- sum(ah * zh.s)
-paste("MSE =", round(zSt.s,3))
+zSt.s <- sum(ah * zh.s) # mean of squared error
+paste("MSE =", round(zSt.s, 3))
+paste("RMSE =", round(sqrt(zSt.s), 3))
 MSE <- zSt.s
 RMSE <- sqrt(zSt.s)
-# # variance of zSt
-# VzSt.s <- sum((ah^2)*dplyr::summarise(X, var(residuals.sq))[2])
-# VzSt.s
-# # 95% confidence using X-square distribution
-# # # lowwer limit
-# ll.s <- zSt.s-qchisq(p=0.025, df=N-1, ncp = 0, lower.tail = TRUE, log.p = FALSE)*sqrt(VzSt)
-# # # upper limit
-# ul.s <- zSt+qchisq(p=0.975, df=N-1, ncp = 0, lower.tail = T, log.p = FALSE)* sqrt(VzSt)
-# RMSE <-paste(round(ll.s,1),"<",round(zSt.s,1),"<",round(ul.s,1))
+
+theta_mean <- mean(SP.val$residuals.sq / (Var$variance[Var$property=="bt"] * Ns$sd[Ns$name=="bt"]^2))
+theta_median <- median(SP.val$residuals.sq / (Var$variance[Var$property=="bt"] * Ns$sd[Ns$name=="bt"]^2))
 
 # fill report table
-report[7,1:4] <- c("Ratio clay A/B", ME, RMSE, SS)
+report[7,1:8] <- c("bt",ME.ll,ME,ME.ul,RMSE,SS, theta_mean, theta_median)
+
+report
 d.stat <- d.stat[,c(1:5,7,6)]
 
 
@@ -891,7 +911,7 @@ setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model
 
 report$R2 <- NA
 for (i in 1:7) {
-  report$R2[i] <- 1 - (as.numeric(report[i,4]) / d.stat[6,i])
+  report$R2[i] <- 1 - (as.numeric(report$SS[i]) / d.stat[6,i])
 }
 
 d.stat <- rbind(d.stat,NA)
