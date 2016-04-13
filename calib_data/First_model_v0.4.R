@@ -237,6 +237,7 @@ B <- inspect(fit3,"est")$beta[1:7,1:7] #matrix of coeff. latent state variables
 I <-diag(nrow=7, ncol=7) #Identity matrix
 A <- inspect(fit3,"est")$beta[1:7,8:19] #matrix of coeff of external drivers
 V <- inspect(fit3,"est")$psi[1:7,1:7] #matrix of predicted error variance
+Th <- inspect(fit3, "est")$theta[1:7,1:7] # matrix of measurement error
 IB<-solve(I-B)
 
 ################# Running Prediction ###########################
@@ -263,7 +264,7 @@ for(i in 3:9){
 
 
 ##### Estimation prediction interval withd ## No stapial #######
-Var.n <-IB%*%V%*%t(IB) # diagonal vaues are variance error
+Var.n <-IB%*%V%*%t(IB)+Th # diagonal vaues are variance error
 Var<-diag(Var.n)
 CI <- 1.64 * (Var ^ 0.5)
 

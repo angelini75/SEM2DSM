@@ -152,15 +152,13 @@ fit3 <- lavaan(model = third_model, data = calib,
 
 ################# Matrices ##############
 ##setting up matrices
-B <- inspect(fit3, "est")$beta[1:7,1:7] #matrix of coeff. latent state variables
-I <- diag(nrow = 7, ncol = 7) #Identity matrix
-A <- inspect(fit3, "est")$beta[1:7,8:19] #matrix of coeff of external drivers
-V <- inspect(fit3, "est")$psi[1:7,1:7] #matrix of predicted error variance
+B <- inspect(fit3, "est")$beta[1:7,1:7] # matrix of coeff. latent state variables
+I <- diag(nrow = 7, ncol = 7) # Identity matrix
+A <- inspect(fit3, "est")$beta[1:7,8:19] # matrix of coeff of external drivers
+V <- inspect(fit3, "est")$psi[1:7,1:7] # matrix of predicted error variance
+Th <- inspect(fit3, "est")$theta[1:7,1:7] # matrix of measurement error
 IB <- solve(I - B)
-
 ################# Running Prediction ###########################
-
-
 # (IB%*%A%*%p) product of matrices per pixel (equation 4 paper)
   p = as.vector(as.matrix(pred[i,c(15,17,19,22,21,16,20,18,26,27,24,25)]))
   p = matrix(p, nrow = 12, ncol = 1)
@@ -170,9 +168,9 @@ IB <- solve(I - B)
   ## theta = ((observed-predicted)²)/error variance=(standard error^2)
   a[i,] <- pred[i,c(4:10)] # observed values
   b[i,] <- pred[i,c(32:38)] # predicted values
-  v[i,] <- diag(IB%*%V%*%t(IB)) # error variance
+  v[i,] <- diag(IB%*%V%*%t(IB)+Th) # error variance
   resids[i,] <- a[i,] - b[i,] # residuals
-  theta[i,] <- (resids[i,]^2)/v[i,] #theta
+  theta[i,] <- (resids[i,]^2)/v[i,] # theta 
 
 ##### Estimation confidence interval ## No stapial #######
 Var.n <- IB %*% V %*% t(IB) # diagonal vaues are variance error

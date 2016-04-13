@@ -111,6 +111,12 @@ for(j in 1:7){
   }
  }
 
+# To include prediction uncertainty
+# pred[i,29+j] <- predict.lm(models[[j]],pred[i,], se.fit = T)$fit
+# resids[i,1+j] <- pred[i,29+j] - d[i,3+j]
+# theta[i,1+j] <- ((resids[i,1+j])^2)/((summary(models[[j]])$sigma^2)+
+#                  (predict.lm(models[[j]],pred[i,], se.fit = T)$se.fit^2))
+
 name(pred)
 res <- pred[,c(1,4:10,30:36)]
 M <- N[c(1,6,2:5,7),]
