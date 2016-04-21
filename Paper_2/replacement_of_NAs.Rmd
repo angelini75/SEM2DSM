@@ -1,0 +1,266 @@
+---
+title: "Replace NAs and restructurate calibration data"
+author: "Marcos Angelini"
+date: "April 19, 2016"
+output: pdf_document
+---
+
+```{r, echo=FALSE, warning=FALSE}
+rm(list=ls())
+name <- function(x) { as.data.frame(names(x))}
+setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration")
+sp <- read.csv("calib.data-sp.csv")[,-1]
+covar <- read.csv("calib.data-covar.csv")[,-1]
+################### TO BE SOLVED ####################sp[which(sp$id.p %in% sp$id.p[is.na(sp$phw)]),]
+library(questionr)
+library(pastecs)
+# function to compute hz-thickness weighted mean of Clay, OC and CEC
+wt.mean.properties <- function(data, properties) {
+  # use horizon thickness as a weight
+  d = data
+  p = properties
+  site <- unique(d$id.p)  
+  hor <- c("A", "B", "C")
+  m1 <- as.data.frame(matrix(data = NA,nrow = 0,ncol = length(p)+1,
+                             dimnames = list(NULL,c("id.p",paste(p[1],rep(hor,1), sep=".")))))
+  m2 <- as.data.frame(matrix(data = NA,nrow = 0,ncol = length(p)+1,
+                             dimnames = list(NULL,c("id.p",paste(p[2],rep(hor,1), sep=".")))))
+  m3 <- as.data.frame(matrix(data = NA,nrow = 0,ncol = length(p)+1,
+                             dimnames = list(NULL,c("id.p",paste(p[3],rep(hor,1), sep=".")))))
+  for(i in seq_along(site)){
+    d.sub <- d[d$id.p == site[i],]
+    for(j in seq_along(hor)){
+      subset <- d.sub[d.sub$hor == hor[j],]
+      thick <- subset$bottom - subset$top  
+      # compute the weighted mean, accounting for the possibility of missing data
+      m1[i,1] <- site[i]
+      m2[i,1] <- site[i]
+      m3[i,1] <- site[i]
+      m1[i,j+1] <- wtd.mean(subset[which(names(d) == p[1])], weights=thick, na.rm=TRUE)
+      m2[i,j+1] <- wtd.mean(subset[which(names(d) == p[2])], weights=thick, na.rm=TRUE)
+      m3[i,j+1] <- wtd.mean(subset[which(names(d) == p[3])], weights=thick, na.rm=TRUE)
+    }
+  }
+  r <- merge(merge(m1, m2, by = "id.p", all = TRUE), m3, by = "id.p", all = TRUE)
+  r
+}
+m <- wt.mean.properties(data = sp, properties = c("CEC", "OC","clay"))
+```
+***Replace NAs and restructurate calibration data***
+
+Calibration data for second paper has to be structured in such a form that we have all the variables per location in one row. They are three soil properties (CEC, OC and clay) in three major horizons (A, B and C) and the covariate values that belong to each site. If one row has any missing value, all the row (sample) is lost. 
+We have 344 soil profiles, however they have many NAs. Here, I explain the criteria to replace some NAs and get a calibration data set suitable for our study.
+
+First, a summary of soil properties: CEC, OC and Clay at A, B and C
+```{r}
+round(stat.desc(m[,2:10],norm = T),3) 
+```
+It can be seen that C horizons have the highest NAs. It is partly because several profiles do not have C horizon. 
+Let see it
+```{r}
+length(unique(sp$id.p)) # number of soil profiles
+length(unique(sp$id.p[sp$hor=="C"])) # number of soil profiles with C horizons
+length(m$id.p[complete.cases(m)]) # number of complete cases
+```
+An alternative option to fill these gaps is to take the deepest BC horizons.
+The following histogram that shows CEC, OC and clay in C (blue) and BC (red) horizons
+
+```{r, echo=FALSE}
+par(mfrow = c(2, 2))
+hist(m$CEC.C,col = "blue", main = "CEC", xlim = c(0,50),
+     xlab = "blue = C, red = BC", breaks = 20)
+hist(sp$CEC[sp$hor=="BC"],col = "red",xlim = c(0,50),
+ add=T, breaks = 20)
+
+hist(m$OC.C,col = "blue", main = "OC",xlim = c(0,0.6),
+ xlab = "blue = C, red = BC", breaks = 20)
+hist(sp$OC[sp$hor=="BC"],col = "red",xlim = c(0,0.6),
+ add=T, breaks = 10)
+
+hist(m$clay.C, col = "blue", main = "Clay",xlim = c(0,65),
+ xlab = "blue = C, red = BC", breaks = 20)
+hist(sp$clay[sp$hor=="BC"],col = "red", xlim = c(0,65),
+add=T, breaks = 20)
+
+hist(sp$bottom[sp$hor=="C"],col = "blue", main = "Top depth",xlim = c(0,300),
+ xlab = "blue = C, red = BC", breaks = 20)
+hist(sp$bottom[sp$hor=="BC"],col = "red", add=T, xlim = c(0,300), breaks = 10)
+```
+
+If we include these horizons as C horizons, the statistics will change as follows: 
+
+```{r, echo=FALSE, warning=FALSE}
+sp$hor[sp$hor=="BC"] <- "C"
+n <- wt.mean.properties(data = sp, properties = c("CEC", "OC","clay"))
+n <- as.matrix(n)
+n[is.nan(n)] <- NA
+n <- n[!(is.na(n[,2]) & is.na(n[,3]) & is.na(n[,4]) & is.na(n[,5]) & is.na(n[,6]) & is.na(n[,7]) & is.na(n[,8]) & is.na(n[,9]) & is.na(n[,10])),]
+n <- as.data.frame(n)
+```
+
+```{r}
+round(stat.desc(n[,2:10],norm = T),3)
+# number of soil profiles (the difference belongs to soil profiles without 
+# data in any of the three soil properties)
+length(unique(n$id.p)) 
+length(n$id.p[complete.cases(n)]) # number of complete cases
+```
+
+There are several profiles that have not A, B or C horizons. They are removed in the next step
+
+```{r, warning=FALSE}
+t <- wt.mean.properties(data = sp, properties = c("CEC", "OC","clay"))
+t <- as.matrix(t)
+t[is.nan(t)] <- NA
+t <- as.data.frame(t)
+sp[which(sp$id.p %in% t[is.na(t$OC.A),]$id.p),] # profiles without A hz
+sp[which(sp$id.p %in% t[is.na(t$OC.B),]$id.p),] # profiles without B hz
+sp[which(sp$id.p %in% t[is.na(t$OC.C),]$id.p),] # profiles without C hz
+
+sp <- sp[sp$id.p!=433,] # no A, no C
+sp <- sp[sp$id.p!=502,] # no A
+sp <- sp[sp$id.p!=508,] # no A
+sp <- sp[sp$id.p!=539,] # no A
+sp <- sp[sp$id.p!=601,] # no A
+sp <- sp[sp$id.p!=592,] # no B
+sp <- sp[sp$id.p!=608,] # no B
+sp <- sp[sp$id.p!=609,] # no B
+sp <- sp[sp$id.p!=363,] # no C
+sp <- sp[sp$id.p!=404,] # no C
+sp <- sp[sp$id.p!=701,] # no C
+sp <- sp[sp$id.p!=749,] # no CEC at any hz.
+t <- wt.mean.properties(data = sp, properties = c("CEC", "OC","clay"))
+round(stat.desc(t[,2:10]),3)
+```
+Now, it can be seen that there are still several NAs sparsed in the variables. To replace some of them we could: 1) define constant value or 2) predict value using other soil properties as predictors.
+OC.C has 9 NAs. However, the amount of OC in C horizon is negligible. Values arround 0.15 may have low signal-to-noise ratio. For this reason replacing them for the median (which is not affected by extreme values) should not have high impact in the modelling step.
+
+```{r}
+# replace NA at OC.C with a constant value
+sp$OC[sp$hor=="C" & is.na(sp$OC)] <- median(t$OC.C, na.rm = TRUE)
+t <- wt.mean.properties(data = sp, properties = c("CEC", "OC","clay"))
+length(t$id.p[complete.cases(t)]) # number of complete cases
+```
+
+This could be the calibration data.
+```{r}
+write.csv(t[complete.cases(t),], "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.0.csv")
+############################################################################################
+```
+
+For OC at A and B horizon, let us first to analise the NA.
+```{r}
+# replace NA at OC.C with a constant value
+sp$OC[sp$hor=="C" & is.na(sp$OC)] <- median(t$OC.C, na.rm = TRUE)
+
+a <- sp$id.p[sp$hor=="A" & is.na(sp$OC) & !is.na(sp$phw)] # OC.A is NA
+b <- sp$id.p[sp$hor=="B" & is.na(sp$OC) & !is.na(sp$phw)] # OC.A is NA
+
+# profile 356 has clay and CEC values, but profiles 379, 417 and 421 have only CEC 
+sp[which(sp$id.p %in% a),-14] # profiles with OC.A = NA
+# Again, rofile 356, 379, 417 and 421 are in the list. 
+sp[which(sp$id.p %in% b),-14] # profiles with OC.A = NA
+
+```
+
+A solution may be to predict the value of OC.A at profiles *356*, *379*, *417* and *421*, and OC.B at profile *356*. It is proposed a MLR using soil properties that will not be used in SEM. This method is analogous to pedotransfer functions and are implemented below. 
+
+
+```{r}
+# creating subsets
+sp.A <- sp[sp$hor=="A",] #subset of A horizons
+sp.B <- sp[sp$hor=="B",] #subset of B horizons
+sp.C <- sp[sp$hor=="C",] #subset of C horizons
+# MLR for OC at A horizon
+lm.OC.A <- lm(OC~CEC+bottom+thick+phw+resist, sp.A) # MLR for A hz.
+summary(lm.OC.A)
+lm.OC.B <- lm(OC~CEC+bottom+thick+phw+resist, sp.B) # MLR for B hz.
+summary(lm.OC.B)
+# prediction
+sp$OC[which(sp$id.p %in% a & sp$hor=="A")] <-# sp where hz is A, OC is NA and
+  # pH is not NA is predicted with lm.OC.A
+  predict(lm.OC.A,sp[which(sp$id.p %in% a & sp$hor=="A"),])
+sp$OC[which(sp$id.p %in% 356 & sp$hor=="B")] <-# sp where hz is B, OC is NA and
+  # pH is not NA is predicted with lm.OC.B
+  predict(lm.OC.B,sp[which(sp$id.p %in% 356 & sp$hor=="B"),])
+# statistics
+t <- wt.mean.properties(data = sp, properties = c("CEC", "OC","clay"))
+t <- as.matrix(t);t[is.nan(t)] <- NA;t <- as.data.frame(t)
+round(stat.desc(t[,2:10]),3)
+dim(t[complete.cases(t),])
+```
+
+This could be the calibration data.
+```{r}
+write.csv(t[complete.cases(t),], "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.1.csv")
+############################################################################################
+```
+
+Now, OC has not NAs. The larger amount of NAs remain in clay. We predict their values using MLR, as we did before.
+
+```{r}
+# creating subsets
+sp.A <- sp[sp$hor=="A",] #subset of A horizons
+sp.B <- sp[sp$hor=="B",] #subset of B horizons
+sp.C <- sp[sp$hor=="C",] #subset of C horizons
+
+lm.clay.A <- lm(clay~CEC*OC+bottom+thick+phw+resist, sp.A) # MLR for A hz.
+summary(lm.clay.A)
+lm.clay.C <- lm(clay~CEC+bottom+thick+phw+resist, sp.C) # MLR for A hz.
+summary(lm.clay.C)
+
+a <- sp$id.p[sp$hor=="A" & is.na(sp$clay)] # clay.A is NA
+c <- sp$id.p[sp$hor=="C" & is.na(sp$clay)] # clay.C is NA
+
+# prediction
+# clay where hz is A & clay is NA is predicted with lm.clay.A
+sp$clay[which(sp$id.p %in% c(379,417,421) & sp$hor=="A")] <-
+  predict(lm.clay.A,sp[which(sp$id.p %in% c(379,417,421) & sp$hor=="A"),])
+# clay where hz is C & clay is NA is predicted with lm.clay.C
+c <- c[c(-(4:7),-13,-19)]
+sp$clay[which(sp$id.p %in% c & sp$hor=="C")] <-# sp where hz is B, OC is NA and
+  # pH is not NA is predicted with lm.OC.B
+  predict(lm.clay.C,sp[which(sp$id.p %in% c & sp$hor=="C"),])
+
+t <- wt.mean.properties(data = sp, properties = c("CEC", "OC","clay"))
+t <- as.matrix(t);t[is.nan(t)] <- NA;t <- as.data.frame(t)
+round(stat.desc(t[,2:10]),3)
+dim(t[complete.cases(t),])[1] #number of soil profiles
+
+```
+This could be the calibration data.
+```{r}
+write.csv(t[complete.cases(t),], "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.2.csv")
+############################################################################################
+```
+
+Finally, we predict CEC at C (6 NA).  
+
+```{r}
+# creating subsets
+sp.C <- sp[sp$hor=="C",] #subset of C horizons
+
+lm.CEC.C <- lm(CEC~clay+bottom+thick+phw, sp.C) # MLR for C hz. (resistance is not available)
+summary(lm.CEC.C)
+
+c <- sp$id.p[sp$hor=="C" & is.na(sp$CEC)] # clay.C is NA
+
+# prediction
+# CEC where hz is A & CEC is NA is predicted with lm.CEC.A
+sp$CEC[which(sp$id.p %in% c & sp$hor=="C")] <-
+  predict(lm.CEC.C,sp[which(sp$id.p %in% c & sp$hor=="C"),])
+
+t <- wt.mean.properties(data = sp, properties = c("CEC", "OC","clay"))
+t <- as.matrix(t);t[is.nan(t)] <- NA;t <- as.data.frame(t)
+round(stat.desc(t[,2:10]),3)
+dim(t[complete.cases(t),])[1] #number of soil profiles
+
+```
+This could be the calibration data.
+```{r}
+write.csv(t[complete.cases(t),], "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.3.csv")
+############################################################################################
+```
+
+
+
