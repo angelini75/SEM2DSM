@@ -18,7 +18,7 @@ library(utils)
 
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration")
+setwd("~/big/SEM_2nd_paper/")
 
 ##### Dictionary of elements in this script ######
 # d = calibration dataset. It comes from replacement_of_NAs.Rm (different versions: 5.0 to 5.3)
@@ -55,7 +55,7 @@ STt <- t(stat.desc(d,norm = TRUE)[c(9,13),])
 nor <- function(x, st){
   y <- x
   for(i in seq_along(names(x))){
-   y[,i] <- (x[,i] - st[i,1]) / st[i,2]
+    y[,i] <- (x[,i] - st[i,1]) / st[i,2]
   }
   y
 }
@@ -66,41 +66,41 @@ D[,1] <- d[,1]
 round(stat.desc(D,norm = TRUE),0)
 
 #### Begining SEM ####
- # first, a model without latent variables (no measurement error)
+# first, a model without latent variables (no measurement error)
 # names of variables
 name(D)
-my.model <- '
-clay.C ~ a01*river + a02*X + a03*Y + a04*vdchn + a05*dem 
-clay.A ~ b01*clay.C + 
-         a07*evisd + a08*lstm + a09*ndwi.b 
-clay.B ~ b02*clay.A + b03*clay.C + 
-         a10*vdchn + a11*twi + a12*river + a13*Y + a14*ndwi.b
-
-OC.A ~ b04*clay.A +
-       a15*evisd + a16*lstm + a17*ndwi.b  
-OC.B ~ b05*OC.A + b06*clay.B + 
-       a18*evisd + a19*lstm + a20*ndwi.a + a21*vdchn
-
-CEC.A ~ b07*OC.A + b08*clay.A 
-CEC.B ~ b09*OC.B + b10*clay.B
-CEC.C ~ b11*clay.C
-
-CEC.A ~~ CEC.B + CEC.C
-CEC.C ~~ CEC.B
-OC.C ~ OC.B + clay.C
-
-#modifications in order of relevances
-clay.C ~~  CEC.C # 1st suggestion. CFI 0.933 and RMSEA 0.068 means that
-                 # the model is moderately good
-clay.B  ~    dem # 2nd suggestion, which is reasonable 
-clay.B ~~   OC.B #
-clay.B ~~  CEC.B
-'
-my.fit.ML <- sem(model = my.model,data = D, meanstructure = FALSE, fixed.x = T, estimator = "ML")
-summary(my.fit.ML, fit.measures=TRUE, rsquare = T)
-mod <- modindices(my.fit.ML)
-mod[mod$mi>5,] # suggestion where mi is higher than 10 (most significant mi)
-
+# my.model <- '
+# clay.C ~ a01*river + a02*X + a03*Y + a04*vdchn + a05*dem 
+# clay.A ~ b01*clay.C + 
+#          a07*evisd + a08*lstm + a09*ndwi.b 
+# clay.B ~ b02*clay.A + b03*clay.C + 
+#          a10*vdchn + a11*twi + a12*river + a13*Y + a14*ndwi.b
+# 
+# OC.A ~ b04*clay.A +
+#        a15*evisd + a16*lstm + a17*ndwi.b  
+# OC.B ~ b05*OC.A + b06*clay.B + 
+#        a18*evisd + a19*lstm + a20*ndwi.a + a21*vdchn
+# 
+# CEC.A ~ b07*OC.A + b08*clay.A 
+# CEC.B ~ b09*OC.B + b10*clay.B
+# CEC.C ~ b11*clay.C
+# 
+# CEC.A ~~ CEC.B + CEC.C
+# CEC.C ~~ CEC.B
+# OC.C ~ OC.B + clay.C
+# 
+# #modifications in order of relevances
+# clay.C ~~  CEC.C # 1st suggestion. CFI 0.933 and RMSEA 0.068 means that
+#                  # the model is moderately good
+# clay.B  ~    dem # 2nd suggestion, which is reasonable 
+# clay.B ~~   OC.B #
+# clay.B ~~  CEC.B
+# '
+# my.fit.ML <- sem(model = my.model,data = D, meanstructure = FALSE, fixed.x = T, estimator = "ML")
+# summary(my.fit.ML, fit.measures=TRUE, rsquare = T)
+# mod <- modindices(my.fit.ML)
+# mod[mod$mi>5,] # suggestion where mi is higher than 10 (most significant mi)
+# as.data.frame(lavaan::fitMeasures(my.fit.ML,fit.measures = "all"))
 
 # Second, a model with measurement error
 
@@ -119,14 +119,14 @@ clay.Cr =~ 1*clay.C
 # Structural model
 clay.Cr ~ dem + river + vdchn + X + Y 
 clay.Ar ~ clay.Cr + 
-         evisd + lstm + ndwi.b 
+evisd + lstm + ndwi.b 
 clay.Br ~ clay.Ar + clay.Cr + 
-         vdchn + twi + river + Y + ndwi.b
+vdchn + twi + river + Y + ndwi.b
 
 OC.Ar ~ clay.Ar +
-       evisd + lstm + ndwi.b  
+evisd + lstm + ndwi.b  
 OC.Br ~ OC.Ar + clay.Br + 
-       evisd + lstm + ndwi.a + vdchn
+evisd + lstm + ndwi.a + vdchn
 
 CEC.Ar ~ OC.Ar + clay.Ar 
 CEC.Br ~ OC.Br + clay.Br
@@ -148,10 +148,12 @@ clay.B ~~ 0.1 * clay.B
 clay.C ~~ 0.1 * clay.C
 
 # suggestions
-CEC.Cr ~~ clay.Cr # CFI .939 RMSEA .063
+#CEC.Cr ~~ clay.Cr # CFI .939 RMSEA .063 GFI .940 SMRM .039 
 '
 my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, fixed.x = T, estimator = "ML")
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
+fitMeasures(my.fit.lv.ML,fit.measures = "gfi")
+fitMeasures(my.fit.lv.ML,fit.measures = "srmr")
 mod <- modindices(my.fit.lv.ML,sort. = T)
 mod[mod$mi>10,] # suggestion where mi is higher than 10 (most significant mi)
 
@@ -161,53 +163,53 @@ mod[mod$mi>10,] # suggestion where mi is higher than 10 (most significant mi)
 ##### cross-validation #####
 
 
-  #### Model ####
-  my.model.lv <- '
-  # Measurement model
-  CEC.Ar =~ 1*CEC.A
-  CEC.Br =~ 1*CEC.B
-  CEC.Cr =~ 1*CEC.C
-  OC.Ar =~ 1*OC.A
-  OC.Br =~ 1*OC.B
-  OC.Cr =~ 1*OC.C
-  clay.Ar =~ 1*clay.A
-  clay.Br =~ 1*clay.B
-  clay.Cr =~ 1*clay.C
-  
-  # Structural model
-  clay.Cr ~ river + X + Y + vdchn + dem 
-  clay.Ar ~ clay.Cr + 
-  evisd + lstm + ndwi.b 
-  clay.Br ~ clay.Ar + clay.Cr + 
-  vdchn + twi + river + Y + ndwi.b
-  
-  OC.Ar ~ clay.Ar +
-  evisd + lstm + ndwi.b  
-  OC.Br ~ OC.Ar + clay.Br + 
-  evisd + lstm + ndwi.a + vdchn
-  
-  CEC.Ar ~ OC.Ar + clay.Ar 
-  CEC.Br ~ OC.Br + clay.Br
-  CEC.Cr ~ clay.Cr
-  
-  CEC.Ar ~~ CEC.Br + CEC.Cr
-  CEC.Cr ~~ CEC.Br
-  OC.Cr ~ OC.Br + clay.Cr
-  
-  # Measurement error
-  CEC.A ~~ 0.1 * CEC.A
-  CEC.B ~~ 0.1 * CEC.B
-  CEC.C ~~ 0.1 * CEC.C
-  OC.A ~~ 0.1 * OC.A
-  OC.B ~~ 0.1 * OC.B
-  OC.C ~~ 0.1 * OC.C
-  clay.A ~~ 0.1 * clay.A
-  clay.B ~~ 0.1 * clay.B
-  clay.C ~~ 0.1 * clay.C
-  
-  # suggestions
-  CEC.Cr ~~ clay.Cr # CFI .939 RMSEA .063
-  '
+#### Model ####
+my.model.lv <- '
+# Measurement model
+CEC.Ar =~ 1*CEC.A
+CEC.Br =~ 1*CEC.B
+CEC.Cr =~ 1*CEC.C
+OC.Ar =~ 1*OC.A
+OC.Br =~ 1*OC.B
+OC.Cr =~ 1*OC.C
+clay.Ar =~ 1*clay.A
+clay.Br =~ 1*clay.B
+clay.Cr =~ 1*clay.C
+
+# Structural model
+clay.Cr ~ river + X + Y + vdchn + dem 
+clay.Ar ~ clay.Cr + 
+evisd + lstm + ndwi.b 
+clay.Br ~ clay.Ar + clay.Cr + 
+vdchn + twi + river + Y + ndwi.b
+
+OC.Ar ~ clay.Ar +
+evisd + ndwi.b + lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi  
+OC.Br ~ OC.Ar + clay.Br + 
+evisd + lstm + ndwi.a + vdchn
+
+CEC.Ar ~ OC.Ar + clay.Ar 
+CEC.Br ~ OC.Br + clay.Br
+CEC.Cr ~ clay.Cr
+
+#   CEC.Ar ~~ CEC.Br + CEC.Cr
+#   CEC.Cr ~~ CEC.Br
+OC.Cr ~ OC.Br + clay.Cr
+
+# Measurement error
+#   CEC.A ~~ 0.1 * CEC.A
+#   CEC.B ~~ 0.1 * CEC.B
+#   CEC.C ~~ 0.1 * CEC.C
+#   OC.A ~~ 0.1 * OC.A
+#   OC.B ~~ 0.1 * OC.B
+#   OC.C ~~ 0.1 * OC.C
+#   clay.A ~~ 0.1 * clay.A
+#   clay.B ~~ 0.1 * clay.B
+#   clay.C ~~ 0.1 * clay.C
+#   
+# suggestions
+#  CEC.Cr ~~ clay.Cr # CFI .939 RMSEA .063
+'
 pre <- cbind(D[1,],
              matrix(nrow=1,ncol= 9, data = NA,dimnames = list(NULL,paste0(names(D)[2:10],".p"))))
 a <- pre[-(1:nrow(pre)),c(2:10)] #observed
@@ -222,7 +224,7 @@ for(i in seq_along(D[,1])){
   cal <- D[-i,]
   pre[i,] <- D[ i,]
   
- #### Fiting ####
+  #### Fiting ####
   my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, fixed.x = T, estimator = "ML")
   #pre <- pre[,c("id.p",colnames(inspect(my.fit.lv.ML, "est")$theta),names(pre)[21:29])]
   
@@ -243,9 +245,9 @@ for(i in seq_along(D[,1])){
   ## theta = ((observed-predicted)^2)/error variance=(standard error^2)
   a[i,] <- pre[i,c(2:10)] # observed values
   b[i,] <- pre[i,c(28:36)] # predicted values
-  v[i,] <- diag(IB%*%V%*%t(IB)+Th) # error variance
+  v <- diag(IB%*%V%*%t(IB)+Th) # error variance (now is not diagonal)
   resids[i,] <- a[i,] - b[i,] # residuals
-  theta[i,] <- (resids[i,]^2)/v[i,] # theta 
+  theta[i,] <- (resids[i,]^2)/v # theta 
   
   ##### Error variance #######
   Var[i,] <- diag(IB %*% V %*% t(IB))
@@ -274,11 +276,11 @@ Res <- cbind(pre[,1], unnor(pre[,2:10], STt[2:10,]), unnor(pre[,28:36], STt[2:10
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
 
 for (i in 2:10) {
-  lim = c(min(Res[,i]), max(Res[,i + 9]))
+  lim = c(0, max(c(Res[,i],Res[,i+9])))
   plot(Res[,i+9] ~ Res[,i], main = paste(names(Res)[i]), xlab = "measured",
        ylab = "predicted", col = "dark red", xlim = lim, ylim = lim)
   abline(0,1)
-  abline(lm(Res[,i+9] ~ pre[,i]), col = "blue")
+  abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
 }
 
 report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA, mean_theta = NA, median_th = NA)
@@ -304,22 +306,28 @@ report$R2 <- 1 - (as.numeric(report$SS) / STt)
 report
 
 
+par(mfrow = c(1, 1), pty="s",mai=rep(0.7,4))
 
-
-OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),as.matrix(Res[,c(7,16)]))
-OC <- as.data.frame(OC)
-plot(OC[,2]~OC[,1])
-abline(lm(OC[,2]~OC[,1]),col = "red")
 
 CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),as.matrix(Res[,c(4,13)]))
 CEC <- as.data.frame(CEC)
 plot(CEC[,2]~CEC[,1])
 abline(lm(CEC[,2]~CEC[,1]),col = "red")
 
+OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),as.matrix(Res[,c(7,16)]))
+OC <- as.data.frame(OC)
+plot(OC[,2]~OC[,1])
+abline(lm(OC[,2]~OC[,1]),col = "red")
+
+
 clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),as.matrix(Res[,c(10,19)]))
 clay <- as.data.frame(clay)
 plot(clay[,2]~clay[,1])
 abline(lm(clay[,2]~clay[,1]),col = "red")
+
+
+plot(d$CEC.C~d$clay.C)
+
 
 
 
