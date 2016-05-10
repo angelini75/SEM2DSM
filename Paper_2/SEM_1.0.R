@@ -147,6 +147,7 @@ clay.A ~~ 0.1 * clay.A
 clay.B ~~ 0.1 * clay.B
 clay.C ~~ 0.1 * clay.C
 
+
 # suggestions
 #CEC.Cr ~~ clay.Cr # CFI .939 RMSEA .063 GFI .940 SMRM .039 
 '
