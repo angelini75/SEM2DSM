@@ -102,7 +102,7 @@ name(D)
 # mod[mod$mi>5,] # suggestion where mi is higher than 10 (most significant mi)
 # as.data.frame(lavaan::fitMeasures(my.fit.ML,fit.measures = "all"))
 
-# Second, a model with measurement error
+###### Second, a model with measurement error
 
 my.model.lv <- '
 # Measurement model
@@ -119,14 +119,14 @@ clay.Cr =~ 1*clay.C
 # Structural model
 clay.Cr ~ dem + river + vdchn + X + Y 
 clay.Ar ~ clay.Cr + 
-evisd + lstm + ndwi.b 
+          evisd + lstm + ndwi.b 
 clay.Br ~ clay.Ar + clay.Cr + 
-vdchn + twi + river + Y + ndwi.b
+          vdchn + twi + river + Y + ndwi.b
 
 OC.Ar ~ clay.Ar +
-evisd + lstm + ndwi.b  
+        evisd + lstm + ndwi.b  
 OC.Br ~ OC.Ar + clay.Br + 
-evisd + lstm + ndwi.a + vdchn
+        evisd + lstm + ndwi.a + vdchn
 
 CEC.Ar ~ OC.Ar + clay.Ar 
 CEC.Br ~ OC.Br + clay.Br
