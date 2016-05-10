@@ -33,7 +33,7 @@ setwd("~/big/SEM_2nd_paper/")
 
 d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
 
-# Descriptive statistics and normality test.
+# Descriptive statistics and normality test. ####
 round(stat.desc(d,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
 # But some covariates need to be transformed. First, we store original mean and sd in ST
