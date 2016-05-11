@@ -132,8 +132,6 @@ CEC.Ar ~ OC.Ar + clay.Ar
 CEC.Br ~ OC.Br + clay.Br
 CEC.Cr ~ clay.Cr
 
-CEC.Ar ~~ CEC.Br + CEC.Cr
-CEC.Cr ~~ CEC.Br
 OC.Cr ~ OC.Br + clay.Cr
 
 # Measurement error
@@ -147,7 +145,9 @@ clay.A ~~ 0.1 * clay.A
 clay.B ~~ 0.1 * clay.B
 clay.C ~~ 0.1 * clay.C
 
-
+CEC.Ar ~~ CEC.Br + CEC.Cr
+CEC.Cr ~~ CEC.Br
+OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
 # suggestions
 #CEC.Cr ~~ clay.Cr # CFI .939 RMSEA .063 GFI .940 SMRM .039 
 '
