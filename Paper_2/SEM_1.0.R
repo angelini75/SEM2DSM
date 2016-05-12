@@ -62,7 +62,7 @@ std <- function(x, st){
   }
   y
 }
-D <- nor(d,STt)
+D <- std(d,STt)
 D[,1] <- d[,1] 
 # statistics
 round(stat.desc(D,norm = TRUE),0)
@@ -161,6 +161,7 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 # lavaan suggestions
 #------------------#
 CEC.Cr ~~ clay.Cr 
+clay.Br  ~     dem
 #------------------#
 '
 # Model calibration ####
@@ -308,12 +309,12 @@ unstd<- function(x, st){
   y
 }
 
-# 
+# Accuracy measures ####
+# Residuals #
 Res <- cbind(pre[,1], unstd(pre[,2:10], STt[2:10,]), unstd(pre[,28:36],
                                                            STt[2:10,]))
-
+# plot residuals
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
-
 for (i in 2:10) {
   lim = c(0, max(c(Res[,i],Res[,i+9])))
   plot(Res[,i+9] ~ Res[,i], main = paste(names(Res)[i]), xlab = "measured",
@@ -322,15 +323,16 @@ for (i in 2:10) {
   abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
 }
 
+# create report
 report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
                      mean_theta = NA, median_th = NA)
 for (i in 2:10) {
-  ######################## ME <- mean error 
+  # ME <- mean error 
   ME  <-  mean(Res[,i] - Res[,i + 9])
-  ############################################ RMSE (root mean squared error)
+  # RMSE (root mean squared error)
   RMSE <- sqrt(mean((Res[,i] - Res[,i + 9]) ^ 2))
   MSE <- mean((Res[,i] - Res[,i + 9]) ^ 2)
-  ############################################ SS (Sum of squares)
+  # SS (Sum of squares)
   SS <- sum((Res[,i] - Res[,i + 9]) ^ 2)
   # fill report table
   report[i-1,1:4] <- c(names(pre)[i], ME, RMSE, SS)
@@ -342,7 +344,13 @@ for(i in 1:9){
 }
 report
 #d.stat <- read.csv("summary.calibdata.csv")
-report$R2 <- 1 - (as.numeric(report$SS) / STt)
+STt <- as.data.frame(STt)
+STt$SS <- NA 
+for(i in seq_along(names(d))){
+  STt$SS[i] <- sum(( d[i] - STt$mean[i])^2)
+}
+
+report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt$SS[2:10]))
 report
 
 
@@ -351,30 +359,35 @@ par(mfrow = c(1, 1), pty="s",mai=rep(0.7,4))
 
 CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
              as.matrix(Res[,c(4,13)]))
+colnames(CEC) <- c("CECo","CECp")
+rownames(CEC) <- 1:length(rownames(CEC))
 CEC <- as.data.frame(CEC)
+r2 <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
+                 sum((mean(CEC$CECo)-CEC$CECo)^2))
 plot(CEC[,2]~CEC[,1])
 abline(lm(CEC[,2]~CEC[,1]),col = "red")
 
 OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
             as.matrix(Res[,c(7,16)]))
+colnames(OC) <- c("OCo","OCp")
+rownames(OC) <- 1:length(rownames(OC))
 OC <- as.data.frame(OC)
+r2 <- 1 - (sum((OC$OCo - OC$OCp)^2)/
+             sum((mean(OC$OCo)-OC$OCo)^2))
 plot(OC[,2]~OC[,1])
 abline(lm(OC[,2]~OC[,1]),col = "red")
 
 
 clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
               as.matrix(Res[,c(10,19)]))
+
+colnames(clay) <- c("clayo","clayp")
+rownames(clay) <- 1:length(rownames(clay))
 clay <- as.data.frame(clay)
+r2 <- 1 - (sum((clay$clayo - clay$clayp)^2)/
+             sum((mean(clay$clayo)-clay$clayo)^2))
 plot(clay[,2]~clay[,1])
 abline(lm(clay[,2]~clay[,1]),col = "red")
-
-
-plot(d$CEC.C~d$clay.C)
-
-
-
-
-
 
 
 
