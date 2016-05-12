@@ -1,4 +1,4 @@
-############### #### ### ## # - SEM for second paper - # ## ### #### ###############
+############### #### ### ## # - SEM for second paper - # ## ### #### ###########
 # Purpose        : Load, standardise and create a SE model
 # Maintainer     : Marcos Angelini  (marcos.angelini@wur.nl); 
 # Contributions  : Gerard?
@@ -12,6 +12,7 @@
 # other attached packages:
 #   [1] questionr_0.5
 
+# Libraries ####
 library(lavaan)
 library(pastecs)
 library(utils)
@@ -20,8 +21,9 @@ rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 setwd("~/big/SEM_2nd_paper/")
 
-##### Dictionary of elements in this script ######
-# d = calibration dataset. It comes from replacement_of_NAs.Rm (different versions: 5.0 to 5.3)
+# Dictionary of elements in this script ######
+# d = calibration dataset. It comes from replacement_of_NAs.Rm 
+#     (different versions: 5.0 to 5.3)
 # ST = original mean and standard deviation of all variables
 # STt = mean and standard deviation of transformed data
 # nor = normalisation funcion (x-mean)/sd
@@ -29,14 +31,15 @@ setwd("~/big/SEM_2nd_paper/")
 # my.model = lavaan syntax
 # my.fit = model fitted
 # mod = modification indices (for respecification)
-##################################################
+#------------------------------------------------#
 
 d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
 
 # Descriptive statistics and normality test. ####
 round(stat.desc(d,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
-# But some covariates need to be transformed. First, we store original mean and sd in ST
+# But some covariates need to be transformed. First, we store original mean and 
+# sd in ST
 ST <- t(stat.desc(d,norm = TRUE)[c(9,13),])
 
 # Based on normtest.W the following covariates need to be transformed
@@ -51,24 +54,23 @@ round(stat.desc(d,norm = TRUE),3)
 # New mean and sd
 STt <- t(stat.desc(d,norm = TRUE)[c(9,13),])
 
-# normalisation
-nor <- function(x, st){
+# standardised data set ####
+std <- function(x, st){
   y <- x
   for(i in seq_along(names(x))){
     y[,i] <- (x[,i] - st[i,1]) / st[i,2]
   }
   y
 }
-# standardised data set
 D <- nor(d,STt)
 D[,1] <- d[,1] 
 # statistics
 round(stat.desc(D,norm = TRUE),0)
 
-#### Begining SEM ####
-# first, a model without latent variables (no measurement error)
-# names of variables
-name(D)
+# SEM ####
+# Model without latent variables (CFA) ####
+## disabled
+
 # my.model <- '
 # clay.C ~ a01*river + a02*X + a03*Y + a04*vdchn + a05*dem 
 # clay.A ~ b01*clay.C + 
@@ -96,16 +98,19 @@ name(D)
 # clay.B ~~   OC.B #
 # clay.B ~~  CEC.B
 # '
-# my.fit.ML <- sem(model = my.model,data = D, meanstructure = FALSE, fixed.x = T, estimator = "ML")
+# my.fit.ML <- sem(model = my.model,data = D, meanstructure = FALSE,
+# fixed.x = T, estimator = "ML")
 # summary(my.fit.ML, fit.measures=TRUE, rsquare = T)
 # mod <- modindices(my.fit.ML)
 # mod[mod$mi>5,] # suggestion where mi is higher than 10 (most significant mi)
 # as.data.frame(lavaan::fitMeasures(my.fit.ML,fit.measures = "all"))
 
-###### Second, a model with measurement error
-
+# Model with latent variables ####
+## Model (re)specification
 my.model.lv <- '
-# Measurement model
+
+# Measurement model (lamda and epsilon)
+#--------------------#
 CEC.Ar =~ 1*CEC.A
 CEC.Br =~ 1*CEC.B
 CEC.Cr =~ 1*CEC.C
@@ -115,8 +120,20 @@ OC.Cr =~ 1*OC.C
 clay.Ar =~ 1*clay.A
 clay.Br =~ 1*clay.B
 clay.Cr =~ 1*clay.C
+## Measurement error
+CEC.A ~~ 0.1 * CEC.A
+CEC.B ~~ 0.1 * CEC.B
+CEC.C ~~ 0.1 * CEC.C
+OC.A ~~ 0.1 * OC.A
+OC.B ~~ 0.1 * OC.B
+OC.C ~~ 0.1 * OC.C
+clay.A ~~ 0.1 * clay.A
+clay.B ~~ 0.1 * clay.B
+clay.C ~~ 0.1 * clay.C
+#--------------------#
 
-# Structural model
+# Structural model (gamma and betta matrices)
+#--------------------#
 clay.Cr ~ dem + river + vdchn + X + Y 
 clay.Ar ~ clay.Cr + 
           evisd + lstm + ndwi.b 
@@ -127,46 +144,48 @@ OC.Ar ~ clay.Ar +
         evisd + lstm + ndwi.b  
 OC.Br ~ OC.Ar + clay.Br + 
         evisd + lstm + ndwi.a + vdchn
+OC.Cr ~ OC.Br 
 
 CEC.Ar ~ OC.Ar + clay.Ar 
 CEC.Br ~ OC.Br + clay.Br
 CEC.Cr ~ clay.Cr
+#------------------#
 
-OC.Cr ~ OC.Br + clay.Cr
-
-# Measurement error
-CEC.A ~~ 0.1 * CEC.A
-CEC.B ~~ 0.1 * CEC.B
-CEC.C ~~ 0.1 * CEC.C
-OC.A ~~ 0.1 * OC.A
-OC.B ~~ 0.1 * OC.B
-OC.C ~~ 0.1 * OC.C
-clay.A ~~ 0.1 * clay.A
-clay.B ~~ 0.1 * clay.B
-clay.C ~~ 0.1 * clay.C
-
+# Model error covariance (Psi)
+#------------------#
 CEC.Ar ~~ CEC.Br + CEC.Cr
 CEC.Cr ~~ CEC.Br
 OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
-# suggestions
-#CEC.Cr ~~ clay.Cr # CFI .939 RMSEA .063 GFI .940 SMRM .039 
+#------------------#
+
+# lavaan suggestions
+#------------------#
+CEC.Cr ~~ clay.Cr 
+#------------------#
 '
-my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, fixed.x = T, estimator = "ML")
+# Model calibration ####
+my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
+                    fixed.x = T, estimator = "ML")
+
+# Model evaluation ####
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
+
+# Model respecification: modification indices ####
 fitMeasures(my.fit.lv.ML,fit.measures = "gfi")
 fitMeasures(my.fit.lv.ML,fit.measures = "srmr")
 mod <- modindices(my.fit.lv.ML,sort. = T)
 mod[mod$mi>10,] # suggestion where mi is higher than 10 (most significant mi)
 
+
 # reorder variables in D as they appear in fit model.
 #D <- D[,c("id.p",colnames(inspect(my.fit.lv.ML, "est")$theta))]
 
-##### cross-validation #####
-
-
-#### Model ####
+# Cross-validation #####
+# same model than before
 my.model.lv <- '
-# Measurement model
+
+# Measurement model (lamda and epsilon)
+#--------------------#
 CEC.Ar =~ 1*CEC.A
 CEC.Br =~ 1*CEC.B
 CEC.Cr =~ 1*CEC.C
@@ -176,94 +195,112 @@ OC.Cr =~ 1*OC.C
 clay.Ar =~ 1*clay.A
 clay.Br =~ 1*clay.B
 clay.Cr =~ 1*clay.C
+## Measurement error
+CEC.A ~~ 0.1 * CEC.A
+CEC.B ~~ 0.1 * CEC.B
+CEC.C ~~ 0.1 * CEC.C
+OC.A ~~ 0.1 * OC.A
+OC.B ~~ 0.1 * OC.B
+OC.C ~~ 0.1 * OC.C
+clay.A ~~ 0.1 * clay.A
+clay.B ~~ 0.1 * clay.B
+clay.C ~~ 0.1 * clay.C
+#--------------------#
 
-# Structural model
-clay.Cr ~ river + X + Y + vdchn + dem 
+# Structural model (gamma and betta matrices)
+#--------------------#
+clay.Cr ~ dem + river + vdchn + X + Y 
 clay.Ar ~ clay.Cr + 
 evisd + lstm + ndwi.b 
 clay.Br ~ clay.Ar + clay.Cr + 
 vdchn + twi + river + Y + ndwi.b
 
 OC.Ar ~ clay.Ar +
-evisd + ndwi.b + lstm +  lstsd + evim + evisd + dem + wdist + mrvbf + vdchn + twi  
+evisd + lstm + ndwi.b  
 OC.Br ~ OC.Ar + clay.Br + 
 evisd + lstm + ndwi.a + vdchn
+OC.Cr ~ OC.Br 
 
 CEC.Ar ~ OC.Ar + clay.Ar 
 CEC.Br ~ OC.Br + clay.Br
 CEC.Cr ~ clay.Cr
+#------------------#
 
-#   CEC.Ar ~~ CEC.Br + CEC.Cr
-#   CEC.Cr ~~ CEC.Br
-OC.Cr ~ OC.Br + clay.Cr
+# Model error covariance (Psi)
+#------------------#
+CEC.Ar ~~ CEC.Br + CEC.Cr
+CEC.Cr ~~ CEC.Br
+OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
+#------------------#
 
-# Measurement error
-#   CEC.A ~~ 0.1 * CEC.A
-#   CEC.B ~~ 0.1 * CEC.B
-#   CEC.C ~~ 0.1 * CEC.C
-#   OC.A ~~ 0.1 * OC.A
-#   OC.B ~~ 0.1 * OC.B
-#   OC.C ~~ 0.1 * OC.C
-#   clay.A ~~ 0.1 * clay.A
-#   clay.B ~~ 0.1 * clay.B
-#   clay.C ~~ 0.1 * clay.C
-#   
-# suggestions
-#  CEC.Cr ~~ clay.Cr # CFI .939 RMSEA .063
+# lavaan suggestions
+#------------------#
+#CEC.Cr ~~ clay.Cr 
+#------------------#
 '
-pre <- cbind(D[1,],
-             matrix(nrow=1,ncol= 9, data = NA,dimnames = list(NULL,paste0(names(D)[2:10],".p"))))
+# Element definition
+pre <- cbind(D[1,], matrix(nrow=1,ncol= 9, data = NA,
+                           dimnames = list(NULL,paste0(names(D)[2:10],".p"))))
+
 a <- pre[-(1:nrow(pre)),c(2:10)] #observed
 b <- pre[-(1:nrow(pre)),c(2:10)] #predicted
 v <- pre[-(1:nrow(pre)),c(2:10)] #variance(s)
 resids <- pre[-(1:nrow(pre)),c(2:10)] #residuals
-theta <- pre[-(1:nrow(pre)),c(2:10)]
-Var <- pre[-(1:nrow(pre)),c(2:10)]
+theta <- pre[-(1:nrow(pre)),c(2:10)] # for mean and median
+Var <- pre[-(1:nrow(pre)),c(2:10)] # model variance (constant)
 pb = txtProgressBar(min = 0, max = length(d[,1]), initial = 0, style = 3)
 
+# Loop: cal is calibration data, pre is prediction place
 for(i in seq_along(D[,1])){ 
   cal <- D[-i,]
   pre[i,] <- D[ i,]
   
-  #### Fiting ####
-  my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, fixed.x = T, estimator = "ML")
-  #pre <- pre[,c("id.p",colnames(inspect(my.fit.lv.ML, "est")$theta),names(pre)[21:29])]
+  # Fiting #
+  my.fit.lv.ML <- sem(model = my.model.lv,data = cal, fixed.x = T,
+                      estimator = "ML")
+  #pre <- pre[,c("id.p",colnames(inspect(my.fit.lv.ML, "est")$theta),
+  #                              names(pre)[21:29])]
   
-  #### Prediction @ i ####
-  B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] # matrix of coeff. latent state variables
-  I <- diag(nrow = 9, ncol = 9) # Identity matrix
-  A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19] # matrix of coeff of external drivers
-  V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] # matrix of predicted error variance
-  Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] # matrix of measurement error
+  # Matrix dedinition (Section 3.3 2nd paper and Fig. 5) #
+  # Matrix of Beta coefficients
+  B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
+  # Identity matrix (Kappa coefficients)
+  I <- diag(nrow = 9, ncol = 9)
+  # Matrix of Gamma coefficients
+  A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19]
+  # Matrix of Psi coefficients (model error variance-covariance)
+  V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] 
+  # Matrix of measurement error (Epsylon)
+  Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] 
   IB <- solve(I - B)
-  ################# Running Prediction ###########################
-  # (IB%*%A%*%p) product of matrices per pixel (equation 4 paper)
-  p = as.vector(as.matrix(pre[i,colnames(A)])) #values of covariates ordered respecting A sequence
-  p = matrix(p, nrow = 10, ncol = 1)
-  pre[i,21:29] = t(IB %*% A %*% p) # key equation
+  # Running Prediction @ i location #
+  # p is a matrix with the 10 external drivers
+  p = as.vector(as.matrix(pre[i,colnames(A)])) # values of covariates ordered
+  p = matrix(p, nrow = 10, ncol = 1)           # by lavaan sequence
+  # prediction 
+  pre[i,21:29] = t(IB %*% A %*% p) # key equation 
   # calculate standarised squared standard error
   ## theta is standarised squared standard error
   ## theta = ((observed-predicted)^2)/error variance=(standard error^2)
   a[i,] <- pre[i,c(2:10)] # observed values
   b[i,] <- pre[i,c(28:36)] # predicted values
-  v <- diag(IB%*%V%*%t(IB)+Th) # error variance (now is not diagonal)
+  v <- diag(IB%*%V%*%t(IB)+Th) # error variance (it is not diagonal!)
   resids[i,] <- a[i,] - b[i,] # residuals
   theta[i,] <- (resids[i,]^2)/v # theta 
   
-  ##### Error variance #######
+  # Error variance #
   Var[i,] <- diag(IB %*% V %*% t(IB))
   
   #bar time
   setTxtProgressBar(pb, i)
 }
 
+# Model variance
 summary(Var)
 Var <- apply(Var, MARGIN = 2, FUN = mean)
-apply(theta, MARGIN = 2,FUN = mean)
-apply(theta, MARGIN = 2,FUN = median)
 
 # function to unstandardise the data
-unnor<- function(x, st){
+unstd<- function(x, st){
   y <- x
   for(i in seq_along(names(x))){
     y[,i] <- (x[,i] * st[i,2]) + st[i,1]
@@ -272,7 +309,8 @@ unnor<- function(x, st){
 }
 
 # 
-Res <- cbind(pre[,1], unnor(pre[,2:10], STt[2:10,]), unnor(pre[,28:36], STt[2:10,]))
+Res <- cbind(pre[,1], unstd(pre[,2:10], STt[2:10,]), unstd(pre[,28:36],
+                                                           STt[2:10,]))
 
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
 
@@ -284,7 +322,8 @@ for (i in 2:10) {
   abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
 }
 
-report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA, mean_theta = NA, median_th = NA)
+report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
+                     mean_theta = NA, median_th = NA)
 for (i in 2:10) {
   ######################## ME <- mean error 
   ME  <-  mean(Res[,i] - Res[,i + 9])
@@ -310,18 +349,21 @@ report
 par(mfrow = c(1, 1), pty="s",mai=rep(0.7,4))
 
 
-CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),as.matrix(Res[,c(4,13)]))
+CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
+             as.matrix(Res[,c(4,13)]))
 CEC <- as.data.frame(CEC)
 plot(CEC[,2]~CEC[,1])
 abline(lm(CEC[,2]~CEC[,1]),col = "red")
 
-OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),as.matrix(Res[,c(7,16)]))
+OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
+            as.matrix(Res[,c(7,16)]))
 OC <- as.data.frame(OC)
 plot(OC[,2]~OC[,1])
 abline(lm(OC[,2]~OC[,1]),col = "red")
 
 
-clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),as.matrix(Res[,c(10,19)]))
+clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
+              as.matrix(Res[,c(10,19)]))
 clay <- as.data.frame(clay)
 plot(clay[,2]~clay[,1])
 abline(lm(clay[,2]~clay[,1]),col = "red")
