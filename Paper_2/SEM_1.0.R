@@ -169,7 +169,7 @@ clay.Ar  ~ clay.Br
 '
 # Model calibration ####
 my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
-                    fixed.x = T, estimator = "ML")
+                    fixed.x = T, estimator = "ML", se="bootstrap")
 
 # Model evaluation ####
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
@@ -415,6 +415,19 @@ report2$r2[3] <- 1 - (as.numeric(report$SS[3]) / sum((mean(z[,3])-z[,3])^2))
 report2$r2[5] <- 1 - (as.numeric(report$SS[5]) / sum((mean(z[,5])-z[,5])^2))
 
 report2 <- report2[c(-4,-2),]
+
+# Covariation assessment ####
+
+unstd(x = t(B),st = STt[2:10,2])
+apply(d[,2:10],2,mean)%*%t(apply(d[,2:10],2,mean))
+round(cor(d[,2:10])-B,3)
+
+
+
+
+
+
+
 
 
 
