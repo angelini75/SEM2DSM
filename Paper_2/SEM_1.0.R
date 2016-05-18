@@ -279,7 +279,7 @@ for(i in seq_along(D[,1])){
   p = as.vector(as.matrix(pre[i,colnames(A)])) # values of covariates ordered
   p = matrix(p, nrow = 10, ncol = 1)           # by lavaan sequence
   # prediction 
-  pre[i,21:29] = t(IB %*% A %*% p) # key equation 
+  pre[i,28:36] = t(IB %*% A %*% p) # key equation 
   # calculate standarised squared standard error
   ## theta is standarised squared standard error
   ## theta = ((observed-predicted)^2)/error variance=(standard error^2)
