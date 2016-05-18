@@ -426,9 +426,4 @@ round(cor(d[,2:10])-B,3)
 
 
 
-
-
-
-
-
-
+# Validation ####
