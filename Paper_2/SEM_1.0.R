@@ -184,7 +184,6 @@ mod[mod$mi>10,] # suggestion where mi is higher than 10 (most significant mi)
 # Cross-validation #####
 # same model than before
 my.model.lv <- '
-
 # Measurement model (lamda and epsilon)
 #--------------------#
 CEC.Ar =~ 1*CEC.A
@@ -236,7 +235,11 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 # lavaan suggestions
 #------------------#
-#CEC.Cr ~~ clay.Cr 
+CEC.Cr ~~ clay.Cr 
+clay.Br  ~     dem
+OC.Br ~~ clay.Br
+CEC.Br  ~  ndwi.a
+clay.Ar  ~ clay.Br
 #------------------#
 '
 # Element definition
@@ -355,7 +358,7 @@ report
 
 
 # plot mesured vs predicted combined ####
-par(mfrow = c(1, 1), pty="s",mai=rep(0.7,4))
+par(mfrow = c(3, 1), pty="s",mai=rep(0.7,4))
 
 r2<- NULL
 CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
@@ -385,24 +388,34 @@ clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
 colnames(clay) <- c("clayo","clayp")
 rownames(clay) <- 1:length(rownames(clay))
 clay <- as.data.frame(clay)
-r2 <- 1 - (sum((clay$clayo - clay$clayp)^2)/
+r2[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
              sum((mean(clay$clayo)-clay$clayo)^2))
 plot(clay[,2]~clay[,1])
 abline(lm(clay[,2]~clay[,1]),col = "red")
 
 
-# create report
-report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
-                     mean_theta = NA, median_th = NA)
-for (i in 2:10) {
+# create report by soil property
+report2 <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
+                     r2 = NA)
+z <- cbind(CEC, OC, clay)
+for (i in c(1,3,5)) {
   # ME <- mean error 
-  ME  <-  mean(Res[,i] - Res[,i + 9])
+  ME  <-  mean(z[,i] - z[,i + 1])
   # RMSE (root mean squared error)
-  RMSE <- sqrt(mean((Res[,i] - Res[,i + 9]) ^ 2))
-  MSE <- mean((Res[,i] - Res[,i + 9]) ^ 2)
+  RMSE <- sqrt(mean((z[,i] - z[,i + 1]) ^ 2))
+  MSE <- mean((z[,i] - z[,i + 1]) ^ 2)
   # SS (Sum of squares)
-  SS <- sum((Res[,i] - Res[,i + 9]) ^ 2)
+  SS <- sum((z[,i] - z[,i + 1]) ^ 2)
   # fill report table
-  report[i-1,1:4] <- c(names(pre)[i], ME, RMSE, SS)
+  report2[i,1:4] <- c(names(z)[i], ME, RMSE, SS)
 }
+
+report2$r2[1] <- 1 - (as.numeric(report$SS[1]) / sum((mean(z[,1])-z[,1])^2))
+report2$r2[3] <- 1 - (as.numeric(report$SS[3]) / sum((mean(z[,3])-z[,3])^2))
+report2$r2[5] <- 1 - (as.numeric(report$SS[5]) / sum((mean(z[,5])-z[,5])^2))
+
+report2 <- report2[c(-4,-2),]
+
+
+
 
