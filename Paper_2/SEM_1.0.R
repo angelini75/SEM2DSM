@@ -162,6 +162,9 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 #------------------#
 CEC.Cr ~~ clay.Cr 
 clay.Br  ~     dem
+OC.Br ~~ clay.Br
+CEC.Br  ~  ndwi.a
+clay.Ar  ~ clay.Br
 #------------------#
 '
 # Model calibration ####
@@ -177,9 +180,6 @@ fitMeasures(my.fit.lv.ML,fit.measures = "srmr")
 mod <- modindices(my.fit.lv.ML,sort. = T)
 mod[mod$mi>10,] # suggestion where mi is higher than 10 (most significant mi)
 
-
-# reorder variables in D as they appear in fit model.
-#D <- D[,c("id.p",colnames(inspect(my.fit.lv.ML, "est")$theta))]
 
 # Cross-validation #####
 # same model than before
@@ -354,15 +354,16 @@ report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt$SS[2:10]))
 report
 
 
+# plot mesured vs predicted combined ####
 par(mfrow = c(1, 1), pty="s",mai=rep(0.7,4))
 
-
+r2<- NULL
 CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
              as.matrix(Res[,c(4,13)]))
 colnames(CEC) <- c("CECo","CECp")
 rownames(CEC) <- 1:length(rownames(CEC))
 CEC <- as.data.frame(CEC)
-r2 <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
+r2[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
                  sum((mean(CEC$CECo)-CEC$CECo)^2))
 plot(CEC[,2]~CEC[,1])
 abline(lm(CEC[,2]~CEC[,1]),col = "red")
@@ -372,7 +373,7 @@ OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
 colnames(OC) <- c("OCo","OCp")
 rownames(OC) <- 1:length(rownames(OC))
 OC <- as.data.frame(OC)
-r2 <- 1 - (sum((OC$OCo - OC$OCp)^2)/
+r2[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
              sum((mean(OC$OCo)-OC$OCo)^2))
 plot(OC[,2]~OC[,1])
 abline(lm(OC[,2]~OC[,1]),col = "red")
@@ -390,5 +391,18 @@ plot(clay[,2]~clay[,1])
 abline(lm(clay[,2]~clay[,1]),col = "red")
 
 
-
+# create report
+report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
+                     mean_theta = NA, median_th = NA)
+for (i in 2:10) {
+  # ME <- mean error 
+  ME  <-  mean(Res[,i] - Res[,i + 9])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((Res[,i] - Res[,i + 9]) ^ 2))
+  MSE <- mean((Res[,i] - Res[,i + 9]) ^ 2)
+  # SS (Sum of squares)
+  SS <- sum((Res[,i] - Res[,i + 9]) ^ 2)
+  # fill report table
+  report[i-1,1:4] <- c(names(pre)[i], ME, RMSE, SS)
+}
 
