@@ -108,44 +108,20 @@ names(B)[8:10] <- paste0(names(B)[8:10],".B")
 names(C)[8:10] <- paste0(names(C)[8:10],".C")
 samples <- merge(merge(A,B[,c(1,8:10)]),C[,c(1,8:10)])
 
-for(i in 1:11){
-  d.A[d.A$sitio == ratio.mean$sitio[i],8] <- ratio.mean$mean_ratio[i]
-}
-#d.A <- d.A[-24,] # co1-19 is not reliable
-d.A <- d.A[,c(-1,-7)]
-d.B <- d.B[-103,]
-d.B <- data.frame(ESP.B=d.B[,c(-1,-3)])
+write.csv(sample, "validation.csv")
 
-d.stat <- matrix(data = NA,nrow = 6,ncol = 7,
-                 dimnames = list(c("Min", "Median", "Mean", "Max", "SD", "SS"),
-                                 c(names(d.A),names(d.B))))
-d.stat[1,1:6] <- apply(X = d.A,FUN = min,2, na.rm = T)
-d.stat[1,7] <- apply(X = d.B,FUN = min,2, na.rm = T)
-d.stat[2,1:6] <- apply(X = d.A,FUN = median,2, na.rm = T)
-d.stat[2,7] <- apply(X = d.B,FUN = median,2, na.rm = T)
-d.stat[3,1:6] <- apply(X = d.A,FUN = mean,2, na.rm = T)
-d.stat[3,7] <- apply(X = d.B,FUN = mean,2, na.rm = T)
-d.stat[4,1:6] <- apply(X = d.A,FUN = max,2, na.rm = T)
-d.stat[4,7] <- apply(X = d.B,FUN = max,2, na.rm = T)
-d.stat[5,1:6] <- apply(X = d.A,FUN = sd,2, na.rm = T)
-d.stat[5,7] <- apply(X = d.B,FUN = sd,2, na.rm = T)
 
-sum((mean(d.A$Total_bases.A, na.rm=T) - d.A$Total_bases.A)^2, na.rm = T)
-sum((mean(d.A$bt, na.rm=T) - d.A$bt)^2, na.rm = T)
 
-for (i in 1:6) {
-  d.stat[6,i] <- sum((mean(d.A[complete.cases(d.A[,i]),i]) -
-                        d.A[complete.cases(d.A[,i]),i]) ^ 2 )
-}
-d.stat[6,7] <- sum((mean(d.B[complete.cases(d.B[,1]),1]) - d.B[complete.cases(d.B[,1]),1]) ^ 2)
-dimnames(d.stat)[[2]] <- c("thick.A", "oc.A", "tb.A", "sat.A", "esp.A", "bt", "esp.B")
-library(pastecs)
-d.stat1 <- stat.desc(d.A)
-d.stat1[,7] <- NA
-d.stat1[,7] <- stat.desc(d.B)
-names(d.stat1)[7] <- "esp.B"
 
-# Var is the error variance from SEM and Ns are the mean and standard deviation used to standardise the variables
-Var <- read.csv("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/SEM.variance.error.csv")
-Ns <- read.csv("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model/N.march2016.csv")[,-1]
-names(Var) <- c("property", "variance")
+
+
+
+
+
+
+
+
+
+
+
+
