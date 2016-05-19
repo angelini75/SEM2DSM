@@ -108,8 +108,9 @@ names(B)[8:10] <- paste0(names(B)[8:10],".B")
 names(C)[8:10] <- paste0(names(C)[8:10],".C")
 samples <- merge(merge(A,B[,c(1,8:10)]),C[,c(1,8:10)])
 
-write.csv(sample, "validation.csv")
+write.csv(samples, "validation.csv")
 
+# it needs covariates
 
 
 
