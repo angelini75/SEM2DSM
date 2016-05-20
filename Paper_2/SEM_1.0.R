@@ -160,16 +160,16 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 # lavaan suggestions
 #------------------#
-CEC.Cr ~~ clay.Cr 
-clay.Br  ~     dem
-OC.Br ~~ clay.Br
-CEC.Br  ~  ndwi.a
-clay.Ar  ~ clay.Br
+# CEC.Cr ~~ clay.Cr 
+# clay.Br  ~     dem
+# OC.Br ~~ clay.Br
+# CEC.Br  ~  ndwi.a
+# clay.Ar  ~ clay.Br
 #------------------#
 '
 # Model calibration ####
 my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
-                    fixed.x = T, estimator = "ML", se="bootstrap")
+                    fixed.x = T, estimator = "ML")
 
 # Model evaluation ####
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
@@ -427,3 +427,4 @@ round(cor(d[,2:10])-B,3)
 
 
 # Validation ####
+val <- read.csv("validation.csv")
