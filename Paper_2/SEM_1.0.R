@@ -41,7 +41,7 @@ round(stat.desc(d,norm = TRUE),3)
 # But some covariates need to be transformed. First, we store original mean and 
 # sd in ST
 ST <- t(stat.desc(d,norm = TRUE)[c(9,13),])
-
+ 
 # Based on normtest.W the following covariates need to be transformed
 d$wdist <- d$wdist^0.5
 d$maxc <- (d$maxc+20000)^2
@@ -105,10 +105,37 @@ round(stat.desc(D,norm = TRUE),0)
 # mod[mod$mi>5,] # suggestion where mi is higher than 10 (most significant mi)
 # as.data.frame(lavaan::fitMeasures(my.fit.ML,fit.measures = "all"))
 
+# WEPAL document WEPAL_ISE900.pdf ####
+# search for literature
+# CEC (NH4) sd = 1.68 cmol+/kg CV 10.5%
+# CO sd = 0.218 % CV 11.8%
+# clay sd = 3.11 % CV 14.1%
+
+# measurement error as a constant
+(1.68/STt[2:4,2])^2 # standardised measurement error for CEC
+(0.218/STt[5:7,2])^2 # standardised measurement error for OC
+(3.11/STt[8:10,2])^2 # standardised measurement error for clay
+
+# measurement error as relative to the mean value
+(0.105)^2 # standardised measurement error for CEC
+(0.118)^2 # standardised measurement error for OC
+(0.141)^2 # standardised measurement error for clay
+
+# model error variance when measurement errors are zero
+# they are constrains for measurement error
+# CEC.Ar            0.389    0.032   12.124    0.000
+# CEC.Br            0.362    0.030   12.124    0.000
+# CEC.Cr            0.568    0.047   12.124    0.000
+# OC.Ar             0.730    0.060   12.124    0.000
+# OC.Br             0.922    0.076   12.124    0.000
+# OC.Cr             0.946    0.078   12.124    0.000
+# clay.Ar           0.841    0.069   12.124    0.000
+# clay.Br           0.357    0.029   12.124    0.000
+# clay.Cr           0.568    0.047   12.124    0.000
+
 # Model with latent variables ####
 ## Model (re)specification
 my.model.lv <- '
-
 # Measurement model (lamda and epsilon)
 #--------------------#
 CEC.Ar =~ 1*CEC.A
@@ -120,16 +147,17 @@ OC.Cr =~ 1*OC.C
 clay.Ar =~ 1*clay.A
 clay.Br =~ 1*clay.B
 clay.Cr =~ 1*clay.C
-## Measurement error
+## Measurement error #
 CEC.A ~~ 0.1 * CEC.A
 CEC.B ~~ 0.1 * CEC.B
-CEC.C ~~ 0.1 * CEC.C
-OC.A ~~ 0.1 * OC.A
-OC.B ~~ 0.1 * OC.B
-OC.C ~~ 0.1 * OC.C
-clay.A ~~ 0.1 * clay.A
-clay.B ~~ 0.1 * clay.B
-clay.C ~~  0.33*clay.C
+CEC.C ~~ 0.05 * CEC.C
+OC.A ~~ 0.2 * OC.A
+OC.B ~~ 0.6 * OC.B
+OC.C ~~ 0.6 * OC.C
+clay.A ~~ 0.3 * clay.A
+clay.B ~~ 0.14 * clay.B
+clay.C ~~ 0.12 *clay.C
+
 #--------------------#
 
 # Structural model (gamma and betta matrices)
@@ -160,8 +188,11 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 # lavaan suggestions
 #------------------#
-# CEC.Cr ~~ clay.Cr 
-# clay.Br  ~     dem
+CEC.Cr ~~ clay.Cr
+clay.Ar  ~       X
+CEC.Ar  ~ clay.Br
+clay.Br  ~     dem
+CEC.Br  ~  ndwi.a
 # OC.Br ~~ clay.Br
 # CEC.Br  ~  ndwi.a
 # clay.Ar  ~ clay.Br
@@ -169,16 +200,16 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 '
 # Model calibration ####
 my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
-                    fixed.x = T, estimator = "ML")
+                    fixed.x = T)
 
 # Model evaluation ####
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
 
 # Model respecification: modification indices ####
-fitMeasures(my.fit.lv.ML,fit.measures = "gfi")
-fitMeasures(my.fit.lv.ML,fit.measures = "srmr")
+fitMeasures(my.fit.lv.ML,fit.measures = 
+              c("chisq","df","pvalue","cfi","rmsea","gfi", "srmr"))
 mod <- modindices(my.fit.lv.ML,sort. = T)
-mod[mod$mi>10,] # suggestion where mi is higher than 10 (most significant mi)
+mod[mod$mi>5 & (mod$op == "~~"|mod$op == "~"),] 
 
 
 # Cross-validation #####
@@ -195,16 +226,17 @@ OC.Cr =~ 1*OC.C
 clay.Ar =~ 1*clay.A
 clay.Br =~ 1*clay.B
 clay.Cr =~ 1*clay.C
-## Measurement error
+## Measurement error #
 CEC.A ~~ 0.1 * CEC.A
 CEC.B ~~ 0.1 * CEC.B
-CEC.C ~~ 0.1 * CEC.C
-OC.A ~~ 0.1 * OC.A
-OC.B ~~ 0.1 * OC.B
-OC.C ~~ 0.1 * OC.C
-clay.A ~~ 0.1 * clay.A
-clay.B ~~ 0.1 * clay.B
-clay.C ~~ 0.1 * clay.C
+CEC.C ~~ 0.05 * CEC.C
+OC.A ~~ 0.2 * OC.A
+OC.B ~~ 0.6 * OC.B
+OC.C ~~ 0.6 * OC.C
+clay.A ~~ 0.3 * clay.A
+clay.B ~~ 0.14 * clay.B
+clay.C ~~ 0.12 *clay.C
+
 #--------------------#
 
 # Structural model (gamma and betta matrices)
@@ -235,11 +267,14 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 # lavaan suggestions
 #------------------#
-CEC.Cr ~~ clay.Cr 
+CEC.Cr ~~ clay.Cr
+clay.Ar  ~       X
+CEC.Ar  ~ clay.Br
 clay.Br  ~     dem
-OC.Br ~~ clay.Br
 CEC.Br  ~  ndwi.a
-clay.Ar  ~ clay.Br
+# OC.Br ~~ clay.Br
+# CEC.Br  ~  ndwi.a
+# clay.Ar  ~ clay.Br
 #------------------#
 '
 # Element definition
@@ -415,6 +450,7 @@ report2$r2[3] <- 1 - (as.numeric(report$SS[3]) / sum((mean(z[,3])-z[,3])^2))
 report2$r2[5] <- 1 - (as.numeric(report$SS[5]) / sum((mean(z[,5])-z[,5])^2))
 
 report2 <- report2[c(-4,-2),]
+report2
 
 # Covariation assessment ####
 
