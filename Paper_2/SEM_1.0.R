@@ -129,7 +129,7 @@ OC.B ~~ 0.1 * OC.B
 OC.C ~~ 0.1 * OC.C
 clay.A ~~ 0.1 * clay.A
 clay.B ~~ 0.1 * clay.B
-clay.C ~~ 0.1 * clay.C
+clay.C ~~  0.33*clay.C
 #--------------------#
 
 # Structural model (gamma and betta matrices)
@@ -420,9 +420,9 @@ report2 <- report2[c(-4,-2),]
 
 unstd(x = t(B),st = STt[2:10,2])
 apply(d[,2:10],2,mean)%*%t(apply(d[,2:10],2,mean))
-round(cor(d[,2:10])-B,3)
-
-
+round(cov(D[,2:10])-(IB %*% V %*% t(IB)),3) # substract measurement error to S
+# How to estimate sigma-hat and S
+# https://groups.google.com/d/msg/lavaan/X8frgnSOFRg/W3foOvEvf2QJ
 
 
 
