@@ -113,6 +113,102 @@ write.csv(samples, "validation.csv")
 # it needs covariates
 
 
+setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
+# X <- 
+# Y <- 
+
+# sdat files (dem) 
+files <- list.files(pattern=".sdat$")
+header <- gsub(".sdat", "", files)
+header <- c("dem", "river", "wdist","maxc","mrvbf","slope","twi","vdchn","water") 
+
+#files_posgar <- files[c(1:4,9,10,12,13)]
+# header <- header[c(1:4,9,10,12,13)]
+# files250p <- files[11]
+# header250p <- header[11]
+
+# tif files (modis)
+files_m <- list.files(pattern=".tif$")
+# files250m <- files[c(7,8)]
+# header250m <- header[c(7,8)]
+# files1km <- files[c(5,6)]
+header_m <- c("lstm", "lstsd", "evim", "evisd", "ndwi.a", "ndwi.b", "ndwi.bsd")
+
+# files_n <- list.files(path = "/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/output/",pattern=".tif$")
+# header_n <- gsub(pattern = ".tif",replacement = "",x = files_n)
+# header_n <- paste("X",header_n, sep = "")
+# files_n <- paste("output/", files_n, sep = "")
+# 
+# files_M <- list.files(path = "/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/MCD43A4/",pattern=".tif$")
+# header_M <- gsub(pattern = ".tif",replacement = "",x = files_M)
+# files_M <- paste("MCD43A4/", files_M, sep = "")
+
+coordinates(obj = endo) <- ~X+Y
+
+
+#define crs
+wgs84 <- CRS("+init=epsg:4326")
+posgar98 <- CRS("+init=epsg:22175")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
+# assign projection
+proj4string(endo) <- wgs84
+
+
+# However, if you got the data from a RasterLayer (it looks like it)
+# you can avoid the above and simply do:
+# library(raster)
+# pts <- rasterToPoints(r, spatial=TRUE)
+
+# use spTransform
+endo <- spTransform( endo, posgar98)
+
+# extract values from files (.sdat)
+stack <- list()
+for(i in 1:length(files)) {
+  endo@data[,length(endo@data)+1] <- NULL
+  stack[[i]] <- readGDAL(files[i])
+  proj4string(stack[[i]]) <- posgar98
+  endo@data[,length(endo@data)+1] <- over(endo, stack[[i]])[,1]
+  stack <- list()
+  names(endo@data)[length(endo@data)] <- header[i]
+}  
+
+## extract values from modis files 
+stack <- list()
+# reproject endo to modis projection
+endo <- spTransform( endo, modis)
+for(i in 1:length(files_m)) {
+  endo@data[,length(endo@data)+1] <- NULL
+  stack[[i]] <- readGDAL(files_m[i])
+  proj4string(stack[[i]]) <- modis # change projection
+  endo@data[,length(endo@data)+1] <- over(endo, stack[[i]])[,1]
+  stack <- list()
+  names(endo@data)[length(endo@data)] <- header_m[i]
+}  
+# files within folder output
+# 
+# for(i in 1:length(files_n)) {
+#   endo@data[,length(endo@data)+1] <- NULL
+#   stack[[i]] <- readGDAL(files_n[i])
+#   proj4string(stack[[i]]) <- modis # change projection
+#   endo@data[,length(endo@data)+1] <- over(endo, stack[[i]])[,1]
+#   stack <- list()
+#   names(endo@data)[length(endo@data)] <- header_n[i]
+# }
+# 
+# # files MCD43A4
+# for(i in 1:length(files_M)) {
+#   endo@data[,length(endo@data)+1] <- NULL
+#   stack[[i]] <- readGDAL(files_M[i])
+#   proj4string(stack[[i]]) <- modis # change projection
+#   endo@data[,length(endo@data)+1] <- over(endo, stack[[i]])[,1]
+#   stack <- list()
+#   names(endo@data)[length(endo@data)] <- header_M[i]
+# }
+#image(raster(("mod13q1_tot_mean.tif")))
+
+
 
 
 
