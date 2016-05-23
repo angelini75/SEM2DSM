@@ -19,7 +19,9 @@ library(utils)
 
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
-setwd("~/big/SEM_2nd_paper/")
+# chose one
+#setwd("~/big/SEM_2nd_paper/")
+setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/")
 
 # Dictionary of elements in this script ######
 # d = calibration dataset. It comes from replacement_of_NAs.Rm 
@@ -175,8 +177,10 @@ OC.Br ~ OC.Ar + clay.Br +
 OC.Cr ~ OC.Br 
 
 CEC.Ar ~ OC.Ar + clay.Ar 
-CEC.Br ~ OC.Br + clay.Br
+CEC.Br ~ a*OC.Br + clay.Br
 CEC.Cr ~ clay.Cr
+
+a>0
 #------------------#
 
 # Model error covariance (Psi)
@@ -190,12 +194,10 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 #------------------#
 CEC.Cr ~~ clay.Cr
 clay.Ar  ~       X
-CEC.Ar  ~ clay.Br
 clay.Br  ~     dem
+OC.Ar  ~       Y
+OC.Br ~~ clay.Br
 CEC.Br  ~  ndwi.a
-# OC.Br ~~ clay.Br
-# CEC.Br  ~  ndwi.a
-# clay.Ar  ~ clay.Br
 #------------------#
 '
 # Model calibration ####
