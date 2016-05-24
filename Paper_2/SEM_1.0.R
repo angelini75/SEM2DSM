@@ -190,15 +190,18 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 # lavaan suggestions
 #------------------#
-clay.Ar  ~  river + X
+clay.Ar  ~  X  
 clay.Br  ~  dem + lstm
-OC.Ar  ~    dem + Y + X
+OC.Ar  ~    Y + dem + river
 OC.Br  ~    X
-
-CEC.Cr  ~   river + X 
-CEC.Br  ~   ndwi.a + river
-
-clay.A ~~  clay.B
+# 
+CEC.Cr  ~   river  + Y 
+CEC.Br  ~   ndwi.a 
+# 
+CEC.Ar ~~ clay.Cr
+CEC.Ar ~~ clay.Br
+OC.Cr ~~ clay.Cr
+CEC.Cr ~~ clay.Ar
 #------------------#
 '
 # Model calibration ####
@@ -209,14 +212,14 @@ my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE,
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
 # model Rsquare
 
-r2 <- rbind(r2,round(inspect(my.fit.lv.ML, "rsquare")[1:9] * 
-              inspect(my.fit.lv.ML, "rsquare")[10:18],3))
-r2
+# r2 <- rbind(r2,round(inspect(my.fit.lv.ML, "rsquare")[1:9] * 
+#               inspect(my.fit.lv.ML, "rsquare")[10:18],3))
+# r2
 # Model respecification: modification indices ####
 fitMeasures(my.fit.lv.ML,fit.measures = 
               c("chisq","df","pvalue","cfi","rmsea","gfi", "srmr"))
-mod <- modindices(my.fit.lv.ML,sort. = F)
-mod[mod$mi>4 & (mod$op == "~~"|mod$op == "~"),] 
+mod <- modindices(my.fit.lv.ML,sort. = T)
+mod[mod$mi>4 & (mod$op == "~~"|mod$op == "~~"),] 
 
 
 # Cross-validation #####
@@ -336,16 +339,17 @@ for(i in seq_along(names(d))){
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt$SS[2:10]))
 report
 
+write.csv(report, "report.byhor.csv")
 # R2
-# 1 0.17584794
-# 2 0.50041302
-# 3 0.45204174
-# 4 0.23327378
-# 5 0.03218495
-# 6 0.01763872
-# 7 0.14043409
-# 8 0.60188619
-# 9 0.40883512
+# 1 0.17925444
+# 2 0.49877645
+# 3 0.44945036
+# 4 0.23572007
+# 5 0.03188455
+# 6 0.01821501
+# 7 0.14844670
+# 8 0.60178832
+# 9 0.40977255
 
 # plot mesured vs predicted combined ####
 par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
@@ -402,10 +406,16 @@ report2$r2[5] <- rsq[3]
 
 report2 <- report2[c(-4,-2),]
 report2
-# Soil_property                   ME              RMSE        r2
-# 1          CECo -0.00478663204694298  4.30586026276809 0.5247429
-# 3           OCo 5.44341824515518e-05 0.249362762421657 0.9077307
-# 5         clayo -0.00788421073128052  5.48518041031915 0.7126347
+write.csv(report2, "report.bysp.csv")
+#   Soil_property                   ME              RMSE        r2
+# 1          CECo -0.00502006963394904  4.31170054042889 0.5234528
+# 3           OCo 4.06950091888797e-05 0.249013469607231 0.9079890
+# 5         clayo -0.00890802207555752  5.47840068870246 0.7133447
+
+# sem plot
+library(semPlot)
+semPaths(my.fit.lv.ML,what = "est",style = "LISREL", layout = "circle")
+
 
 # Covariation assessment ####
 
