@@ -166,85 +166,6 @@ clay.C ~~ 0.12 *clay.C
 #--------------------#
 clay.Cr ~ dem + river + vdchn + X + Y 
 clay.Ar ~ clay.Cr + 
-          evisd + lstm + ndwi.b 
-clay.Br ~ clay.Ar + clay.Cr + 
-          vdchn + twi + river + Y + ndwi.b
-
-OC.Ar ~ clay.Ar +
-        evisd + lstm + ndwi.b  
-OC.Br ~ OC.Ar + clay.Br + 
-        evisd + lstm + ndwi.a + vdchn
-OC.Cr ~ OC.Br 
-
-CEC.Ar ~ OC.Ar + clay.Ar 
-CEC.Br ~ a*OC.Br + clay.Br
-CEC.Cr ~ clay.Cr
-
-a>0
-#------------------#
-
-# Model error covariance (Psi)
-#------------------#
-CEC.Ar ~~ CEC.Br + CEC.Cr
-CEC.Cr ~~ CEC.Br
-OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
-#------------------#
-
-# lavaan suggestions
-#------------------#
-CEC.Cr ~~ clay.Cr
-clay.Ar  ~       X
-clay.Br  ~     dem
-OC.Ar  ~       Y
-OC.Br ~~ clay.Br
-CEC.Br  ~  ndwi.a
-#------------------#
-'
-# Model calibration ####
-my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
-                    fixed.x = T)
-
-# Model evaluation ####
-summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
-
-# Model respecification: modification indices ####
-fitMeasures(my.fit.lv.ML,fit.measures = 
-              c("chisq","df","pvalue","cfi","rmsea","gfi", "srmr"))
-mod <- modindices(my.fit.lv.ML,sort. = T)
-mod[mod$mi>5 & (mod$op == "~~"|mod$op == "~"),] 
-
-
-# Cross-validation #####
-# same model than before
-my.model.lv <- '
-# Measurement model (lamda and epsilon)
-#--------------------#
-CEC.Ar =~ 1*CEC.A
-CEC.Br =~ 1*CEC.B
-CEC.Cr =~ 1*CEC.C
-OC.Ar =~ 1*OC.A
-OC.Br =~ 1*OC.B
-OC.Cr =~ 1*OC.C
-clay.Ar =~ 1*clay.A
-clay.Br =~ 1*clay.B
-clay.Cr =~ 1*clay.C
-## Measurement error #
-CEC.A ~~ 0.1 * CEC.A
-CEC.B ~~ 0.1 * CEC.B
-CEC.C ~~ 0.05 * CEC.C
-OC.A ~~ 0.2 * OC.A
-OC.B ~~ 0.6 * OC.B
-OC.C ~~ 0.6 * OC.C
-clay.A ~~ 0.3 * clay.A
-clay.B ~~ 0.14 * clay.B
-clay.C ~~ 0.12 *clay.C
-
-#--------------------#
-
-# Structural model (gamma and betta matrices)
-#--------------------#
-clay.Cr ~ dem + river + vdchn + X + Y 
-clay.Ar ~ clay.Cr + 
 evisd + lstm + ndwi.b 
 clay.Br ~ clay.Ar + clay.Cr + 
 vdchn + twi + river + Y + ndwi.b
@@ -256,7 +177,7 @@ evisd + lstm + ndwi.a + vdchn
 OC.Cr ~ OC.Br 
 
 CEC.Ar ~ OC.Ar + clay.Ar 
-CEC.Br ~ OC.Br + clay.Br
+CEC.Br ~ clay.Br
 CEC.Cr ~ clay.Cr
 #------------------#
 
@@ -269,16 +190,38 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 # lavaan suggestions
 #------------------#
-CEC.Cr ~~ clay.Cr
-clay.Ar  ~       X
-CEC.Ar  ~ clay.Br
-clay.Br  ~     dem
-CEC.Br  ~  ndwi.a
-# OC.Br ~~ clay.Br
-# CEC.Br  ~  ndwi.a
-# clay.Ar  ~ clay.Br
+clay.Ar  ~  river + X
+clay.Br  ~  dem + lstm
+OC.Ar  ~    dem + Y + X
+OC.Br  ~    X
+
+CEC.Cr  ~   river + X 
+CEC.Br  ~   ndwi.a + river
+
+clay.A ~~  clay.B
 #------------------#
 '
+# Model calibration ####
+my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
+                    fixed.x = T)
+
+# Model evaluation ####
+summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
+# model Rsquare
+
+r2 <- rbind(r2,round(inspect(my.fit.lv.ML, "rsquare")[1:9] * 
+              inspect(my.fit.lv.ML, "rsquare")[10:18],3))
+r2
+# Model respecification: modification indices ####
+fitMeasures(my.fit.lv.ML,fit.measures = 
+              c("chisq","df","pvalue","cfi","rmsea","gfi", "srmr"))
+mod <- modindices(my.fit.lv.ML,sort. = F)
+mod[mod$mi>4 & (mod$op == "~~"|mod$op == "~"),] 
+
+
+# Cross-validation #####
+# same model than before
+
 # Element definition
 pre <- cbind(D[1,], matrix(nrow=1,ncol= 9, data = NA,
                            dimnames = list(NULL,paste0(names(D)[2:10],".p"))))
@@ -393,17 +336,27 @@ for(i in seq_along(names(d))){
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt$SS[2:10]))
 report
 
+# R2
+# 1 0.17584794
+# 2 0.50041302
+# 3 0.45204174
+# 4 0.23327378
+# 5 0.03218495
+# 6 0.01763872
+# 7 0.14043409
+# 8 0.60188619
+# 9 0.40883512
 
 # plot mesured vs predicted combined ####
-par(mfrow = c(3, 1), pty="s",mai=rep(0.7,4))
+par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
 
-r2<- NULL
+rsq<- NULL
 CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
              as.matrix(Res[,c(4,13)]))
 colnames(CEC) <- c("CECo","CECp")
 rownames(CEC) <- 1:length(rownames(CEC))
 CEC <- as.data.frame(CEC)
-r2[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
+rsq[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
                  sum((mean(CEC$CECo)-CEC$CECo)^2))
 plot(CEC[,2]~CEC[,1])
 abline(lm(CEC[,2]~CEC[,1]),col = "red")
@@ -413,11 +366,10 @@ OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
 colnames(OC) <- c("OCo","OCp")
 rownames(OC) <- 1:length(rownames(OC))
 OC <- as.data.frame(OC)
-r2[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
+rsq[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
              sum((mean(OC$OCo)-OC$OCo)^2))
 plot(OC[,2]~OC[,1])
 abline(lm(OC[,2]~OC[,1]),col = "red")
-
 
 clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
               as.matrix(Res[,c(10,19)]))
@@ -425,15 +377,14 @@ clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
 colnames(clay) <- c("clayo","clayp")
 rownames(clay) <- 1:length(rownames(clay))
 clay <- as.data.frame(clay)
-r2[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
+rsq[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
              sum((mean(clay$clayo)-clay$clayo)^2))
 plot(clay[,2]~clay[,1])
 abline(lm(clay[,2]~clay[,1]),col = "red")
 
 
 # create report by soil property
-report2 <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
-                     r2 = NA)
+report2 <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, r2 = NA)
 z <- cbind(CEC, OC, clay)
 for (i in c(1,3,5)) {
   # ME <- mean error 
@@ -441,18 +392,20 @@ for (i in c(1,3,5)) {
   # RMSE (root mean squared error)
   RMSE <- sqrt(mean((z[,i] - z[,i + 1]) ^ 2))
   MSE <- mean((z[,i] - z[,i + 1]) ^ 2)
-  # SS (Sum of squares)
-  SS <- sum((z[,i] - z[,i + 1]) ^ 2)
   # fill report table
-  report2[i,1:4] <- c(names(z)[i], ME, RMSE, SS)
+  report2[i,1:3] <- c(names(z)[i], ME, RMSE)
 }
 
-report2$r2[1] <- 1 - (as.numeric(report$SS[1]) / sum((mean(z[,1])-z[,1])^2))
-report2$r2[3] <- 1 - (as.numeric(report$SS[3]) / sum((mean(z[,3])-z[,3])^2))
-report2$r2[5] <- 1 - (as.numeric(report$SS[5]) / sum((mean(z[,5])-z[,5])^2))
+report2$r2[1] <- rsq[1]
+report2$r2[3] <- rsq[2]
+report2$r2[5] <- rsq[3]
 
 report2 <- report2[c(-4,-2),]
 report2
+# Soil_property                   ME              RMSE        r2
+# 1          CECo -0.00478663204694298  4.30586026276809 0.5247429
+# 3           OCo 5.44341824515518e-05 0.249362762421657 0.9077307
+# 5         clayo -0.00788421073128052  5.48518041031915 0.7126347
 
 # Covariation assessment ####
 
