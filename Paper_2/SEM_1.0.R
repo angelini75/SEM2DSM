@@ -190,18 +190,25 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 # lavaan suggestions
 #------------------#
-clay.Ar  ~  X  
-clay.Br  ~  dem + lstm
-OC.Ar  ~    Y + dem + river
-OC.Br  ~    X
-# 
-CEC.Cr  ~   river  + Y 
-CEC.Br  ~   ndwi.a 
-# 
-CEC.Ar ~~ clay.Cr
-CEC.Ar ~~ clay.Br
-OC.Cr ~~ clay.Cr
-CEC.Cr ~~ clay.Ar
+  OC.Ar  ~       Y
+clay.Ar  ~       X
+  OC.Ar  ~     dem
+clay.Br  ~       X
+clay.Br  ~     dem
+clay.Br  ~    lstm
+  OC.Br  ~       X
+  OC.Ar  ~   river
+# # 
+ CEC.Cr  ~   river
+ CEC.Br  ~  ndwi.a
+ CEC.Cr  ~       X
+clay.Cr  ~  ndwi.a
+clay.Cr  ~   evisd
+# # 
+ CEC.Ar ~~ clay.Br
+ CEC.Ar ~~ clay.Cr
+  OC.Cr ~~ clay.Cr
+ CEC.Cr ~~ clay.Ar
 #------------------#
 '
 # Model calibration ####
@@ -219,7 +226,7 @@ summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
 fitMeasures(my.fit.lv.ML,fit.measures = 
               c("chisq","df","pvalue","cfi","rmsea","gfi", "srmr"))
 mod <- modindices(my.fit.lv.ML,sort. = T)
-mod[mod$mi>4 & (mod$op == "~~"|mod$op == "~~"),] 
+mod[mod$mi>3 & (mod$op == "~~"|mod$op == "~~"),] 
 
 
 # Cross-validation #####
@@ -341,15 +348,15 @@ report
 
 write.csv(report, "report.byhor.csv")
 # R2
-# 1 0.17925444
-# 2 0.49877645
-# 3 0.44945036
-# 4 0.23572007
-# 5 0.03188455
-# 6 0.01821501
-# 7 0.14844670
-# 8 0.60178832
-# 9 0.40977255
+# 1 0.17997897
+# 2 0.49938652
+# 3 0.45497635
+# 4 0.23497330
+# 5 0.03238344
+# 6 0.01771871
+# 7 0.14873541
+# 8 0.60412970
+# 9 0.42054296
 
 # plot mesured vs predicted combined ####
 par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
@@ -407,10 +414,11 @@ report2$r2[5] <- rsq[3]
 report2 <- report2[c(-4,-2),]
 report2
 write.csv(report2, "report.bysp.csv")
-#   Soil_property                   ME              RMSE        r2
-# 1          CECo -0.00502006963394904  4.31170054042889 0.5234528
-# 3           OCo 4.06950091888797e-05 0.249013469607231 0.9079890
-# 5         clayo -0.00890802207555752  5.47840068870246 0.7133447
+# Soil_property                   ME              RMSE        r2
+# 1          CECo -0.00419372399590419  4.29902877759584 0.5262497
+# 3           OCo 3.66189158698424e-05 0.249115654848832 0.9079135
+# 5         clayo -0.00703797144384494  5.44721980811741 0.7165984
+
 
 # sem plot
 library(semPlot)
