@@ -164,11 +164,11 @@ clay.C ~~ 0.12 *clay.C
 
 # Structural model (gamma and betta matrices)
 #--------------------#
-clay.Cr ~ dem + river + vdchn + X + Y 
+clay.Cr ~ dem + river + vdchn + X + 0*Y 
 clay.Ar ~ clay.Cr + 
 evisd + lstm + ndwi.b 
 clay.Br ~ clay.Ar + clay.Cr + 
-vdchn + twi + river + Y + ndwi.b
+vdchn + twi + river + 0*Y + ndwi.b
 
 OC.Ar ~ clay.Ar +
 evisd + lstm + ndwi.b  
