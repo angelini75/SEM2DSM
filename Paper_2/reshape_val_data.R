@@ -109,42 +109,26 @@ names(B)[8:10] <- paste0(names(B)[8:10],".B")
 names(C)[8:10] <- paste0(names(C)[8:10],".C")
 samples <- merge(merge(A,B[,c(1,8:10)]),C[,c(1,8:10)])
 
-write.csv(samples, "validation.csv")
-
-# it needs covariates
-
-
+# extract covariates values ####
 setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
-# X <- 
-# Y <- 
+# libraries
+library(raster)
+library(maptools)
+library(sp)
+library(rgdal)
 
-# sdat files (dem) 
+
+# sdat files (dem covariates) 
 files <- list.files(pattern=".sdat$")
 header <- gsub(".sdat", "", files)
 header <- c("dem", "river", "wdist","maxc","mrvbf","slope","twi","vdchn","water") 
 
-#files_posgar <- files[c(1:4,9,10,12,13)]
-# header <- header[c(1:4,9,10,12,13)]
-# files250p <- files[11]
-# header250p <- header[11]
-
 # tif files (modis)
 files_m <- list.files(pattern=".tif$")
-# files250m <- files[c(7,8)]
-# header250m <- header[c(7,8)]
-# files1km <- files[c(5,6)]
+# set names of covariates
 header_m <- c("lstm", "lstsd", "evim", "evisd", "ndwi.a", "ndwi.b", "ndwi.bsd")
-
-# files_n <- list.files(path = "/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/output/",pattern=".tif$")
-# header_n <- gsub(pattern = ".tif",replacement = "",x = files_n)
-# header_n <- paste("X",header_n, sep = "")
-# files_n <- paste("output/", files_n, sep = "")
-# 
-# files_M <- list.files(path = "/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/MCD43A4/",pattern=".tif$")
-# header_M <- gsub(pattern = ".tif",replacement = "",x = files_M)
-# files_M <- paste("MCD43A4/", files_M, sep = "")
-
-coordinates(obj = endo) <- ~X+Y
+# samples to spatial object
+coordinates(obj = samples) <- ~X+Y
 
 
 #define crs
