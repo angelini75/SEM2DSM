@@ -9,6 +9,17 @@ site <- read.csv("Ficha_campo_sitio.csv")
 lab <- read.csv("64232_a_65039_FINAL.csv")
 lab <- lab[,c(1,8,10,19)]
 
+# profiles with odd horizons
+# run after get object C line ~110
+# hor[which(hor$sitio %in% 
+#             unique(C[which(C$sitio %in% 
+#                              names(table(C[,1])[table(C[,1])>1])),1])),]
+hor$horizonte <- as.character(hor$horizonte)
+hor[59,3] <- "X"
+hor[332,3] <- "A"
+hor[341,3] <- "X"
+hor[365,3] <- "X"
+hor[390,3] <- "X"
 # mistakes in hor
 #  
 # en hor 64320 (64534 64793 64698) (64837 64903 65036)
@@ -53,7 +64,6 @@ hor$hor[grep("^2C",hor$horizonte)] <- "C"
 
 as.data.frame(t(table(hor$horizonte[is.na(hor$hor)])))
 #-------------------------------------#
-
 
 # replace horizons with duplo analysis ####
 # (2 measurements per sample) by mean(analysis[i]) 
@@ -104,6 +114,8 @@ hor.xy$sitio[hor.xy$hor== "AB|BA" | hor.xy$hor== "BC" | hor.xy$hor== "AC" ]),]
 A <- samples[samples$hor=="A",]
 B <- samples[samples$hor=="B",]
 C <- samples[samples$hor=="C",]
+unique(C[which(C$sitio %in% names(table(C[,1])[table(C[,1])>1])),])
+
 names(A)[8:10] <- paste0(names(A)[8:10],".A")
 names(B)[8:10] <- paste0(names(B)[8:10],".B")
 names(C)[8:10] <- paste0(names(C)[8:10],".C")
