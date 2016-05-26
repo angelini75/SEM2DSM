@@ -93,10 +93,10 @@ hor <- hor[,-6]
 hor.lab <- merge(hor, lab, by.x="num_lab", by.y="labid", all=F)
 # add coordenates to hor.lab
 hor.xy <- merge(hor.lab,site[,c(2,5,6)], all.x = T)
-
+hor.xy <- hor.xy[(hor.xy$hor == "A" | hor.xy$hor == "B" |
+                   hor.xy$hor == "C") & !is.na(hor.xy$hor),]
 # thickness of standarized horizons
 library(plyr)
-hor.xy <- hor.xy[!is.na(hor.xy$hor),]
 hor.xy$sitio.hor <- paste(hor.xy$sitio,hor.xy$hor,sep = ".")
 hor.xy <- merge(hor.xy, ddply(hor.xy,.(sitio.hor), summarise, mintop = min(prof_s))[,c(1,2)], by = "sitio.hor")
 hor.xy <- merge(hor.xy, ddply(hor.xy,.(sitio.hor), summarise, maxbot = max(prof_i))[,c(1,2)], by = "sitio.hor")
@@ -106,15 +106,11 @@ length(unique(hor.xy$sitio.hor[hor.xy$hor == "A"]))
 #table(hor.xy$hor[hor.xy$mintop==0])
 #Thickness
 hor.xy$thick <- hor.xy$maxbot - hor.xy$mintop
-hor.xy <- unique(hor.xy[,c(2,11,12,7,13,14,15,8:10)])
-
-samples <- hor.xy[which(!hor.xy$sitio %in%
-hor.xy$sitio[hor.xy$hor== "AB|BA" | hor.xy$hor== "BC" | hor.xy$hor== "AC" ]),]
+samples <- unique(hor.xy[,c(2,11,12,7,13,14,15,8:10)])
 
 A <- samples[samples$hor=="A",]
 B <- samples[samples$hor=="B",]
 C <- samples[samples$hor=="C",]
-unique(C[which(C$sitio %in% names(table(C[,1])[table(C[,1])>1])),])
 
 names(A)[8:10] <- paste0(names(A)[8:10],".A")
 names(B)[8:10] <- paste0(names(B)[8:10],".B")
