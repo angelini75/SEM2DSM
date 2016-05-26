@@ -117,7 +117,6 @@ library(maptools)
 library(sp)
 library(rgdal)
 
-
 # sdat files (dem covariates) 
 files <- list.files(pattern=".sdat$")
 header <- gsub(".sdat", "", files)
@@ -128,8 +127,8 @@ files_m <- list.files(pattern=".tif$")
 # set names of covariates
 header_m <- c("lstm", "lstsd", "evim", "evisd", "ndwi.a", "ndwi.b", "ndwi.bsd")
 # samples to spatial object
+names(samples)[c(2,3)] <- c("Y", "X")
 coordinates(obj = samples) <- ~X+Y
-
 
 #define crs
 wgs84 <- CRS("+init=epsg:4326")
@@ -137,66 +136,41 @@ posgar98 <- CRS("+init=epsg:22175")
 modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # assign projection
-proj4string(endo) <- wgs84
+proj4string(samples) <- wgs84
 
-
-# However, if you got the data from a RasterLayer (it looks like it)
-# you can avoid the above and simply do:
-# library(raster)
-# pts <- rasterToPoints(r, spatial=TRUE)
-
-# use spTransform
-endo <- spTransform( endo, posgar98)
+# reproject
+samples <- spTransform( samples, posgar98)
 
 # extract values from files (.sdat)
 stack <- list()
-for(i in 1:length(files)) {
-  endo@data[,length(endo@data)+1] <- NULL
+for(i in seq_along(files)) {
+  samples@data[,length(samples@data)+1] <- NULL
   stack[[i]] <- readGDAL(files[i])
   proj4string(stack[[i]]) <- posgar98
-  endo@data[,length(endo@data)+1] <- over(endo, stack[[i]])[,1]
+  samples@data[,length(samples@data)+1] <- over(samples, stack[[i]])[,1]
   stack <- list()
-  names(endo@data)[length(endo@data)] <- header[i]
+  names(samples@data)[length(samples@data)] <- header[i]
 }  
 
 ## extract values from modis files 
 stack <- list()
 # reproject endo to modis projection
-endo <- spTransform( endo, modis)
-for(i in 1:length(files_m)) {
-  endo@data[,length(endo@data)+1] <- NULL
+samples <- spTransform( samples, modis)
+for(i in seq_along(files_m)) {
+  samples@data[,length(samples@data)+1] <- NULL
   stack[[i]] <- readGDAL(files_m[i])
   proj4string(stack[[i]]) <- modis # change projection
-  endo@data[,length(endo@data)+1] <- over(endo, stack[[i]])[,1]
+  samples@data[,length(samples@data)+1] <- over(samples, stack[[i]])[,1]
   stack <- list()
-  names(endo@data)[length(endo@data)] <- header_m[i]
+  names(samples@data)[length(samples@data)] <- header_m[i]
 }  
-# files within folder output
-# 
-# for(i in 1:length(files_n)) {
-#   endo@data[,length(endo@data)+1] <- NULL
-#   stack[[i]] <- readGDAL(files_n[i])
-#   proj4string(stack[[i]]) <- modis # change projection
-#   endo@data[,length(endo@data)+1] <- over(endo, stack[[i]])[,1]
-#   stack <- list()
-#   names(endo@data)[length(endo@data)] <- header_n[i]
-# }
-# 
-# # files MCD43A4
-# for(i in 1:length(files_M)) {
-#   endo@data[,length(endo@data)+1] <- NULL
-#   stack[[i]] <- readGDAL(files_M[i])
-#   proj4string(stack[[i]]) <- modis # change projection
-#   endo@data[,length(endo@data)+1] <- over(endo, stack[[i]])[,1]
-#   stack <- list()
-#   names(endo@data)[length(endo@data)] <- header_M[i]
-# }
-#image(raster(("mod13q1_tot_mean.tif")))
 
+samples <- as.data.frame(samples)
 
-
-
-
+samples <- samples[,c(-2,-3,-4,-5)]
+name(samples)
+setwd("~/Documents/SEM2DSM1/Paper_2/data/")
+write.csv(samples,"val.data.csv")
 
 
 
