@@ -229,7 +229,7 @@ mod <- modindices(my.fit.lv.ML,sort. = T)
 mod[mod$mi>3 & (mod$op == "~~"|mod$op == "~~"),] 
 
 
-# Cross-validation #####
+# CROSS-VALIDATION #####
 # same model than before
 
 # Element definition
@@ -422,13 +422,11 @@ write.csv(report2, "report.bysp.csv")
 # 5         clayo -0.00703797144384494  5.44721980811741 0.7165984
 
 
-# sem plot
+# sem plot ####
 library(semPlot)
 semPaths(my.fit.lv.ML,what = "est",style = "LISREL", layout = "circle")
 
-
 # Covariation assessment ####
-
 unstd(x = t(B),st = STt[2:10,2])
 apply(d[,2:10],2,mean)%*%t(apply(d[,2:10],2,mean))
 round(cov(D[,2:10])-(IB %*% V %*% t(IB)),3) # substract measurement error to S
@@ -436,6 +434,101 @@ round(cov(D[,2:10])-(IB %*% V %*% t(IB)),3) # substract measurement error to S
 # https://groups.google.com/d/msg/lavaan/X8frgnSOFRg/W3foOvEvf2QJ
 
 
+# VALIDATION ####
+val <- read.csv("val.data.csv")[,-1]
 
-# Validation ####
-val <- read.csv("validation.csv")
+# Statistics, normalization and standardisation ####
+# Descriptive statistics and normality test. #
+round(stat.desc(val[,-1],norm = TRUE),3)
+val[val$OC.C>0.5,]
+table(val$sitio)
+
+
+
+
+
+
+
+# Soil properties does not present strong deviation from normality.
+# But some covariates need to be transformed. First, we store original mean and 
+# sd in ST
+ST <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+
+# Based on normtest.W the following covariates need to be transformed
+d$wdist <- d$wdist^0.5
+d$maxc <- (d$maxc+20000)^2
+d$slope <- d$slope^0.25
+d$twi <- log10(d$twi)
+d$vdchn <- log10(d$vdchn+10)
+d$ndwi.a <- (d$ndwi.a+10)^.3
+# New statistics
+round(stat.desc(d,norm = TRUE),3)
+# New mean and sd
+STt <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+
+# standardised data set ####
+std <- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] - st[i,1]) / st[i,2]
+  }
+  y
+}
+D <- std(d,STt)
+D[,1] <- d[,1] 
+# statistics
+round(stat.desc(D,norm = TRUE),0)
+
+
+my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
+                    fixed.x = T)
+  # Matrix dedinition (Section 3.3 2nd paper and Fig. 5) #
+  # Matrix of Beta coefficients
+  B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
+  # Identity matrix (Kappa coefficients)
+  I <- diag(nrow = 9, ncol = 9)
+  # Matrix of Gamma coefficients
+  A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19]
+  # Matrix of Psi coefficients (model error variance-covariance)
+  V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] 
+  # Matrix of measurement error (Epsylon)
+  Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] 
+  IB <- solve(I - B)
+  # Running Prediction @ i location #
+  # p is a matrix with the 10 external drivers
+  p = as.vector(as.matrix(pre[i,colnames(A)])) # values of covariates ordered
+  p = matrix(p, nrow = 10, ncol = 1)           # by lavaan sequence
+  # prediction 
+  pre[i,28:36] = t(IB %*% A %*% p) # key equation 
+  # calculate standarised squared standard error
+  ## theta is standarised squared standard error
+  ## theta = ((observed-predicted)^2)/error variance=(standard error^2)
+  a[i,] <- pre[i,c(2:10)] # observed values
+  b[i,] <- pre[i,c(28:36)] # predicted values
+  v <- diag(IB%*%V%*%t(IB)+Th) # error variance (it is not diagonal!)
+  resids[i,] <- a[i,] - b[i,] # residuals
+  theta[i,] <- (resids[i,]^2)/v # theta 
+  
+  # Error variance #
+  Var[i,] <- diag(IB %*% V %*% t(IB))
+  
+  #bar time
+  setTxtProgressBar(pb, i)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
