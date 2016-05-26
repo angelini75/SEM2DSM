@@ -1,0 +1,171 @@
+lavaan (0.5-20) converged normally after  52 iterations
+
+  Number of observations                           294
+
+  Estimator                                         ML
+  Minimum Function Test Statistic               90.905
+  Degrees of freedom                                77
+  P-value (Chi-square)                           0.133
+
+Model test baseline model:
+
+  Minimum Function Test Statistic             1765.512
+  Degrees of freedom                               126
+  P-value                                        0.000
+
+User model versus baseline model:
+
+  Comparative Fit Index (CFI)                    0.992
+  Tucker-Lewis Index (TLI)                       0.986
+
+Loglikelihood and Information Criteria:
+
+  Loglikelihood user model (H0)              -5237.812
+  Loglikelihood unrestricted model (H1)      -5192.360
+
+  Number of free parameters                         58
+  Akaike (AIC)                               10591.625
+  Bayesian (BIC)                             10805.272
+  Sample-size adjusted Bayesian (BIC)        10621.338
+
+Root Mean Square Error of Approximation:
+
+  RMSEA                                          0.025
+  90 Percent Confidence Interval          0.000  0.043
+  P-value RMSEA <= 0.05                          0.992
+
+Standardized Root Mean Square Residual:
+
+  SRMR                                           0.024
+
+Parameter Estimates:
+
+  Information                                 Expected
+  Standard Errors                             Standard
+
+Latent Variables:
+                   Estimate  Std.Err  Z-value  P(>|z|)
+  CEC.Ar =~                                           
+    CEC.A             1.000                           
+  CEC.Br =~                                           
+    CEC.B             1.000                           
+  CEC.Cr =~                                           
+    CEC.C             1.000                           
+  OC.Ar =~                                            
+    OC.A              1.000                           
+  OC.Br =~                                            
+    OC.B              1.000                           
+  OC.Cr =~                                            
+    OC.C              1.000                           
+  clay.Ar =~                                          
+    clay.A            1.000                           
+  clay.Br =~                                          
+    clay.B            1.000                           
+  clay.Cr =~                                          
+    clay.C            1.000                           
+
+Regressions:
+                   Estimate  Std.Err  Z-value  P(>|z|)
+  clay.Cr ~                                           
+    dem               0.473    0.114    4.136    0.000
+    river            -0.659    0.075   -8.784    0.000
+    vdchn            -0.115    0.048   -2.379    0.017
+    X                 0.507    0.090    5.623    0.000
+    Y                 0.000                           
+  clay.Ar ~                                           
+    clay.Cr           0.248    0.079    3.140    0.002
+    evisd             0.268    0.058    4.648    0.000
+    lstm              0.092    0.056    1.653    0.098
+    ndwi.b           -0.045    0.055   -0.826    0.409
+  clay.Br ~                                           
+    clay.Ar           0.152    0.055    2.752    0.006
+    clay.Cr           0.205    0.058    3.501    0.000
+    vdchn            -0.015    0.042   -0.360    0.719
+    twi              -0.005    0.039   -0.134    0.894
+    river            -0.409    0.099   -4.145    0.000
+    Y                 0.000                           
+    ndwi.b           -0.052    0.038   -1.370    0.171
+  OC.Ar ~                                             
+    clay.Ar           0.348    0.078    4.471    0.000
+    evisd             0.070    0.066    1.061    0.289
+    lstm             -0.145    0.096   -1.506    0.132
+    ndwi.b           -0.053    0.058   -0.910    0.363
+  OC.Br ~                                             
+    OC.Ar             0.085    0.078    1.091    0.275
+    clay.Br           0.158    0.105    1.511    0.131
+    evisd             0.196    0.088    2.227    0.026
+    lstm             -0.004    0.078   -0.047    0.963
+    ndwi.a           -0.123    0.087   -1.417    0.156
+    vdchn             0.203    0.060    3.371    0.001
+  OC.Cr ~                                             
+    OC.Br             0.597    0.142    4.218    0.000
+  CEC.Ar ~                                            
+    OC.Ar             0.417    0.050    8.288    0.000
+    clay.Ar           0.868    0.062   13.910    0.000
+  CEC.Br ~                                            
+    clay.Br           0.904    0.040   22.438    0.000
+  CEC.Cr ~                                            
+    clay.Cr           0.552    0.057    9.709    0.000
+  OC.Ar ~                                             
+    Y                -0.506    0.126   -4.024    0.000
+  clay.Ar ~                                           
+    X                 0.206    0.071    2.902    0.004
+  OC.Ar ~                                             
+    dem               0.442    0.135    3.281    0.001
+  clay.Br ~                                           
+    X                 0.504    0.103    4.885    0.000
+    dem               0.339    0.090    3.756    0.000
+    lstm              0.151    0.065    2.308    0.021
+  OC.Br ~                                             
+    X                -0.207    0.097   -2.144    0.032
+  OC.Ar ~                                             
+    river            -0.371    0.157   -2.358    0.018
+  CEC.Cr ~                                            
+    river            -0.231    0.055   -4.167    0.000
+  CEC.Br ~                                            
+    ndwi.a           -0.111    0.031   -3.576    0.000
+  CEC.Cr ~                                            
+    X                 0.127    0.052    2.439    0.015
+  clay.Cr ~                                           
+    ndwi.a           -0.243    0.071   -3.432    0.001
+    evisd             0.197    0.069    2.860    0.004
+
+Covariances:
+                   Estimate  Std.Err  Z-value  P(>|z|)
+  CEC.Ar ~~                                           
+    CEC.Br            0.082    0.022    3.781    0.000
+    CEC.Cr            0.058    0.026    2.191    0.028
+  CEC.Br ~~                                           
+    CEC.Cr            0.199    0.026    7.698    0.000
+    OC.Cr             0.000                           
+  CEC.Cr ~~                                           
+    OC.Cr             0.000                           
+  CEC.Ar ~~                                           
+    OC.Cr             0.000                           
+    clay.Br          -0.082    0.023   -3.550    0.000
+    clay.Cr          -0.085    0.029   -2.950    0.003
+  OC.Cr ~~                                            
+    clay.Cr           0.132    0.042    3.174    0.002
+  CEC.Cr ~~                                           
+    clay.Ar           0.077    0.032    2.394    0.017
+
+Variances:
+                   Estimate  Std.Err  Z-value  P(>|z|)
+    CEC.A             0.100                           
+    CEC.B             0.100                           
+    CEC.C             0.050                           
+    OC.A              0.200                           
+    OC.B              0.600                           
+    OC.C              0.600                           
+    clay.A            0.300                           
+    clay.B            0.140                           
+    clay.C            0.120                           
+    CEC.Ar            0.107    0.035    3.025    0.002
+    CEC.Br            0.167    0.029    5.835    0.000
+    CEC.Cr            0.387    0.039   10.031    0.000
+    OC.Ar             0.453    0.057    7.992    0.000
+    OC.Br             0.313    0.071    4.394    0.000
+    OC.Cr             0.257    0.084    3.059    0.002
+    clay.Ar           0.517    0.064    8.134    0.000
+    clay.Br           0.224    0.027    8.252    0.000
+    clay.Cr           0.431    0.045    9.529    0.000
