@@ -20,8 +20,8 @@ library(utils)
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 # chose one
-#setwd("~/big/SEM_2nd_paper/")
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/")
+#setwd("~/big/SEM2DSM1/Paper_2/data/")
+setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 
 # Dictionary of elements in this script ######
 # d = calibration dataset. It comes from replacement_of_NAs.Rm 
