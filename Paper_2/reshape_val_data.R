@@ -1,6 +1,7 @@
 rm(list = ls())
 name <- function(x) { as.data.frame(names(x))} 
-setwd("/home/mangelini/big/SEM_2nd_paper/")
+#setwd("/home/mangelini/big/SEM_2nd_paper/")
+setwd("/home/marcos/Documents/SEM2DSM1/Paper_2/data")
 
 # load data ####
 hor <- read.csv("Ficha_campo_hor.csv")
