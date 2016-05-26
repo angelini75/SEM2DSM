@@ -346,6 +346,8 @@ for(i in seq_along(names(d))){
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt$SS[2:10]))
 report
 
+setwd("~/Documents/SEM2DSM1/Paper_2/reports/")
+#setwd("~/big/SEM2DSM1/Paper_2/reports/")
 write.csv(report, "report.byhor.csv")
 # R2
 # 1 0.17997897
