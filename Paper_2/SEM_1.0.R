@@ -583,7 +583,6 @@ abline(lm(CEC.v[,2]~CEC.v[,1]),col = "blue")
 OC.v <- rbind(as.matrix(Res.v[,c(5,14)]), as.matrix(Res.v[,c(6,15)]),
             as.matrix(Res.v[,c(7,16)]))
 colnames(OC.v) <- c("OCo","OCp")
-rownames(OC.v) <- 1:length(rownames(OC.v))
 OC.v <- as.data.frame(OC.v)
 rsq.v[2] <- 1 - (sum((OC.v$OCo - OC.v$OCp)^2)/
              sum((mean(OC.v$OCo)-OC.v$OCo)^2))
@@ -597,7 +596,6 @@ clay.v <- rbind(as.matrix(Res.v[,c(8,17)]), as.matrix(Res.v[,c(9,18)]),
               as.matrix(Res.v[,c(10,19)]))
 
 colnames(clay.v) <- c("clayo","clayp")
-rownames(clay.v) <- 1:length(rownames(clay.v))
 clay.v <- as.data.frame(clay.v)
 rsq.v[3] <- 1 - (sum((clay.v$clayo - clay.v$clayp)^2)/
              sum((mean(clay.v$clayo)-clay.v$clayo)^2))
