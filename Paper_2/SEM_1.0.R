@@ -248,13 +248,9 @@ pb = txtProgressBar(min = 0, max = length(d[,1]), initial = 0, style = 3)
 for(i in seq_along(D[,1])){ 
   cal <- D[-i,]
   pre[i,] <- D[ i,]
-  
   # Fiting #
   my.fit.lv.ML <- sem(model = my.model.lv,data = cal, fixed.x = T,
                       estimator = "ML")
-  #pre <- pre[,c("id.p",colnames(inspect(my.fit.lv.ML, "est")$theta),
-  #                              names(pre)[21:29])]
-  
   # Matrix dedinition (Section 3.3 2nd paper and Fig. 5) #
   # Matrix of Beta coefficients
   B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
@@ -444,84 +440,193 @@ round(cov(D[,2:10])-(IB %*% V %*% t(IB)),3) # substract measurement error to S
 
 
 # VALIDATION ####
+setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 val <- read.csv("val.data.csv")[,-1]
-
+val <- val[,-19]
 # Statistics, normalization and standardisation ####
 # Descriptive statistics and normality test. #
 round(stat.desc(val[,-1],norm = TRUE),3)
-val[val$OC.C>0.5,]
-
-
-
-
-
 # Soil properties does not present strong deviation from normality.
 # But some covariates need to be transformed. First, we store original mean and 
 # sd in ST
-ST <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+STv <- t(stat.desc(val,norm = TRUE)[c(9,13),])[-1,]
 
 # Based on normtest.W the following covariates need to be transformed
-d$wdist <- d$wdist^0.5
-d$maxc <- (d$maxc+20000)^2
-d$slope <- d$slope^0.25
-d$twi <- log10(d$twi)
-d$vdchn <- log10(d$vdchn+10)
-d$ndwi.a <- (d$ndwi.a+10)^.3
+val$wdist <- val$wdist^0.5
+val$maxc <- (val$maxc+20000)^2
+val$slope <- val$slope^0.25
+val$twi <- log10(val$twi)
+val$vdchn <- log10(val$vdchn+10)
+val$ndwi.a <- (val$ndwi.a+10)^.3
 # New statistics
-round(stat.desc(d,norm = TRUE),3)
+round(stat.desc(val[,2:27],norm = TRUE),3)
 # New mean and sd
-STt <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+STtv <- t(stat.desc(val[,1:27],norm = TRUE)[c(9,13),])
 
 # standardised data set ####
-std <- function(x, st){
-  y <- x
-  for(i in seq_along(names(x))){
-    y[,i] <- (x[,i] - st[i,1]) / st[i,2]
-  }
-  y
-}
-D <- std(d,STt)
-D[,1] <- d[,1] 
+VAL <- val
+VAL[,2:27] <- std(val[,2:27],STt[2:27,])
+
 # statistics
-round(stat.desc(D,norm = TRUE),0)
+round(stat.desc(VAL[,2:27],norm = TRUE),2)
 
-
-my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
+# Model validation ####
+val.fit.lv.ML <- sem(model = my.model.lv,data = VAL, meanstructure = FALSE, 
                     fixed.x = T)
-  # Matrix dedinition (Section 3.3 2nd paper and Fig. 5) #
-  # Matrix of Beta coefficients
-  B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
-  # Identity matrix (Kappa coefficients)
-  I <- diag(nrow = 9, ncol = 9)
-  # Matrix of Gamma coefficients
-  A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19]
-  # Matrix of Psi coefficients (model error variance-covariance)
-  V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] 
-  # Matrix of measurement error (Epsylon)
-  Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] 
-  IB <- solve(I - B)
-  # Running Prediction @ i location #
+
+summary(val.fit.lv.ML, fit.measures=TRUE, rsquare = F)
+
+fitMeasures(val.fit.lv.ML,fit.measures = 
+              c("chisq","df","pvalue","cfi","rmsea","gfi", "srmr"))
+mod.v <- modindices(val.fit.lv.ML,sort. = T)
+mod.v[mod.v$mi>3 & (mod.v$op == "~~"|mod.v$op == "~"),] 
+
+# model prediction @ val location ####
+B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
+# Identity matrix (Kappa coefficients)
+I <- diag(nrow = 9, ncol = 9)
+# Matrix of Gamma coefficients
+A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19]
+# Matrix of Psi coefficients (model error variance-covariance)
+V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] 
+# Matrix of measurement error (Epsylon)
+Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] 
+IB <- solve(I - B)
+
+# element definition
+VAL[,28:36] <- NA
+names(VAL)[28:36] <- paste0(names(VAL)[2:10], ".p")
+a <- VAL[-(1:nrow(VAL)),c(2:10)] #observed
+b <- VAL[-(1:nrow(VAL)),c(28:36)] #predicted
+v <- VAL[-(1:nrow(VAL)),c(2:10)] #variance(s)
+resids <- VAL[-(1:nrow(VAL)),c(2:10)] #residuals
+theta <- VAL[-(1:nrow(VAL)),c(2:10)] # for mean and median
+# Running Prediction @ i location #
+for(i in seq_along(VAL[,1])){ 
   # p is a matrix with the 10 external drivers
-  p = as.vector(as.matrix(pre[i,colnames(A)])) # values of covariates ordered
+  p = as.vector(as.matrix(VAL[i,colnames(A)])) # values of covariates ordered
   p = matrix(p, nrow = 10, ncol = 1)           # by lavaan sequence
   # prediction 
-  pre[i,28:36] = t(IB %*% A %*% p) # key equation 
+  VAL[i,28:36] = t(IB %*% A %*% p) # key equation 
   # calculate standarised squared standard error
   ## theta is standarised squared standard error
   ## theta = ((observed-predicted)^2)/error variance=(standard error^2)
-  a[i,] <- pre[i,c(2:10)] # observed values
-  b[i,] <- pre[i,c(28:36)] # predicted values
+  a[i,] <- VAL[i,c(2:10)] # observed values
+  b[i,] <- VAL[i,c(28:36)] # predicted values
   v <- diag(IB%*%V%*%t(IB)+Th) # error variance (it is not diagonal!)
   resids[i,] <- a[i,] - b[i,] # residuals
   theta[i,] <- (resids[i,]^2)/v # theta 
-  
-  # Error variance #
-  Var[i,] <- diag(IB %*% V %*% t(IB))
-  
-  #bar time
-  setTxtProgressBar(pb, i)
 }
 
+# Accuracy measures ####
+# Residuals #
+Res.v <- cbind(VAL[,1], 
+               unstd(VAL[,2:10],  STt[2:10,]), 
+               unstd(VAL[,28:36], STt[2:10,])
+               )
+# plot residuals
+par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
+for (i in 2:10) {
+  lim = c(min(c(Res.v[,i],Res.v[,i+9])), max(c(Res.v[,i],Res.v[,i+9])))
+  plot(Res.v[,i+9] ~ Res.v[,i], main = paste(names(Res.v)[i]), xlab = "measured",
+       ylab = "predicted", col = "dark red", xlim = lim, ylim = lim)
+  abline(0,1)
+  abline(lm(Res.v[,i+9] ~ Res.v[,i]), col = "blue")
+}
+
+# create report ####
+report.v <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
+                     mean_theta = NA, median_th = NA)
+for (i in 2:10) {
+  # ME <- mean error 
+  ME  <-  mean(Res.v[,i] - Res.v[,i + 9])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((Res.v[,i] - Res.v[,i + 9]) ^ 2))
+  MSE <- mean((Res.v[,i] - Res.v[,i + 9]) ^ 2)
+  # SS (Sum of squares)
+  SS <- sum((Res.v[,i] - Res.v[,i + 9]) ^ 2)
+  # fill report table
+  report.v[i-1,1:4] <- c(names(VAL)[i], ME, RMSE, SS)
+}
+
+for(i in 1:9){
+  report.v$mean_theta[i] <- mean(theta[,i])
+  report.v$median_th[i] <- median(theta[,i])
+}
+report.v
+STtv <- as.data.frame(STtv)
+STtv$SS <- NA 
+for(i in seq_along(names(val))){
+  STtv$SS[i] <- sum(( val[,i] - STtv$mean[i])^2)
+}
+
+report.v$R2 <- 1 - (as.numeric(report.v$SS) / as.numeric(STtv$SS[2:10]))
+report.v
+
+# plot mesured vs predicted combined ####
+par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
+
+rsq.v<- NULL
+CEC.v <- rbind(as.matrix(Res.v[,c(2,11)]), as.matrix(Res.v[,c(3,12)]),
+             as.matrix(Res.v[,c(4,13)]))
+colnames(CEC.v) <- c("CECo","CECp")
+#rownames(CEC.v) <- 1:length(rownames(CEC.v))
+CEC.v <- as.data.frame(CEC.v)
+rsq.v[1] <- 1 - (sum((CEC.v$CECo - CEC.v$CECp)^2)/
+                 sum((mean(CEC.v$CECo)-CEC.v$CECo)^2))
+lim = round(c(min(c(CEC.v[,1],CEC.v[,2])), max(c(CEC.v[,1],CEC.v[,2]))))
+plot(CEC.v[,2]~CEC.v[,1], xlim = lim, ylim= lim, xlab = "measured",
+       ylab = "predicted", main = "CEC residuals", col = "dark red")
+abline(0,1)
+abline(lm(CEC.v[,2]~CEC.v[,1]),col = "blue")
+
+OC.v <- rbind(as.matrix(Res.v[,c(5,14)]), as.matrix(Res.v[,c(6,15)]),
+            as.matrix(Res.v[,c(7,16)]))
+colnames(OC.v) <- c("OCo","OCp")
+rownames(OC.v) <- 1:length(rownames(OC.v))
+OC.v <- as.data.frame(OC.v)
+rsq.v[2] <- 1 - (sum((OC.v$OCo - OC.v$OCp)^2)/
+             sum((mean(OC.v$OCo)-OC.v$OCo)^2))
+lim = round(c(min(c(OC.v[,1],OC.v[,2])), max(c(OC.v[,1],OC.v[,2]))))
+plot(OC.v[,2]~OC.v[,1], xlim = lim, ylim= lim, xlab = "measured",
+       ylab = "predicted", main = "OC residuals", col = "dark red")
+abline(0,1)
+abline(lm(OC.v[,2]~OC.v[,1]),col = "blue")
+
+clay.v <- rbind(as.matrix(Res.v[,c(8,17)]), as.matrix(Res.v[,c(9,18)]),
+              as.matrix(Res.v[,c(10,19)]))
+
+colnames(clay.v) <- c("clayo","clayp")
+rownames(clay.v) <- 1:length(rownames(clay.v))
+clay.v <- as.data.frame(clay.v)
+rsq.v[3] <- 1 - (sum((clay.v$clayo - clay.v$clayp)^2)/
+             sum((mean(clay.v$clayo)-clay.v$clayo)^2))
+lim = round(c(min(c(clay.v[,1],clay.v[,2])), max(c(clay.v[,1],clay.v[,2]))))
+plot(clay.v[,2]~clay.v[,1], xlim = lim, ylim= lim, xlab = "measured",
+       ylab = "predicted", main = "Clay residuals", col = "dark red")
+abline(0,1)
+abline(lm(clay.v[,2]~clay.v[,1]),col = "blue")
+
+
+# create report by soil property ####
+report2.v <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, r2 = NA)
+z <- cbind(CEC.v, OC.v, clay.v)
+for (i in c(1,3,5)) {
+  # ME <- mean error 
+  ME  <-  mean(z[,i] - z[,i + 1])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((z[,i] - z[,i + 1]) ^ 2))
+  MSE <- mean((z[,i] - z[,i + 1]) ^ 2)
+  # fill report table
+  report2.v[i,1:3] <- c(names(z)[i], ME, RMSE)
+}
+
+report2.v$r2[1] <- rsq.v[1]
+report2.v$r2[3] <- rsq.v[2]
+report2.v$r2[5] <- rsq.v[3]
+
+report2.v <- report2.v[c(-4,-2),]
+report2.v
 
 
 
