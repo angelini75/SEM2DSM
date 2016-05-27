@@ -174,6 +174,7 @@ for(i in seq_along(files_m)) {
   stack <- list()
   names(samples@data)[length(samples@data)] <- header_m[i]
 }  
+samples <- spTransform( samples, posgar98)
 
 samples <- as.data.frame(samples)
 
