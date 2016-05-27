@@ -18,8 +18,9 @@ hor$horizonte <- as.character(hor$horizonte)
 hor[59,3] <- "X"
 hor[332,3] <- "A"
 hor[341,3] <- "X"
-hor[365,3] <- "X"
+# hor[365,3] <- "X"
 hor[390,3] <- "X"
+hor <- hor[-364,] 
 # mistakes in hor
 #  
 # en hor 64320 (64534 64793 64698) (64837 64903 65036)
@@ -107,6 +108,7 @@ length(unique(hor.xy$sitio.hor[hor.xy$hor == "A"]))
 #Thickness
 hor.xy$thick <- hor.xy$maxbot - hor.xy$mintop
 samples <- unique(hor.xy[,c(2,11,12,7,13,14,15,8:10)])
+samples[samples$sitio=="udic1-65",]
 
 A <- samples[samples$hor=="A",]
 B <- samples[samples$hor=="B",]
