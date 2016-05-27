@@ -178,6 +178,7 @@ for(i in seq_along(files_m)) {
 samples <- as.data.frame(samples)
 
 samples <- samples[,c(-2,-3,-4,-5)]
+samples <- samples[,c(1,3,6,9,2,5,8,4,7,10,11:28)]
 name(samples)
 setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 write.csv(samples,"val.data.csv")
