@@ -235,7 +235,6 @@ mod[mod$mi>3 & (mod$op == "~~"|mod$op == "~~"),]
 # Element definition
 pre <- cbind(D[1,], matrix(nrow=1,ncol= 9, data = NA,
                            dimnames = list(NULL,paste0(names(D)[2:10],".p"))))
-
 a <- pre[-(1:nrow(pre)),c(2:10)] #observed
 b <- pre[-(1:nrow(pre)),c(2:10)] #predicted
 v <- pre[-(1:nrow(pre)),c(2:10)] #variance(s)
@@ -627,13 +626,135 @@ report2.v <- report2.v[c(-4,-2),]
 report2.v
 
 
+# MAPS PREDICTION ####
 
 
+# extract covariates values ####
+setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
+# libraries
+library(raster)
+library(maptools)
+library(sp)
+library(rgdal)
 
+# location of predictions
+pred <- read.csv("mask_231m2.csv")
+coordinates(pred) <- ~X+Y
 
+#define crs
+wgs84 <- CRS("+init=epsg:4326")
+posgar98 <- CRS("+init=epsg:22175")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
+# assign projection
+proj4string(pred) <- modis
+pred <- spTransform(pred, posgar98)
 
+# sdat files (dem covariates) 
+files <- list.files(pattern=".sdat$")
+header <- gsub(".sdat", "", files)
+header <- c("dem", "river", "wdist","maxc","mrvbf","slope","twi","vdchn","water") 
 
+# tif files (modis)
+files_m <- list.files(pattern=".tif$")
+# set names of covariates
+header_m <- c("lstm", "lstsd", "evim", "evisd", "ndwi.a", "ndwi.b", "ndwi.bsd")
+
+# extract values from files (.sdat)
+stack <- list()
+for(i in seq_along(files)) {
+  pred@data[,length(pred@data)+1] <- NULL
+  stack[[i]] <- readGDAL(files[i])
+  proj4string(stack[[i]]) <- posgar98
+  pred@data[,length(pred@data)+1] <- over(pred, stack[[i]])[,1]
+  stack <- list()
+  names(pred@data)[length(pred@data)] <- header[i]
+}  
+
+## extract values from modis files 
+stack <- list()
+# reproject endo to modis projection
+pred <- spTransform(pred, modis)
+for(i in seq_along(files_m)) {
+  pred@data[,length(pred@data)+1] <- NULL
+  stack[[i]] <- readGDAL(files_m[i])
+  proj4string(stack[[i]]) <- modis # change projection
+  pred@data[,length(pred@data)+1] <- over(pred, stack[[i]])[,1]
+  stack <- list()
+  names(pred@data)[length(pred@data)] <- header_m[i]
+}  
+pred <- spTransform(pred, posgar98)
+pred.df <- as.data.frame(pred)
+pred.df <- pred.df[complete.cases(pred.df),] 
+
+# transform
+pred.df$wdist <- pred.df$wdist^0.5
+pred.df$maxc <- (pred.df$maxc+20000)^2
+pred.df$slope <- pred.df$slope^0.25
+pred.df$twi <- log10(pred.df$twi)
+pred.df$vdchn <- log10(pred.df$vdchn+10)
+pred.df$ndwi.a <- (pred.df$ndwi.a+10)^.3
+
+# standardise
+as.data.frame(rownames(STt))
+pred.df <- pred.df[,-1]
+pred.df <- pred.df[,-9]
+pred.st <- std(x = pred.df,st = STt[11:27,])
+name(pred.st)
+# prediction
+pred.st[,18:26] <- NA
+names(pred.st)[18:26] <- names(D)[2:10]
+pred.st <- as.matrix(pred.st) # conversion to matrix to improve processing speed
+pb = txtProgressBar(min = 0, max = length(pred.st[,1]), initial = 0, style = 3)
+
+for(i in seq_along(pred.st[,1])){
+  p = as.vector(as.matrix(pred.st[i,colnames(A)])) # values of covariates ordered
+  p = matrix(p, nrow = 10, ncol = 1)           # by lavaan sequence
+  # prediction 
+  pred.st[i,18:26] = t(IB %*% A %*% p) # 
+  setTxtProgressBar(pb, i)
+}
+
+# unstandardize soil properties
+pred.un <- pred.st[,rownames(STt)[2:27]]
+for(i in seq_along(pred.un[1,])){
+  ST <- STt[2:27,]
+  pred.un[,i] <- (pred.un[,i] * ST$std.dev[i]) + ST$mean[i]
+}
+pred.un <- as.data.frame(pred.un)
+
+# rasterize results 
+library(sp)
+library(raster)
+coordinates(pred.un) <- ~X+Y
+proj4string(pred.un) <- posgar98
+pred.un <- spTransform(pred.un, modis)
+#spplot(pred.un[,2])
+
+y <- raster("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/mod13q1_tot_mean.tif")
+y[!y %in% NA] <- 0
+proj4string(y) <- modis
+names(y)<-"mask"
+res(y)
+
+r <- rasterize(x = pred.un[1:9],y = y,background= NA)
+spplot(r[[1]])
+ADE<- readShapePoly("/media/marcos/L0135974_DATA/UserData/BaseARG/study area/ADE_MODIS.shp")
+plot(ADE)
+r<-mask(x = r,mask = ADE)
+TWI <- raster("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/TWI250.sdat")
+proj4string(TWI) <- posgar98
+
+rp <- projectRaster(from = r,to = TWI,res = res(TWI), crs = posgar98, method = 'bilinear')
+library(rasterVis)
+levelplot(rp[[2:4]],)
+levelplot(rp[[5:7]],)
+levelplot(rp[[8:10]],)
+s<- as.data.frame(summary(rp[[2:8]],digits=4))
+names(s) <- names(rp[[2:8]])
+
+raster::NAvalue(rp)<--99999
+writeRaster(x = rp[[2:10]],filename ="paper2.tif", overwrite=T,bylayer=TRUE,suffix=names(rp)[2:10])
 
 
 
