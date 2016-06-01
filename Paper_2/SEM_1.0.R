@@ -430,14 +430,32 @@ write.csv(report2, "report.bysp.csv")
 library(semPlot)
 semPaths(my.fit.lv.ML,what = "est",style = "LISREL", layout = "circle")
 
-# Covariation assessment ####
-unstd(x = t(B),st = STt[2:10,2])
-apply(d[,2:10],2,mean)%*%t(apply(d[,2:10],2,mean))
-round(cov(D[,2:10])-(IB %*% V %*% t(IB)),3) # substract measurement error to S
+# COVARIATION ASSESSMENT ####
+B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
+# Identity matrix (Kappa coefficients)
+I <- diag(nrow = 9, ncol = 9)
+# Matrix of Gamma coefficients
+A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19]
+# Matrix of Psi coefficients (model error variance-covariance)
+V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] 
+# Matrix of measurement error (Epsylon)
+Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] 
+IB <- solve(I - B)
+
+S <- cov(D[,2:10])-(Th)
+SigmaTheta <- IB %*% V %*% t(IB)
+
+library(rasterVis)
+levelplot(S)
+levelplot(SigmaTheta)
+levelplot(SigmaTheta-S)
+
+round(residuals(my.fit.lv.ML, "raw")$cov[1:9,1:9], 3)
+
 # How to estimate sigma-hat and S
 # https://groups.google.com/d/msg/lavaan/X8frgnSOFRg/W3foOvEvf2QJ
 
-
+clipboard(my.fit.lv.ML,fit.measures=TRUE,standardized=TRUE, rsquare = TRUE)
 # VALIDATION ####
 setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 val <- read.csv("val.data.csv")[,-1]
