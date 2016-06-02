@@ -452,6 +452,25 @@ levelplot(SigmaTheta-S)
 
 round(residuals(my.fit.lv.ML, "raw")$cov[1:9,1:9], 3)
 
+# How to estimate Sigma.hat and residual matrix by Yves Rosseel
+# Two things: you need the full matrices, including the
+# x's (not just the first three rows/cols), and S is divided by N (not N-1):
+
+attach(inspect(my.fit.lv.ML, "est"))
+IB.inv <- solve(diag( nrow(beta) ) - beta)
+Sigma.hat <- lambda %*% IB.inv %*% psi %*% t(IB.inv) %*% t(lambda) + theta
+# should be the same as fitted(my.fit)$cov
+
+# sample cov (divided by N, instead of N-1)
+S <- cov(D[,lavNames(my.fit.lv.ML)]) * (nobs(my.fit.lv.ML) - 1) / nobs(my.fit.lv.ML)
+
+# residuals
+S - Sigma.hat
+levelplot((Sigma.hat - S)[1:9,1:9])
+round((S-Sigma.hat)[1:9,1:9],3) 
+round(resid(my.fit.lv.ML)$cov[1:9,1:9],3)
+
+
 # How to estimate sigma-hat and S
 # https://groups.google.com/d/msg/lavaan/X8frgnSOFRg/W3foOvEvf2QJ
 
