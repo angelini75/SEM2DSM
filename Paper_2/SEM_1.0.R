@@ -343,7 +343,7 @@ report
 
 setwd("~/Documents/SEM2DSM1/Paper_2/reports/")
 #setwd("~/big/SEM2DSM1/Paper_2/reports/")
-write.csv(report, "report.byhor.csv")
+#write.csv(report, "report.byhor.csv")
 # R2
 # 1 0.17997897
 # 2 0.49938652
@@ -419,7 +419,7 @@ report2$r2[5] <- rsq[3]
 
 report2 <- report2[c(-4,-2),]
 report2
-write.csv(report2, "report.bysp.csv")
+#write.csv(report2, "report.bysp.csv")
 # Soil_property                   ME              RMSE        r2
 # 1          CECo -0.00419372399590419  4.29902877759584 0.5262497
 # 3           OCo 3.66189158698424e-05 0.249115654848832 0.9079135
@@ -450,7 +450,8 @@ levelplot(S)
 levelplot(SigmaTheta)
 levelplot(SigmaTheta-S)
 
-round(residuals(my.fit.lv.ML, "raw")$cov[1:9,1:9], 3)
+# write.csv(round(residuals(my.fit.lv.ML, "raw")$cov[1:9,1:9], 3), 
+#           "residual.matrix.csv")
 
 # How to estimate Sigma.hat and residual matrix by Yves Rosseel
 # Two things: you need the full matrices, including the
@@ -467,14 +468,71 @@ S <- cov(D[,lavNames(my.fit.lv.ML)]) * (nobs(my.fit.lv.ML) - 1) / nobs(my.fit.lv
 # residuals
 S - Sigma.hat
 levelplot((Sigma.hat - S)[1:9,1:9])
+levelplot((S)[9:1,1:9])
+levelplot((Sigma.hat)[9:1,1:9])
 round((S-Sigma.hat)[1:9,1:9],3) 
 round(resid(my.fit.lv.ML)$cov[1:9,1:9],3)
 
+# MLR comparison ####
+attach(D)
 
-# How to estimate sigma-hat and S
-# https://groups.google.com/d/msg/lavaan/X8frgnSOFRg/W3foOvEvf2QJ
+mod.ceca <- lm(CEC.A ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                         twi + ndwi.a)
+mod.cecb <- lm(CEC.B ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                         twi + ndwi.a)
+mod.cecc <- lm(CEC.C ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                         twi + ndwi.a)
+mod.oca <- lm(OC.A ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                         twi + ndwi.a)
+mod.ocb <- lm(OC.B ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                         twi + ndwi.a)
+mod.occ <- lm(OC.C ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                         twi + ndwi.a)
+mod.claya <- lm(clay.A ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                         twi + ndwi.a)
+mod.clayb <- lm(clay.B ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                         twi + ndwi.a)
+mod.clayc <- lm(clay.C ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                  twi + ndwi.a)
 
-clipboard(my.fit.lv.ML,fit.measures=TRUE,standardized=TRUE, rsquare = TRUE)
+
+beta.lm <- matrix(data = 0, nrow = 19, ncol = 19,dimnames = 
+                    list(rownames(beta), colnames(beta)))
+beta.lm[1,10:19] <- mod.ceca$coefficients[2:11]
+beta.lm[2,10:19] <- mod.cecb$coefficients[2:11]
+beta.lm[3,10:19] <- mod.cecc$coefficients[2:11]
+beta.lm[4,10:19] <- mod.oca$coefficients[2:11]
+beta.lm[5,10:19] <- mod.ocb$coefficients[2:11]
+beta.lm[6,10:19] <- mod.occ$coefficients[2:11]
+beta.lm[7,10:19] <- mod.claya$coefficients[2:11]
+beta.lm[8,10:19] <- mod.clayb$coefficients[2:11]
+beta.lm[9,10:19] <- mod.clayc$coefficients[2:11]
+
+psi.lm <- matrix(data = 0, nrow = 19, ncol = 19,dimnames = 
+                    list(rownames(beta), colnames(beta)))
+psi.lm[1,1] <- summary(mod.ceca)$sigma^2
+psi.lm[2,2] <- summary(mod.cecb)$sigma^2
+psi.lm[3,3] <- summary(mod.cecc)$sigma^2
+psi.lm[4,4] <- summary(mod.oca)$sigma^2
+psi.lm[5,5] <- summary(mod.ocb)$sigma^2
+psi.lm[6,6] <- summary(mod.occ)$sigma^2
+psi.lm[7,7] <- summary(mod.claya)$sigma^2
+psi.lm[8,8] <- summary(mod.clayb)$sigma^2
+psi.lm[9,9] <- summary(mod.clayc)$sigma^2
+psi.lm[10:19,10:19] <- psi[10:19,10:19]
+#
+
+
+IB.lm.inv <- solve(diag( nrow(beta.lm) ) - beta.lm)
+lambda.lm <- diag( nrow(beta.lm) )
+Sigma.hat.lm <- lambda.lm %*% IB.lm.inv %*% psi.lm %*% t(IB.lm.inv) %*% t(lambda.lm) 
+
+levelplot((Sigma.hat.lm - S)[1:9,1:9])
+levelplot((S)[9:1,1:9])
+levelplot((Sigma.hat.lm)[9:1,1:9])
+round((S-Sigma.hat.lm)[1:9,1:9],3) 
+
+
 # VALIDATION ####
 setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 val <- read.csv("val.data.csv")[,-1]
