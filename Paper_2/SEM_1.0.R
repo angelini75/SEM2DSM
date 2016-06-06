@@ -431,24 +431,24 @@ library(semPlot)
 semPaths(my.fit.lv.ML,what = "est",style = "LISREL", layout = "circle")
 
 # COVARIATION ASSESSMENT ####
-B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
-# Identity matrix (Kappa coefficients)
-I <- diag(nrow = 9, ncol = 9)
-# Matrix of Gamma coefficients
-A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19]
-# Matrix of Psi coefficients (model error variance-covariance)
-V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] 
-# Matrix of measurement error (Epsylon)
-Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] 
-IB <- solve(I - B)
+# B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
+# # Identity matrix (Kappa coefficients)
+# I <- diag(nrow = 9, ncol = 9)
+# # Matrix of Gamma coefficients
+# A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19]
+# # Matrix of Psi coefficients (model error variance-covariance)
+# V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] 
+# # Matrix of measurement error (Epsylon)
+# Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] 
+# IB <- solve(I - B)
 
-S <- cov(D[,2:10])-(Th)
-SigmaTheta <- IB %*% V %*% t(IB)
+# S <- cov(D[,2:10])-(Th)
+# SigmaTheta <- IB %*% V %*% t(IB)
 
 library(rasterVis)
-levelplot(S)
-levelplot(SigmaTheta)
-levelplot(SigmaTheta-S)
+# levelplot(S)
+# levelplot(SigmaTheta)
+# levelplot(SigmaTheta-S)
 
 # write.csv(round(residuals(my.fit.lv.ML, "raw")$cov[1:9,1:9], 3), 
 #           "residual.matrix.csv")
@@ -463,19 +463,22 @@ Sigma.hat <- lambda %*% IB.inv %*% psi %*% t(IB.inv) %*% t(lambda) + theta
 # should be the same as fitted(my.fit)$cov
 
 # sample cov (divided by N, instead of N-1)
-S <- cov(D[,lavNames(my.fit.lv.ML)]) * (nobs(my.fit.lv.ML) - 1) / nobs(my.fit.lv.ML)
+S <- cov(D[,lavNames(my.fit.lv.ML)]) * (nobs(my.fit.lv.ML) - 1) /
+    nobs(my.fit.lv.ML)
 
 # residuals
-S - Sigma.hat
-levelplot((Sigma.hat - S)[1:9,1:9])
-levelplot((S)[9:1,1:9])
+DIF <- (S - Sigma.hat)
+dif <- levelplot(DIF[1:9,1:9])
+s <- levelplot(S[1:9,1:9])
+sigmah <- levelplot(Sigma.hat[1:9,1:9])
+
+levelplot((S)[9:1,1:9], outer = (Sigma.hat)[9:1,1:9], allow.multiple = outer)
 levelplot((Sigma.hat)[9:1,1:9])
 round((S-Sigma.hat)[1:9,1:9],3) 
 round(resid(my.fit.lv.ML)$cov[1:9,1:9],3)
 
 # MLR comparison ####
 attach(D)
-
 mod.ceca <- lm(CEC.A ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
                          twi + ndwi.a)
 mod.cecb <- lm(CEC.B ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
@@ -527,10 +530,16 @@ IB.lm.inv <- solve(diag( nrow(beta.lm) ) - beta.lm)
 lambda.lm <- diag( nrow(beta.lm) )
 Sigma.hat.lm <- lambda.lm %*% IB.lm.inv %*% psi.lm %*% t(IB.lm.inv) %*% t(lambda.lm) 
 
-levelplot((Sigma.hat.lm - S)[1:9,1:9])
-levelplot((S)[9:1,1:9])
-levelplot((Sigma.hat.lm)[9:1,1:9])
-round((S-Sigma.hat.lm)[1:9,1:9],3) 
+sigmah.lm <- levelplot(Sigma.hat.lm[1:9,1:9])
+dif.lm <- levelplot(Sigma.hat.lm[1:9,1:9]-S[1:9,1:9])
+print(c(dif,dif.lm, merge.legends = FALSE))
+
+comb_levObj <- c(dif.lm, dif, layout = c(2,1), merge.legends = F)
+print(comb_levObj,scales = list(draw = FALSE))
+
+
+t1 <- levelplot(counts[[1]], main="",
+                col.regions=colorRampPalette(c("white","red"))(256))
 
 
 # VALIDATION ####
