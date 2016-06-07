@@ -554,8 +554,13 @@ print(c(sigmah,s, sigmah.lm), main =NULL)
 # print(sigmah, split=c(2,1,3,1), newpage=FALSE)
 # print(sigmah.lm, split=c(3,1,3,1), newpage=FALSE)
 
+plot(pre$CEC.A.p~pre$OC.A.p)
+plot(D$CEC.A~D$OC.A)
+plot(predict.lm(mod.ceca)~predict.lm(mod.oca))
 
-
+plot(pre$CEC.B.p~pre$CEC.C.p)
+plot(D$CEC.B~D$CEC.C)
+plot(predict.lm(mod.cecb)~predict.lm(mod.cecc))
 # VALIDATION ####
 setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 val <- read.csv("val.data.csv")[,-1]
