@@ -561,6 +561,12 @@ plot(predict.lm(mod.ceca)~predict.lm(mod.oca))
 plot(pre$CEC.B.p~pre$CEC.C.p)
 plot(D$CEC.B~D$CEC.C)
 plot(predict.lm(mod.cecb)~predict.lm(mod.cecc))
+
+# SRMR
+
+sum(sum(()))^.5
+
+
 # VALIDATION ####
 setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 val <- read.csv("val.data.csv")[,-1]
