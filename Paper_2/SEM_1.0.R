@@ -564,7 +564,20 @@ plot(predict.lm(mod.cecb)~predict.lm(mod.cecc))
 
 # SRMR
 
-sum(sum(()))^.5
+#sum(sum(()))^.5
+
+unstd(x = t(B),st = STt[2:10,2])
+apply(d[,2:10],2,mean)%*%t(apply(d[,2:10],2,mean))
+cov(D[,2:10])
+SigmaHat <- (IB %*% V %*% t(IB))+Th # substract measurement error to S
+S <- cov(D[,2:10])
+round(SigmaHat-S, 3)
+par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
+levelplot(S)
+library(lattice)
+lattice::levelplot(SigmaHat)
+levelplot(S-SigmaHat)
+sum(SigmaHat-S)
 
 
 # VALIDATION ####
