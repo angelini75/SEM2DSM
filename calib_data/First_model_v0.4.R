@@ -3,7 +3,7 @@ rm(list=ls())
 # install.packages("lavaan", repos="http://www.da.ugent.be", type="source")
 library(lavaan)
 name <- function(x) { as.data.frame(names(x))} # as.data.frame(.Primitive("names"))
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
+setwd("calib_data/")
 d <-read.csv("calib.data-2.1.csv")[,-1]
 
 ############### PRE-PROCESSING ################## 
@@ -68,8 +68,8 @@ for(i in 1:ncol(D)){
 }
 dimnames(D)
 D <- D[,c(1,6,2:5,7:20)]
-
-
+D
+#write.csv(D,"D.csv")
 ############### FITTING MODEL ######################
 
 #### Third Model####
