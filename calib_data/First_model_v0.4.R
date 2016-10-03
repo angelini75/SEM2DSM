@@ -145,7 +145,7 @@ library(maptools)
 library(sp)
 library(rgdal)
 
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling")
 
 # sdat files (dem) 
 files <- list.files(pattern=".sdat$")
@@ -155,7 +155,7 @@ pred <- read.csv("mask_231m2.csv")
 
 
 # tif files (modis)
-files_m <- list.files(pattern=".tif$")
+files_m <- list.files(pattern=".tif$")[1:4]
 header_m <- c("lstm", "lstsd", "evim", "evisd")
 # for(i in 1:4){
 #   print(spplot(readGDAL(files_m[i])))
@@ -220,11 +220,15 @@ pred.df <- pred.df[,c(16:29,1:15)]
 pred <- pred.df
 pred <- pred[,c(4:10,15:29)]
 ##@## data normalization
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/2_Calibration/simplest_model")
 #P <-read.csv("calib.data-2.1.csv")[,-1]
 for(i in 8:20){
   pred[,i]<- (pred[,i]- N$mean[i])/N$sd[i]
 }
+# SAVING pred
+write.csv(pred, "pred.csv")
+# LOAD STANDARDISED PREDICTORS 
+pred <- read.csv("pred.csv")[,-1]
 
 # for(i in n){
 #   boxplot(c(d[i],pred[i]))
