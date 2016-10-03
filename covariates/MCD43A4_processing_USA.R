@@ -38,8 +38,106 @@
 # # it can be directly read from ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/ (Curl package)
 # # be aware of repeated files
 # 
+rm(list=ls())
+#setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/MODIS") # @RStudio desktop
+setwd("~/big/USA/MODIS/")
+library(doParallel)
+require(RCurl)
 
-setwd(dir = "sftp://mangelini@85.214.221.253/home/mangelini/bigdir")
+
+##read directories from ftp site (fixed MODIS periods). Function developed by Ype.
+readdir<-function(fil){
+  filenames <- try(getURL(fil,ftp.use.epsv = FALSE, dirlistonly = TRUE))
+  filenames <- paste(fil, strsplit(filenames, "\r*\n")[[1]], sep = "")
+  files <- filenames[grepl('\\.', substr(filenames,30,nchar(filenames)) )|
+                       grepl('readme', substr(filenames,30,nchar(filenames)) )|
+                       grepl('README', substr(filenames,30,nchar(filenames)) )]
+  dirs <- setdiff(filenames, files)
+  return(dirs)
+}
+
+readfiles<-function(fil){
+  filenames <- try(getURL(fil,ftp.use.epsv = FALSE, ftplistonly = TRUE))
+  filenames <- paste(fil, strsplit(filenames, "\r*\n")[[1]], sep = "")
+  files <- filenames[grepl('//.', substr(filenames,30,nchar(filenames)) )|
+                       grepl('readme', substr(filenames,30,nchar(filenames)) )|
+                       grepl('README', substr(filenames,30,nchar(filenames)) )]
+  filenames
+}
+
+#MODIS URL
+URL <- "ftp://ladsweb.nascom.nasa.gov/allData/5"
+#define MODIS product
+MODISP <- "MCD43A"
+#define tiles
+tiles <- c("h09v05", "h10v04", "h10v05")
+#define years
+yrs <- as.character(2001:2015)
+#get periods
+period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/","",
+               readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/"))
+# get file urls.
+urls <- NULL
+u <- NULL
+registerDoParallel(cores=10) 
+for(i in seq_along(yrs[1])){
+  foreach(j = seq_along(period)) %dopar%{
+    u <- ""
+    u <- readfiles(paste0(URL,"/",MODISP,"/", yrs[i],"/",period[j], "/"))
+    for(k in seq_along(tiles)){
+      urls <- append(urls,u[grep(tiles[k], u)])
+    }
+  }
+}
+period2000 <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2000/","",
+               readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2000/"))
+for (i in seq_along(yrs[2:16])){
+  foreach(j = seq_along(period2000)) %dopar%{
+    u <- list()
+    u[[1]] <- readfiles(paste0(URL,"/", yrs[i],"/",period[j], "/"))
+    for(k in seq_along(tiles)){
+      urls <- append(urls,u[grep(tiles[k], u[[1]])])
+    }
+  }
+}
+
+length(urls)
+
+# download HDF from urls
+foreach(j = seq_along(tiles)){
+  n <- as.numeric(rownames(granuleID[granuleID$tile == unique(granuleID$tile)[j],]))
+  # parallel processing 6 cores with doParallel package (it allows to open several downloads at once)
+  # miss-connection could be solved with try() function
+  foreach(i= n)  %dopar%{
+    download.file(files$Online.Access.URLs[i],
+                  destfile = paste("output/",granuleID$tile[i],"/", granuleID$tile[i],"_",
+                                   granuleID$date[i], ".hdf", sep=""), quiet = TRUE,
+                  mode = "wb", method = "wget", 
+                  extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
+  }
+}
+
+grepl(pattern = "h09v05",x =  readfiles(URL))
+
+# if(interactive() && url.exists('ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/257')) {
+#   
+#   url = 'ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/257'
+#   filenames = getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE)
+#   
+#   # Deal with newlines as \n or \r\n. (BDR)
+#   # Or alternatively, instruct libcurl to change \n's to \r\n's for us with crlf = TRUE
+#   # filenames = getURL(url, ftp.use.epsv = FALSE, ftplistonly = TRUE, crlf = TRUE)
+#   filenames = paste(url, strsplit(filenames, "\r*\n")[[1]], sep = "")
+#   con = getCurlHandle( ftp.use.epsv = FALSE)
+#   
+#   # there is a slight possibility that some of the files that are
+#   # returned in the directory listing and in filenames will disappear
+#   # when we go back to get them. So we use a try() in the call getURL.
+#   contents = sapply(filenames[1:5], function(x) try(getURL(x, curl = con)))
+#   names(contents) = filenames[1:length(contents)]
+# }
+
+
 
 f <-list.files("output/h12v12/", pattern = ".hdf$")
 f <- gsub(pattern = "h12v12_",replacement = "",x = f)
