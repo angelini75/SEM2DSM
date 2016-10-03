@@ -1,3 +1,4 @@
+d <- read.csv("calib.data-sp.csv")
 p <- unique(d)
 p$top[p$id.p.h=="350_B1"]  <- 25
 p[p$id.p==568,1:10][2,4] <- 18
@@ -8,12 +9,13 @@ p$hor[p$hor== "AB|BA"] <- "AB.BA"
 p$name <- as.factor(p$hor)
 #p <- d[d$id.p== c(619, 350),1:15]
 
+library(aqp)
 aqp::depths(p)<- id.p ~ top + bottom 
 name(p)
 p[3,]
 horizons(p)
 
-a <- slab(p, fm = ~ silt20 )
+a <- slab(p, fm = ~ silt20)
 b <- slab(p, fm = ~ clay )
 # stack into long format
 ab <- make.groups(a, b)
