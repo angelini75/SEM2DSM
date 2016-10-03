@@ -440,7 +440,8 @@ semPaths(my.fit.lv.ML,what = "est",style = "LISREL", layout = "circle")
 
 attach(inspect(my.fit.lv.ML, "est"))
 IB.inv <- solve(diag( nrow(beta) ) - beta)
-Sigma.hat <- lambda %*% IB.inv %*% psi %*% t(IB.inv) %*% t(lambda) + theta
+Sigma.hat <- lambda %*% IB.inv %*% psi %*% t(IB.inv) %*% t(lambda) + 
+  inspect(my.fit.lv.ML, "est")$theta
 # should be the same as fitted(my.fit)$cov
 
 # sample cov (divided by N, instead of N-1)
