@@ -68,56 +68,76 @@ readfiles<-function(fil){
 #MODIS URL
 URL <- "ftp://ladsweb.nascom.nasa.gov/allData/5"
 #define MODIS product
-MODISP <- "MCD43A"
+MODISP <- "MCD43A4"
 #define tiles
 tiles <- c("h09v05", "h10v04", "h10v05")
 #define years
-yrs <- as.character(2001:2015)
+yrs <- as.character(2000:2015)
 #get periods
 period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/","",
                readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/"))
 # get file urls.
-urls <- NULL
 u <- NULL
-registerDoParallel(cores=10) 
-for(i in seq_along(yrs[1])){
-  foreach(j = seq_along(period)) %dopar%{
-    u <- ""
-    u <- readfiles(paste0(URL,"/",MODISP,"/", yrs[i],"/",period[j], "/"))
-    for(k in seq_along(tiles)){
-      urls <- append(urls,u[grep(tiles[k], u)])
-    }
-  }
-}
-period2000 <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2000/","",
-               readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2000/"))
-for (i in seq_along(yrs[2:16])){
-  foreach(j = seq_along(period2000)) %dopar%{
-    u <- list()
-    u[[1]] <- readfiles(paste0(URL,"/", yrs[i],"/",period[j], "/"))
-    for(k in seq_along(tiles)){
-      urls <- append(urls,u[grep(tiles[k], u[[1]])])
-    }
+for(i in seq_along(yrs)){
+  for(j in seq_along(period)){
+    u <-append(u,(paste0(URL,"/",MODISP,"/", yrs[i],"/",period[j], "/")))
   }
 }
 
-length(urls)
+u <- u[-1:-6]
+
+# TILE #1
+n <- NULL 
+for(i in seq_along(u)){
+  z <- readfiles(u[i])
+  n[i] <- z[grep(tiles[1], z)][1]
+  ifelse(test = is.na(n[i]),
+         n[i] <- z[grep(tiles[1], z)][1],
+         n[i])
+}
+u2 <- u[which(is.na(n))]
+u2
+n2 <- NULL
+for(i in seq_along(u)){
+  z <- readfiles(u2[i])
+  n2[i] <- z[grep(tiles[1], z)][1]
+  ifelse(test = is.na(n2[i]),
+         n2[i] <- z[grep(tiles[1], z)][1],
+         n2[i])
+}
+n2
 
 # download HDF from urls
-foreach(j = seq_along(tiles)){
-  n <- as.numeric(rownames(granuleID[granuleID$tile == unique(granuleID$tile)[j],]))
-  # parallel processing 6 cores with doParallel package (it allows to open several downloads at once)
-  # miss-connection could be solved with try() function
-  foreach(i= n)  %dopar%{
-    download.file(files$Online.Access.URLs[i],
-                  destfile = paste("output/",granuleID$tile[i],"/", granuleID$tile[i],"_",
-                                   granuleID$date[i], ".hdf", sep=""), quiet = TRUE,
-                  mode = "wb", method = "wget", 
-                  extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
+registerDoParallel(cores=10)
+foreach(i = seq_along(n)) %dopar%{
+  download.file(n[i], 
+                destfile = paste("output/",tiles[1],"/",
+                                 substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
+                quiet = TRUE, mode = "wb", method = "wget")
   }
-}
 
-grepl(pattern = "h09v05",x =  readfiles(URL))
+# TILE #2
+n <- NULL 
+for(i in seq_along(u)){
+  z <- readfiles(u[i])
+  n[i] <- z[grep(tiles[2], z)][1]
+  ifelse(test = is.na(n[i]),
+         n[i] <- z[grep(tiles[2], z)][1],
+         n[i])
+}
+u2 <- u[which(is.na(n))]
+
+# download HDF from urls
+registerDoParallel(cores=10)
+foreach(i = seq_along(n)) %dopar%{
+  download.file(n[i], 
+                destfile = paste("output/",tiles[2],"/",
+                                 substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
+                quiet = TRUE, mode = "wb", method = "wget")
+}
+u2
+
+#
 
 # if(interactive() && url.exists('ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/257')) {
 #   
