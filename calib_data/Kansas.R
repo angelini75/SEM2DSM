@@ -41,7 +41,7 @@ name(profiles)
 # [6] "hzn_desgn"    "cec_sum"      "cec_nh4"      "c_tot"        "oc"          
 # [11] "clay_tot_psa" "clay_f" 
 D <- profiles[,c(1:4,10,9,7,8,11,12,15,16,17,18)]
-summary(D)
+summary(D[D$top==0,])
 
 # copy values from c_tot to oc where oc == NA
 D$oc[is.na(D$oc)] <- D$c_tot[which(is.na(D$oc))]
@@ -61,7 +61,26 @@ D <- D[!(D$idp == 26252 | D$idp == 26253 | D$idp == 26254 | D$idp == 26255 |
            D$idp == 4496 | D$idp == 15608 | D$idp == 15608),]
 D <- D[!(D$hzn==""),]
 
-D[which(D$idp %in% D[D$hzn=="","idp"]),]
+D[which(D$idp %in% D[D$hzn=="","idp"]),] # should be zero
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/covar")
 library(raster)
