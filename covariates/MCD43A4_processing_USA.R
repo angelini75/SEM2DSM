@@ -137,6 +137,27 @@ foreach(i = seq_along(n)) %dopar%{
 }
 u2
 
+# TILE #3
+n <- NULL 
+for(i in seq_along(u)){
+  z <- readfiles(u[i])
+  n[i] <- z[grep(tiles[3], z)][1]
+  ifelse(test = is.na(n[i]),
+         n[i] <- z[grep(tiles[3], z)][1],
+         n[i])
+}
+u2 <- u[which(is.na(n))]
+
+# download HDF from urls
+registerDoParallel(cores=10)
+foreach(i = seq_along(n)) %dopar%{
+  download.file(n[i], 
+                destfile = paste("output/",tiles[3],"/",
+                                 substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
+                quiet = TRUE, mode = "wb", method = "wget")
+}
+u2
+
 #
 
 # if(interactive() && url.exists('ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/257')) {
