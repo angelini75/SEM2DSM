@@ -125,6 +125,8 @@ foreach(i = seq_along(n)) %dopar%{
                                  substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
                 quiet = TRUE, mode = "wb", method = "wget")
 }
+u2 <- c("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2007/145/",
+        "ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2010/113/")
 
 
 # TILE #3
