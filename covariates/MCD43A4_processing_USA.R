@@ -95,17 +95,7 @@ for(i in seq_along(u)){
          n[i] <- z[grep(tiles[1], z)][1],
          n[i])
 }
-u2 <- u[which(is.na(n))]
-u2
-n2 <- NULL
-for(i in seq_along(u)){
-  z <- readfiles(u2[i])
-  n2[i] <- z[grep(tiles[1], z)][1]
-  ifelse(test = is.na(n2[i]),
-         n2[i] <- z[grep(tiles[1], z)][1],
-         n2[i])
-}
-n2
+u1 <- u[which(is.na(n))]
 
 # download HDF from urls
 registerDoParallel(cores=10)
@@ -135,7 +125,7 @@ foreach(i = seq_along(n)) %dopar%{
                                  substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
                 quiet = TRUE, mode = "wb", method = "wget")
 }
-u2
+
 
 # TILE #3
 n <- NULL 
@@ -146,7 +136,7 @@ for(i in seq_along(u)){
          n[i] <- z[grep(tiles[3], z)][1],
          n[i])
 }
-u2 <- u[which(is.na(n))]
+u3 <- u[which(is.na(n))]
 
 # download HDF from urls
 registerDoParallel(cores=10)
@@ -156,27 +146,23 @@ foreach(i = seq_along(n)) %dopar%{
                                  substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
                 quiet = TRUE, mode = "wb", method = "wget")
 }
-u2
 
-#
+# rescuing missing files
 
-# if(interactive() && url.exists('ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/257')) {
-#   
-#   url = 'ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/257'
-#   filenames = getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE)
-#   
-#   # Deal with newlines as \n or \r\n. (BDR)
-#   # Or alternatively, instruct libcurl to change \n's to \r\n's for us with crlf = TRUE
-#   # filenames = getURL(url, ftp.use.epsv = FALSE, ftplistonly = TRUE, crlf = TRUE)
-#   filenames = paste(url, strsplit(filenames, "\r*\n")[[1]], sep = "")
-#   con = getCurlHandle( ftp.use.epsv = FALSE)
-#   
-#   # there is a slight possibility that some of the files that are
-#   # returned in the directory listing and in filenames will disappear
-#   # when we go back to get them. So we use a try() in the call getURL.
-#   contents = sapply(filenames[1:5], function(x) try(getURL(x, curl = con)))
-#   names(contents) = filenames[1:length(contents)]
-# }
+
+# extracting and mosaicing bands
+# b      length      Rad  SNR
+# 1 	 620 -  670 	21.8 	128
+# 2 	 841 -  876 	24.7 	201
+# 3 	 459 -  479 	35.3 	243
+# 4 	 545 -  565 	29.0 	228
+# 5 	1230 - 1250 	 5.4 	 74
+# 6 	1628 - 1652 	 7.3 	275
+# 7 	2105 - 2155 	 1.0 	110
+
+# we need bands 2 and 5
+
+
 
 
 
@@ -188,35 +174,28 @@ pj <- projection(hdfImage[[1]])
 pb <- txtProgressBar(min = 0, max = length(f), initial = 0, style = 3)
 
 for(i in 1:length(f)){
-hdfImage <- list() 
-hdfImage[[1]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:","output/h12v12/","h12v12_",f[i], ":MOD_Grid_BRDF:Nadir_Reflectance_Band3"))
-hdfImage[[2]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:","output/h13v12/","h13v12_",f[i], ":MOD_Grid_BRDF:Nadir_Reflectance_Band3"))
-n <- merge(raster(hdfImage[[1]]),raster(hdfImage[[2]]))
-m <- crop(x = n,y = mask.ext)
-raster::writeRaster(x = m, filename = paste0("/home/marcos/MCD43A4/B3/",f[i],".B3.tif"), overwrite=TRUE)
-setTxtProgressBar(pb,i)
+  hdfImage <- list() 
+  hdfImage[[1]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:","output/h12v12/","h12v12_",f[i], ":MOD_Grid_BRDF:Nadir_Reflectance_Band3"))
+  hdfImage[[2]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:","output/h13v12/","h13v12_",f[i], ":MOD_Grid_BRDF:Nadir_Reflectance_Band3"))
+  n <- merge(raster(hdfImage[[1]]),raster(hdfImage[[2]]))
+  m <- crop(x = n,y = mask.ext)
+  raster::writeRaster(x = m, filename = paste0("/home/marcos/MCD43A4/B3/",f[i],".B3.tif"), overwrite=TRUE)
+  setTxtProgressBar(pb,i)
 }
-# create a random raster over the space:        
-
-
-# plot it with the boundaries we want to clip against:
-plot(n)
-plot(mask.ext,add=TRUE)
 
 # now use the mask function
 rr <- mask(mask = mask.ext,x =  n)
 plot(raster::)
-# convert HDF to GeoTIFF
-  writeGDAL(hdfImage[[1]], paste("output/TIFF", f[1],"B3", ".tif", sep=""),
-            drivername = "GTiff", type = "Float32", mvFlag = NA, options=NULL, copy_drivername = "GTiff", setStatistics=FALSE) 
-  
-  # delete data to prevent large list
-  hdfImage <- ""
-  # delete HDF file to save space at disk
-  unlink(paste("output/",granuleID$tile[i],"/",
-               granuleID$tile[i],"_",granuleID$date[i], ".hdf", sep=""),force = T)
-}
-}
+
+writeGDAL(hdfImage[[1]], paste("output/TIFF", f[1],"B3", ".tif", sep=""),
+          drivername = "GTiff", type = "Float32", mvFlag = NA, options=NULL, copy_drivername = "GTiff", setStatistics=FALSE) 
+
+# delete data to prevent large list
+hdfImage <- ""
+# delete HDF file to save space at disk
+unlink(paste("output/",granuleID$tile[i],"/",
+             granuleID$tile[i],"_",granuleID$date[i], ".hdf", sep=""),force = T)
+
 
 #### END DOWNLOADING!
 
