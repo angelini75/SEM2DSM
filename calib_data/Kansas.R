@@ -40,22 +40,28 @@ name(profiles)
 # [1] "labsampnum"   "pedon_key"    "X"            "Y"            "hzn_master"  
 # [6] "hzn_desgn"    "cec_sum"      "cec_nh4"      "c_tot"        "oc"          
 # [11] "clay_tot_psa" "clay_f" 
-profiles.r <- profiles[,c(1:4,10,9,7,8,11,12,15,16,17,18)]
-summary(profiles.r)
+D <- profiles[,c(1:4,10,9,7,8,11,12,15,16,17,18)]
+summary(D)
 
 # copy values from c_tot to oc where oc == NA
-profiles.r$oc[is.na(profiles.r$oc)] <- profiles.r$c_tot[which(is.na(profiles.r$oc))]
-profiles.r <- profiles.r[,-11]
+D$oc[is.na(D$oc)] <- D$c_tot[which(is.na(D$oc))]
+D <- D[,-11]
 # copy values from cec_tot to cec_nh4 where cec_nh4 == NA
-profiles.r$cec_nh4[is.na(profiles.r$cec_nh4)] <- profiles.r$cec_sum[which(is.na(profiles.r$cec_nh4))]
-profiles.r <- profiles.r[,c(-9,-13)]
+D$cec_nh4[is.na(D$cec_nh4)] <- D$cec_sum[which(is.na(D$cec_nh4))]
+D <- D[,c(-9,-13)]
 
-names(profiles.r) <- c("labsampnum","idp", "X", "Y","hzn","hzn_nom","top", "bot", "cec", "oc", "clay")
-summary(profiles.r)
+names(D) <- c("labsampnum","idp", "X", "Y","hzn","hzn_nom","top", "bot", "cec", "oc", "clay")
+summary(D)
 
-# adding 30 cm to bottom horizons where bot == NA (2 cases)
-profiles.r[profiles.r$idp == profiles.r$idp[which(is.na(profiles.r$bot))],]
-profiles.r$bot[which(is.na(profiles.r$bot))] <- c(234, 200)
+# checking layer depth
+D[which(D$idp %in% D[which(D$bot-D$top < 1),2]),]
+D[D$labsampnum=="90P00484",5] <- "BC"
+D <- D[!(D$idp == 10174 & D$labsampnum == "83P01445"),]
+D <- D[!(D$idp == 26252 | D$idp == 26253 | D$idp == 26254 | D$idp == 26255 | 
+           D$idp == 4496 | D$idp == 15608 | D$idp == 15608),]
+D <- D[!(D$hzn==""),]
+
+D[which(D$idp %in% D[D$hzn=="","idp"]),]
 
 setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/covar")
 library(raster)
@@ -65,27 +71,27 @@ header <- gsub(".sdat", "", files)
 header <-  c("chnbl", "EVI_M_JanFeb_250", "EVI_SD_JanFeb_250", "LS", "rsp",
              "slope", "srtm250", "twi", "Valley Depth", "vdchn") 
 
-coordinates(profiles.r) <- ~X+Y
+coordinates(D) <- ~X+Y
 #define crs
 wgs84 <- CRS("+init=epsg:4326")
 UTM14N <- CRS("+init=epsg:32614")
 
 # assign projection
-proj4string(profiles.r) <- wgs84
-profiles.r <- spTransform(profiles.r, UTM14N)
+proj4string(D) <- wgs84
+D <- spTransform(D, UTM14N)
 
-profiles.r@data[,7+seq_along(files)] <- NA
-names(profiles.r@data)[8:17] <- header
+D@data[,7+seq_along(files)] <- NA
+names(D@data)[8:17] <- header
 
 for(i in seq_along(files)){
-  profiles.r@data[,7+i] <- extract(x = raster(files[i]), y = profiles.r) 
+  D@data[,7+i] <- extract(x = raster(files[i]), y = D) 
 }
-profiles.r <- as.data.frame(profiles.r)
-head(profiles.r,20)
+D <- as.data.frame(D)
+head(D,20)
 
-A0 <- profiles.r[profiles.r$top<15 & profiles.r$bot>15,]
-B70 <- profiles.r[profiles.r$top<70 & profiles.r$bot>70,]
-C150 <- profiles.r[profiles.r$top<150 & profiles.r$bot>150,]
+A0 <- D[D$top<15 & D$bot>15,]
+B70 <- D[D$top<70 & D$bot>70,]
+C150 <- D[D$top<150 & D$bot>150,]
 
 # step(lm(oc ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
 #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
@@ -145,8 +151,8 @@ summary(lm(formula = cec ~ chnbl + rsp + srtm250 + Valley.Depth + vdchn +
 ## AQP ## 
 #install.packages('aqp', repos="http://R-Forge.R-project.org")
 library(aqp)
-names(profiles.r)[4] <- "name"
-s <- profiles.r
+names(D)[4] <- "name"
+s <- D
 s$name[s$name== "E" |s$name==  "AB" | s$name== "BA" |s$name==  "EB"] <- "transAB"
 s$name[s$name== "BC" |s$name==  "CB"] <- "transBC"
 s$name[s$name== "C" |s$name==  "R"] <- "C"
