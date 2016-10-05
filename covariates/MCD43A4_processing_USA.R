@@ -234,26 +234,19 @@ foreach(i = seq_along(f)) %dopar%{
 }
 
 ### Estimation NDWI
-bands <- c("B2", "B5")
-foreach(i = seq_along(f)) %dopar%{
+bands <- c(".B2.tif", ".B5.tif")
+
+foreach(i = seq_along(f[1])) %dopar%{
   hdfImage <- list()
-  for(j in seq_along(c("B2", "B3"))){
-    hdfImage[[j]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:",
-                                     "output/",
-                                     tiles[j],
-                                     "/",
-                                     f[i],
-                                     ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"))  
+  for(j in seq_along(bands)) {
+    hdfImage[[j]] <- raster(paste0("output/bands/",f[i],bands[j]))    
   }
-  n1 <- merge(
-    raster(hdfImage[[1]]),
-    raster(hdfImage[[2]]))
-  n2 <- merge(
-    raster(n1),
-    raster(hdfImage[[3]]))
-  m <- crop(x = n2,y = mask.ext)
-  writeRaster(x = m, filename = paste0("output/bands/",f[i],".B2.tif"), overwrite=TRUE)
-  setTxtProgressBar(pb,i)
+
+  ndwi <- (hdfImage[[1]] - hdfImage[[2]])/
+          (hdfImage[[1]] + hdfImage[[2]])
+  writeRaster(x = ndwi,
+              filename = paste0("output/bands/",f[i],"ndwi.tif"),
+              overwrite=TRUE)
 }
 
 
