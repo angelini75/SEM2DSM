@@ -170,6 +170,16 @@ for(i in seq_along(miss)){
          )
       )
 }
+registerDoParallel(cores=10)
+foreach(i = seq_along(rescue)) %dopar%{
+  download.file(
+    rescue[i],
+    destfile = paste(
+      "output/",
+      substr(x = rescue[i],start = 82,stop = 96),".hdf", sep=""), 
+                quiet = TRUE, mode = "wb", method = "wget")
+}
+# I changed missing file names and directory by hand afetr downloading.
 
 # extracting and mosaicing bands
 # b      length      Rad  SNR
@@ -182,98 +192,84 @@ for(i in seq_along(miss)){
 # 7 	2105 - 2155 	 1.0 	110
 
 # we need bands 2 and 5
-
-
-
-
-
-f <-list.files("output/h12v12/", pattern = ".hdf$")
-f <- gsub(pattern = "h12v12_",replacement = "",x = f)
-mask.ext <- raster(xmn=-5672223,ymn=-3899255,xmx= -5384129,ymx= -3693436,nrow=100,ncol=100)
-mask.ext[] <- runif(100*100)
-pj <- projection(hdfImage[[1]])
-pb <- txtProgressBar(min = 0, max = length(f), initial = 0, style = 3)
-
-for(i in 1:length(f)){
-  hdfImage <- list() 
-  hdfImage[[1]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:","output/h12v12/","h12v12_",f[i], ":MOD_Grid_BRDF:Nadir_Reflectance_Band3"))
-  hdfImage[[2]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:","output/h13v12/","h13v12_",f[i], ":MOD_Grid_BRDF:Nadir_Reflectance_Band3"))
-  n <- merge(raster(hdfImage[[1]]),raster(hdfImage[[2]]))
-  m <- crop(x = n,y = mask.ext)
-  raster::writeRaster(x = m, filename = paste0("/home/marcos/MCD43A4/B3/",f[i],".B3.tif"), overwrite=TRUE)
-  setTxtProgressBar(pb,i)
-}
-
-# now use the mask function
-rr <- mask(mask = mask.ext,x =  n)
-plot(raster::)
-
-writeGDAL(hdfImage[[1]], paste("output/TIFF", f[1],"B3", ".tif", sep=""),
-          drivername = "GTiff", type = "Float32", mvFlag = NA, options=NULL, copy_drivername = "GTiff", setStatistics=FALSE) 
-
-# delete data to prevent large list
-hdfImage <- ""
-# delete HDF file to save space at disk
-unlink(paste("output/",granuleID$tile[i],"/",
-             granuleID$tile[i],"_",granuleID$date[i], ".hdf", sep=""),force = T)
-
-
-#### END DOWNLOADING!
-
-## control 
-# filelist <- list.files(path = paste("output/",unique(granuleID$tile)[1],"/",  sep=""),pattern = "tif")
-# sum(as.numeric(granuleID$tile == "h13v12")) > length(filelist) 
-# target <- paste(unique(granuleID$tile)[1], "_",granuleID$date[granuleID$tile == unique(granuleID$tile)[1]], ".tif", sep="")
-# setdiff(target, filelist)
-# #   b_tmp[b_tmp%in%a_tmp]   
-# length(target %in% filelist)
-
-
+# files have same names at each tile
 ############### #### ### ## # - IMAGE PROCESSING - # ## ### #### ###############
-rm(list=ls())
-setwd("/media/L0135974_DATA/UserData/BaseARG/COVARIATES/MODIS")
-startdir <- getwd()
+setwd("~/big/USA/MODIS")
 library(rgdal)
 library(gdalUtils)
 library(raster)
 library(doParallel)
+library(maptools)
 ############ Create mosaic 
 # subset extension in MODIS coordinate system (could be calculated from a shape file)
-mask.ext <- c(-5672223,-3899255, -5384129, -3693436)
+extent(readShapePoints("K_3_MODproj.shp"))
 
-# list of files to be processed
-setwd("output")
-tmp.lst <- list.files(include.dirs = T,full.names = T,pattern = ".tif$", recursive = T)
-#raster projection of files (not needed yet)
-pj <- projection(readGDAL(tmp.lst[1]))
+mask.ext <- c(-8995835.65,4052136.73, -7932725.14,4469948.27) # xmin,ymin , xmax,ymax @QGIS K_3MODproj.shp
 
-# mosaiking is by pairs of tiles. The list is order by tiles, so after the last date from tile 1
-# is the firs date of tile 2. (it is a bit risky step, could be safer <- improve!)
-n <-length(tmp.lst)/2
-#nombre de mosaicos
-files.vrt <- NULL
-for(i in 1:n){
-  files.vrt<- append(x = files.vrt,gsub(".tif", ".vrt", gsub("h12v12/h12v12_A","",tmp.lst[i])))
-}
-# mosaiking
+
+f <-list.files("output/h09v05/", pattern = ".hdf$")
+#pj <- projection(hdfImage[[1]])
+pb <- txtProgressBar(min = 0, max = length(f), initial = 0, style = 3)
+
 registerDoParallel(cores=10)
-# log <- list() # optional
- foreach(i = 1:n) %dopar% {
-   tmp.lst.i <-tmp.lst[c(i,i+length(tmp.lst)/2)]
-   #write(files.vrt[1],file = files.vrt[i])
-   gdalwarp(srcfile=tmp.lst.i, t_srs=pj, dstfile=files.vrt[i],te=mask.ext) # it mosaics and crops data with "te=" great!
-#   log[[i]]<-  append(print(gdalinfo(files.vrt[i]))) # optional
- }
-
-require(RCurl)
-##read directories from ftp site (fixed MODIS periods). Function developed by Ype.
-readdir<-function(fil){
-  filenames <- try(getURL(fil,ftp.use.epsv = FALSE, dirlistonly = TRUE))
-  filenames <- paste(fil, strsplit(filenames, "\r*\n")[[1]], sep = "")
-  files <- filenames[grepl('\\.', substr(filenames,30,nchar(filenames)) )|grepl('readme', substr(filenames,30,nchar(filenames)) )|grepl('README', substr(filenames,30,nchar(filenames)) )]
-  dirs <- setdiff(filenames, files)
-  return(dirs)
+foreach(i = seq_along(f)) %dopar%{
+  hdfImage <- list()
+  for(j in seq_along(tiles)){
+    hdfImage[[j]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:",
+                                     "output/",
+                                     tiles[j],
+                                     "/",
+                                     f[i],
+                                     ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"))  
+  }
+  n1 <- merge(
+    raster(hdfImage[[1]]),
+    raster(hdfImage[[2]]))
+  n2 <- merge(
+    raster(n1),
+    raster(hdfImage[[3]]))
+  m <- crop(x = n2,y = mask.ext)
+  writeRaster(x = m, filename = paste0("output/bands/",f[i],".B2.tif"), overwrite=TRUE)
+  setTxtProgressBar(pb,i)
 }
+
+### Estimation NDWI
+bands <- c("B2", "B5")
+foreach(i = seq_along(f)) %dopar%{
+  hdfImage <- list()
+  for(j in seq_along(c("B2", "B3"))){
+    hdfImage[[j]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:",
+                                     "output/",
+                                     tiles[j],
+                                     "/",
+                                     f[i],
+                                     ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"))  
+  }
+  n1 <- merge(
+    raster(hdfImage[[1]]),
+    raster(hdfImage[[2]]))
+  n2 <- merge(
+    raster(n1),
+    raster(hdfImage[[3]]))
+  m <- crop(x = n2,y = mask.ext)
+  writeRaster(x = m, filename = paste0("output/bands/",f[i],".B2.tif"), overwrite=TRUE)
+  setTxtProgressBar(pb,i)
+}
+
+
+
+
+#### END DOWNLOADING!
+
+
+
+
+
+
+
+
+
+
 # get MODIS periods
 period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/","",
                readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/"))
