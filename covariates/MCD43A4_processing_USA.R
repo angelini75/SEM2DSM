@@ -150,7 +150,26 @@ foreach(i = seq_along(n)) %dopar%{
 }
 
 # rescuing missing files
-
+granules <- read.csv(file = "MCD43A4_2002-2010-2007-2001.csv")
+miss <- c("MCD43A4.A2002273.h09v05", "MCD43A4.A2007009.h09v05", "MCD43A4.A2007217.h09v05",
+          "MCD43A4.A2007281.h09v05", "MCD43A4.A2007337.h09v05", "MCD43A4.A2010057.h09v05",
+          "MCD43A4.A2007145.h10v04", "MCD43A4.A2010113.h10v04", "MCD43A4.A2001353.h10v05",
+          "MCD43A4.A2001361.h10v05", "MCD43A4.A2007273.h10v05", "MCD43A4.A2007321.h10v05")
+rescue <- NULL
+for(i in seq_along(miss)){
+   rescue[i] <- 
+      unique(
+         as.character(
+            granules[
+               which(
+                  grepl(
+                     pattern = miss[i],
+                     x = granules$Producer.Granule.ID) == 1),
+               "Online.Access.URLs"
+               ]
+         )
+      )
+}
 
 # extracting and mosaicing bands
 # b      length      Rad  SNR
