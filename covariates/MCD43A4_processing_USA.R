@@ -268,7 +268,7 @@ for(i in seq_along(period)){
 registerDoParallel(cores=12)
 foreach(
   i = seq_along(
-    period
+    period[1]
   )
 ) %dopar% {
   s <- 
@@ -278,7 +278,7 @@ foreach(
         list.per[[i]]
       )
     )
-  s <- s/10000 # to reduce no significan digits
+ # s <- s/10000 # to reduce no significan digits
   # mean and sd  
   m <- 
     mean(
@@ -288,7 +288,8 @@ foreach(
   std <- 
     calc(
       s,
-      fun = sd
+      fun = sd,
+      na.rm=TRUE
     )
   # save and delete objects
   writeRaster(
@@ -296,7 +297,7 @@ foreach(
     filename =  
       paste0(
         "output/NDWI/ndwi.",
-        period[i],".mean.tif",
+        period[i],".mean.tif"
       ),
     overwrite=T
   )
@@ -306,7 +307,7 @@ foreach(
     filename =  
       paste0(
         "output/NDWI/ndwi.",
-        period[i],".sd.tif",
+        period[i],".sd.tif"
       ),
     overwrite = TRUE
   )
