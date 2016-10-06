@@ -83,12 +83,9 @@ period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/","",
 # get file urls.
 u <- NULL
 for(i in seq_along(yrs)){
-  for(j in seq_along(period)){
-    u <-append(u,(paste0(URL,"/",MODISP,"/", yrs[i],"/",period[j], "/")))
-  }
+    u <-append(u,readdir(paste0(URL,"/",MODISP,"/", yrs[i],"/")))
 }
-
-u <- u[-1:-8]
+u <- paste0(u,"/")
 
 # TILE #1
 n <- NULL 
@@ -112,7 +109,7 @@ foreach(i = seq_along(n)) %dopar%{
 
 # TILE #2
 n <- NULL 
-for(i in seq_along(u)){
+for(i in seq_along(u[])){
   z <- readfiles(u[i])
   n[i] <- z[grep(tiles[2], z)][1]
   ifelse(test = is.na(n[i]),
@@ -150,6 +147,10 @@ foreach(i = seq_along(n)) %dopar%{
                                  substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
                 quiet = TRUE, mode = "wb", method = "wget")
 }
+
+u1
+u2
+u3
 
 # rescuing missing files
 granules <- read.csv(file = "MCD43A4_2002-2010-2007-2001.csv")
