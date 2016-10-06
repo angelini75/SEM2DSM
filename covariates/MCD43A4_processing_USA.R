@@ -236,7 +236,7 @@ foreach(i = seq_along(f)) %dopar%{
 ### Estimation NDWI
 bands <- c(".B2.tif", ".B5.tif")
 
-foreach(i = seq_along(f[1])) %dopar%{
+foreach(i = seq_along(f)) %dopar%{
   hdfImage <- list()
   for(j in seq_along(bands)) {
     hdfImage[[j]] <- raster(paste0("output/bands/",f[i],bands[j]))    
@@ -249,6 +249,7 @@ foreach(i = seq_along(f[1])) %dopar%{
               overwrite=TRUE)
 }
 
+### Estimation of mean and sd by period
 
 
 
