@@ -69,6 +69,10 @@ readfiles<-function(fil){
 URL <- "ftp://ladsweb.nascom.nasa.gov/allData/5"
 #define MODIS product
 MODISP <- "MCD43A4"
+# driver and bands of HDF file for GDAL
+driver <- "HDF4_EOS:EOS_GRID:"
+band1 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"
+band2 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
 #define tiles
 tiles <- c("h09v05", "h10v04", "h10v05")
 #define years
@@ -268,7 +272,7 @@ for(i in seq_along(period)){
 registerDoParallel(cores=12)
 foreach(
   i = seq_along(
-    period[1]
+    period
   )
 ) %dopar% {
   s <- 
