@@ -68,11 +68,11 @@ readfiles<-function(fil){
 #MODIS URL
 URL <- "ftp://ladsweb.nascom.nasa.gov/allData/5"
 #define MODIS product
-MODISP <- "MCD43A4"
+MODISP <- "MOD11A2"
 # driver and bands of HDF file for GDAL
 driver <- "HDF4_EOS:EOS_GRID:"
-band1 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"
-band2 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
+band1 <- ":MODIS_Grid_8Day_1km_LST:LST_Day_1km"
+#band2 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
 #define tiles
 tiles <- c("h09v05", "h10v04", "h10v05")
 #define years
@@ -88,7 +88,7 @@ for(i in seq_along(yrs)){
   }
 }
 
-u <- u[-1:-6]
+u <- u[-1:-8]
 
 # TILE #1
 n <- NULL 
@@ -129,8 +129,6 @@ foreach(i = seq_along(n)) %dopar%{
                                  substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
                 quiet = TRUE, mode = "wb", method = "wget")
 }
-u2 <- c("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2007/145/",
-        "ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2010/113/")
 
 
 # TILE #3
