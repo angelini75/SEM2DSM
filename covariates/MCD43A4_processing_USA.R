@@ -291,22 +291,24 @@ foreach(
       fun = sd
     )
   # save and delete objects
-  writeRaster(x = m,
-              filename =  
-                paste0(
-                  "output/NDWI/ndwi.",
-                  period[i],".mean.tif",
-                ),
-              overwrite=T
+  writeRaster(
+    x = m,
+    filename =  
+      paste0(
+        "output/NDWI/ndwi.",
+        period[i],".mean.tif",
+      ),
+    overwrite=T
   )
   
-  writeRaster(x = std,
-              filename =  
-                paste0(
-                  "output/NDWI/ndwi.",
-                  period[i],".sd.tif",
-                ),
-              overwrite = TRUE
+  writeRaster(
+    x = std,
+    filename =  
+      paste0(
+        "output/NDWI/ndwi.",
+        period[i],".sd.tif",
+      ),
+    overwrite = TRUE
   )
   
   rm(s)
