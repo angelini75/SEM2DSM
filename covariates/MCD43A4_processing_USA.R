@@ -251,62 +251,68 @@ foreach(i = seq_along(f)) %dopar%{
 
 ### Estimation of mean and sd by period
 
-
-
-#### END DOWNLOADING!
-
-
-
-
-
-
-
-
-
-
-# get MODIS periods
-period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/","",
-               readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/"))
-
-# in case I need projection from my study area I read this (tiff)image
-#t_pj <- projection(readGDAL("./h12v12/target_pj"))
-
 # crate list of images from the same period
-pb = txtProgressBar(min = 0, max = length(period), initial = 0, style = 3) # see progress 1/2
-for(k in 1:length(period)){
-  list.per <- paste("./", list.files(pattern= paste(period[k],".vrt",sep="")),sep="")
-  a <-list()
-# stack images in a list (not needed)
-#   for (j in 1:length(list.per)) {
-#     a[[j]] <- readGDAL(list.per[j])@data$band1/10000 # redundant 
-#     a[[j]][a[[j]]<0] <-NA # clean negative values
-#   }
-  setTxtProgressBar(pb,k) # see progress 2/2
+list.per <- list()
+for(i in seq_along(period)){
+  list.per[[i]] <- list.files(path = "output/bands/",
+                            pattern= paste(period[i],
+                                           ".hdf",
+                                           "ndwi.tif",
+                                           sep=""
+                                           )
+                            )
+}
+
 # stack images from the same period (raster package)
 # I found this script here http://markmail.org/thread/lsjnczi5fppddrpr
-  s <- stack(list.per)
+registerDoParallel(cores=12)
+foreach(
+  i = seq_along(
+    period
+  )
+) %dopar% {
+  s <- 
+    stack(
+      paste0(
+        "output/bands/",
+        list.per[[i]]
+      )
+    )
   s <- s/10000 # to reduce no significan digits
-  print(paste("###############   number of layer period ",period[k],": ",nlayers(x = s),sep="")) # just FYI
-# to calculate the mean of stacked rasters (very simple!)
-  m<-mean(s,na.rm=T) 
-  #plot(m) # if you want
-# To calculate sd (because sd(s) got error)
-  std<-calc(s, fun = sd)
-  #plot(std) # if you want
-
-    # Optionally, you can reproject and save the raster with gdalwarp() 
-    # m.sd <- as(m,"SpatialPixelsDataFrame")
-    # gdalwarp(srcfile=m.sd, s_srs=pj,t_srs=t_pj, dstfile= paste(period[k],"m.tif"),tr=c(250,250),r="bilinear")
-
-# save rstarers (mean and sd) as tiff file. Each per MODIS period. 
-# http://r-sig-geo.2731867.n2.nabble.com/Problems-with-writeGDAL-gridded-function-td5385974.html
-# writeGDAL can't deal with raster, for this reason writeRaster() exists. 
-  writeRaster(x = m,filename =  paste("./",period[k],"_mean.tif",sep=""), overwrite=T)
-  writeRaster(x = std,filename =  paste("./",period[k],"_std.tif",sep=""), overwrite=T)
+  # mean and sd  
+  m <- 
+    mean(
+      s,
+      na.rm = TRUE
+    )
+  std <- 
+    calc(
+      s,
+      fun = sd
+    )
+  # save and delete objects
+  writeRaster(x = m,
+              filename =  
+                paste0(
+                  "output/NDWI/ndwi.",
+                  period[i],".mean.tif",
+                ),
+              overwrite=T
+  )
+  
+  writeRaster(x = std,
+              filename =  
+                paste0(
+                  "output/NDWI/ndwi.",
+                  period[i],".sd.tif",
+                ),
+              overwrite = TRUE
+  )
   
   rm(s)
   rm(m)
   rm(std)
 }
 
-#### End processing (so far)
+  
+
