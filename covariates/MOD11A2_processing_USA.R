@@ -109,7 +109,7 @@ foreach(i = seq_along(n)) %dopar%{
 
 # TILE #2
 n <- NULL 
-for(i in seq_along(u[])){
+for(i in seq_along(u)){
   z <- readfiles(u[i])
   n[i] <- z[grep(tiles[2], z)][1]
   ifelse(test = is.na(n[i]),
@@ -153,11 +153,21 @@ u2
 u3
 
 # rescuing missing files
-granules <- read.csv(file = "MCD43A4_2002-2010-2007-2001.csv")
-miss <- c("MCD43A4.A2002273.h09v05", "MCD43A4.A2007009.h09v05", "MCD43A4.A2007217.h09v05",
-          "MCD43A4.A2007281.h09v05", "MCD43A4.A2007337.h09v05", "MCD43A4.A2010057.h09v05",
-          "MCD43A4.A2007145.h10v04", "MCD43A4.A2010113.h10v04", "MCD43A4.A2001353.h10v05",
-          "MCD43A4.A2001361.h10v05", "MCD43A4.A2007273.h10v05", "MCD43A4.A2007321.h10v05")
+granules <- read.csv(file = "MOD11A2_2001-02-05-06-07-08-09-11-13-14.csv")
+miss <- c("MOD11A2.A2001353.h09v05", "MOD11A2.A2002001.h09v05", "MOD11A2.A2002017.h09v05",
+          "MOD11A2.A2002145.h09v05", "MOD11A2.A2002153.h09v05", "MOD11A2.A2005353.h09v05",
+          "MOD11A2.A2006033.h09v05", "MOD11A2.A2009289.h09v05", "MOD11A2.A2009321.h09v05",
+          "MOD11A2.A2001225.h10v04", "MOD11A2.A2001233.h10v04", "MOD11A2.A2001249.h10v04",
+          "MOD11A2.A2001281.h10v04", "MOD11A2.A2001289.h10v04", "MOD11A2.A2001345.h10v04",
+          "MOD11A2.A2005017.h10v04", "MOD11A2.A2005025.h10v04", "MOD11A2.A2008281.h10v04",
+          "MOD11A2.A2009337.h10v04", "MOD11A2.A2011193.h10v04", "MOD11A2.A2011225.h10v04",
+          "MOD11A2.A2011233.h10v04", "MOD11A2.A2014249.h10v04", 
+          "MOD11A2.A2007281.h10v05", "MOD11A2.A2007289.h10v05", "MOD11A2.A2013233.h10v05",
+          "MOD11A2.A2013353.h10v05")
+
+# "MOD11A2.A2001177.h10v05" cannot be rescued so A2001177 is deleted from all tiles
+
+granules$Online.Access.URLs <- as.character(granules$Online.Access.URLs)
 rescue <- NULL
 for(i in seq_along(miss)){
    rescue[i] <- 
@@ -184,17 +194,6 @@ foreach(i = seq_along(rescue)) %dopar%{
 }
 # I changed missing file names and directory by hand afetr downloading.
 
-# extracting and mosaicing bands
-# b      length      Rad  SNR
-# 1 	 620 -  670 	21.8 	128
-# 2 	 841 -  876 	24.7 	201
-# 3 	 459 -  479 	35.3 	243
-# 4 	 545 -  565 	29.0 	228
-# 5 	1230 - 1250 	 5.4 	 74
-# 6 	1628 - 1652 	 7.3 	275
-# 7 	2105 - 2155 	 1.0 	110
-
-# we need bands 2 and 5
 # files have same names at each tile
 ############### #### ### ## # - IMAGE PROCESSING - # ## ### #### ###############
 setwd("~/big/USA/MODIS")
@@ -212,18 +211,17 @@ mask.ext <- c(-8995835.65,4052136.73, -7932725.14,4469948.27) # xmin,ymin , xmax
 
 f <-list.files("output/h09v05/", pattern = ".hdf$")
 #pj <- projection(hdfImage[[1]])
-pb <- txtProgressBar(min = 0, max = length(f), initial = 0, style = 3)
 
 registerDoParallel(cores=10)
 foreach(i = seq_along(f)) %dopar%{
   hdfImage <- list()
   for(j in seq_along(tiles)){
-    hdfImage[[j]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:",
+    hdfImage[[j]] <- readGDAL(paste0(driver,
                                      "output/",
                                      tiles[j],
                                      "/",
                                      f[i],
-                                     ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"))  
+                                     band1))  
   }
   n1 <- merge(
     raster(hdfImage[[1]]),
@@ -232,24 +230,7 @@ foreach(i = seq_along(f)) %dopar%{
     raster(n1),
     raster(hdfImage[[3]]))
   m <- crop(x = n2,y = mask.ext)
-  writeRaster(x = m, filename = paste0("output/bands/",f[i],".B2.tif"), overwrite=TRUE)
-  setTxtProgressBar(pb,i)
-}
-
-### Estimation NDWI
-bands <- c(".B2.tif", ".B5.tif")
-
-foreach(i = seq_along(f)) %dopar%{
-  hdfImage <- list()
-  for(j in seq_along(bands)) {
-    hdfImage[[j]] <- raster(paste0("output/bands/",f[i],bands[j]))    
-  }
-
-  ndwi <- (hdfImage[[1]] - hdfImage[[2]])/
-          (hdfImage[[1]] + hdfImage[[2]])
-  writeRaster(x = ndwi,
-              filename = paste0("output/bands/",f[i],"ndwi.tif"),
-              overwrite=TRUE)
+  writeRaster(x = m, filename = paste0("output/bands/",f[i],".LST.tif"), overwrite=TRUE)
 }
 
 ### Estimation of mean and sd by period
@@ -257,13 +238,14 @@ foreach(i = seq_along(f)) %dopar%{
 # crate list of images from the same period
 list.per <- list()
 for(i in seq_along(period)){
-  list.per[[i]] <- list.files(path = "output/bands/",
-                            pattern= paste(period[i],
-                                           ".hdf",
-                                           "ndwi.tif",
-                                           sep=""
-                                           )
-                            )
+  list.per[[i]] <- 
+    list.files(
+      path = "output/bands/",
+      pattern= paste0(
+        period[i],
+        ".hdf.LST.tif"
+        )
+    )
 }
 
 # stack images from the same period (raster package)
@@ -299,7 +281,7 @@ foreach(
     x = m,
     filename =  
       paste0(
-        "output/NDWI/ndwi.",
+        "output/LST/lst.",
         period[i],".mean.tif"
       ),
     overwrite=T
@@ -309,7 +291,7 @@ foreach(
     x = std,
     filename =  
       paste0(
-        "output/NDWI/ndwi.",
+        "output/LST/lst.",
         period[i],".sd.tif"
       ),
     overwrite = TRUE
