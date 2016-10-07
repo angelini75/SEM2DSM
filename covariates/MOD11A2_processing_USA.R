@@ -223,13 +223,13 @@ foreach(i = seq_along(f)) %dopar%{
                                      f[i],
                                      band1))  
   }
-  n1 <- merge(
-    raster(hdfImage[[1]]),
-    raster(hdfImage[[2]]))
-  n2 <- merge(
-    raster(n1),
-    raster(hdfImage[[3]]))
-  m <- crop(x = n2,y = mask.ext)
+  m <- mosaic(
+     raster(hdfImage[[1]]),
+     raster(hdfImage[[2]]),
+     raster(hdfImage[[3]]),
+     fun = mean
+     )
+  m <- crop(m, mask.ext)
   writeRaster(x = m, filename = paste0("output/bands/",f[i],".LST.tif"), overwrite=TRUE)
 }
 
