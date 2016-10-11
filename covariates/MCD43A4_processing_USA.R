@@ -159,15 +159,30 @@ miss <- c("MCD43A4.A2002273.h09v05", "MCD43A4.A2007009.h09v05", "MCD43A4.A200721
           "MCD43A4.A2007281.h09v05", "MCD43A4.A2007337.h09v05", "MCD43A4.A2010057.h09v05",
           "MCD43A4.A2007145.h10v04", "MCD43A4.A2010113.h10v04", "MCD43A4.A2001353.h10v05",
           "MCD43A4.A2001361.h10v05", "MCD43A4.A2007273.h10v05", "MCD43A4.A2007321.h10v05")
+
+granules <- read.csv(file = "MCD43A4.csv")
+miss2 <- c("MCD43A4.A2002073.h10v05", "MCD43A4.A2007305.h10v05", "MCD43A4.A2002033.h10v05",
+           "MCD43A4.A2008049.h10v05", "MCD43A4.A2002137.h10v05", "MCD43A4.A2007241.h10v05",
+           "MCD43A4.A2002025.h10v05", "MCD43A4.A2002065.h10v05", "MCD43A4.A2007353.h10v05",
+           "MCD43A4.A2002113.h10v05", "MCD43A4.A2002129.h10v05", "MCD43A4.A2007249.h10v05",
+           "MCD43A4.A2008009.h10v05", "MCD43A4.A2002217.h10v05", "MCD43A4.A2002177.h10v05",
+           "MCD43A4.A2008001.h10v05", "MCD43A4.A2002105.h10v05", "MCD43A4.A2002185.h10v05",
+           "MCD43A4.A2002065.h10v04", "MCD43A4.A2007201.h10v05", "MCD43A4.A2002233.h10v05",
+           "MCD43A4.A2002241.h10v05")
+
+miss3 <- c("MCD43A4.A2006201.h10v04", "MCD43A4.A2008049.h10v04", "MCD43A4.A2008081.h10v04",
+           "MCD43A4.A2012273.h10v04", "MCD43A4.A2012281.h10v04", "MCD43A4.A2012297.h10v04",
+           "MCD43A4.A2012321.h10v04", "MCD43A4.A2012353.h10v04", "MCD43A4.A2013001.h10v04")
+
 rescue <- NULL
-for(i in seq_along(miss)){
+for(i in seq_along(miss3)){
    rescue[i] <- 
       unique(
          as.character(
             granules[
                which(
                   grepl(
-                     pattern = miss[i],
+                     pattern = miss3[i],
                      x = granules$Producer.Granule.ID) == 1),
                "Online.Access.URLs"
                ]
@@ -212,31 +227,42 @@ mask.ext <- c(-8995835.65,4052136.73, -7932725.14,4469948.27) # xmin,ymin , xmax
 
 
 f <-list.files("output/h09v05/", pattern = ".hdf$")
+# f04 <- list.files("output/h10v04/", pattern = ".hdf$")
+# f[which(f %in% f04 == F)]
 #pj <- projection(hdfImage[[1]])
-pb <- txtProgressBar(min = 0, max = length(f), initial = 0, style = 3)
+rasterOptions(tmpdir="~/big/USA/MODIS/output/temp/")
 
-registerDoParallel(cores=10)
+registerDoParallel(cores=11)
 foreach(i = seq_along(f)) %dopar%{
-  hdfImage <- list()
+  hdfImage <- 
+    list()
   for(j in seq_along(tiles)){
-    hdfImage[[j]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:",
-                                     "output/",
-                                     tiles[j],
-                                     "/",
-                                     f[i],
-                                     ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"))  
+    hdfImage[[j]] <- 
+      readGDAL(
+        paste0(
+          "HDF4_EOS:EOS_GRID:",
+          "output/",
+          tiles[j],
+          "/",
+          f[i],
+          ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
+          )
+        )  
   }
-  n1 <- merge(
+  m <- mosaic(
     raster(hdfImage[[1]]),
-    raster(hdfImage[[2]]))
-  n2 <- merge(
-    raster(n1),
-    raster(hdfImage[[3]]))
-  m <- crop(x = n2,y = mask.ext)
-  writeRaster(x = m, filename = paste0("output/bands/",f[i],".B2.tif"), overwrite=TRUE)
-  setTxtProgressBar(pb,i)
+    raster(hdfImage[[2]]),
+    raster(hdfImage[[3]]),
+    fun = mean
+  )
+  m <- crop(m, mask.ext)
+  writeRaster(x = m, filename = paste0("output/bands/",f[i],".B5.tif"), overwrite=TRUE)
+  rm(m)
+  rm(hdfImage)
+  
 }
-
+#removeTmpFiles(h=24)
+showTmpFiles()
 ### Estimation NDWI
 bands <- c(".B2.tif", ".B5.tif")
 
@@ -249,7 +275,7 @@ foreach(i = seq_along(f)) %dopar%{
   ndwi <- (hdfImage[[1]] - hdfImage[[2]])/
           (hdfImage[[1]] + hdfImage[[2]])
   writeRaster(x = ndwi,
-              filename = paste0("output/bands/",f[i],"ndwi.tif"),
+              filename = paste0("output/bands/",f[i],".ndwi.tif"),
               overwrite=TRUE)
 }
 
@@ -259,17 +285,15 @@ foreach(i = seq_along(f)) %dopar%{
 list.per <- list()
 for(i in seq_along(period)){
   list.per[[i]] <- list.files(path = "output/bands/",
-                            pattern= paste(period[i],
-                                           ".hdf",
-                                           "ndwi.tif",
-                                           sep=""
+                            pattern= paste0(period[i],
+                                           ".hdf.ndwi.tif"
                                            )
                             )
 }
 
 # stack images from the same period (raster package)
 # I found this script here http://markmail.org/thread/lsjnczi5fppddrpr
-registerDoParallel(cores=12)
+registerDoParallel(cores=11)
 foreach(
   i = seq_along(
     period
@@ -321,5 +345,43 @@ foreach(
   rm(std)
 }
 
-  
+# mean per period
+library(raster)
+rm(list=ls())
+setwd("~/big/USA/MODIS/")
+f <-list.files("output/NDWI/", pattern = "mean.tif$")
+f[13:15]
+# "ndwi.097.mean.tif" "ndwi.105.mean.tif" "ndwi.113.mean.tif"
+writeRaster(
+  x = mean(
+    stack(
+      paste0(
+        "output/NDWI/",
+        f[13:15]
+      )
+    ),
+    na.rm = TRUE
+  ),
+  filename = 
+    "output/NDWI/ndwi.b.spring.tif",
+  overwrite = TRUE
+)
 
+#f[24:29]
+#[1] "ndwi.185.mean.tif" "ndwi.193.mean.tif" "ndwi.201.mean.tif" "ndwi.209.mean.tif" "ndwi.217.mean.tif"
+#[6] "ndwi.225.mean.tif"
+
+writeRaster(
+  x = mean(
+    stack(
+      paste0(
+        "output/NDWI/",
+        f[24:29]
+      )
+    ),
+    na.rm = TRUE
+  ),
+  filename = 
+    "output/NDWI/ndwi.a.summaer.tif",
+  overwrite = TRUE
+)
