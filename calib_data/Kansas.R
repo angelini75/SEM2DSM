@@ -41,7 +41,7 @@ name(profiles)
 # [6] "hzn_desgn"    "cec_sum"      "cec_nh4"      "c_tot"        "oc"          
 # [11] "clay_tot_psa" "clay_f" 
 D <- profiles[,c(1:4,10,9,7,8,11,12,15,16,17,18)]
-summary(D[D$top==0,])
+summary(D[D$hzn_top==0,])
 
 # copy values from c_tot to oc where oc == NA
 D$oc[is.na(D$oc)] <- D$c_tot[which(is.na(D$oc))]
@@ -50,11 +50,24 @@ D <- D[,-11]
 D$cec_nh4[is.na(D$cec_nh4)] <- D$cec_sum[which(is.na(D$cec_nh4))]
 D <- D[,c(-9,-13)]
 
+
 names(D) <- c("labsampnum","idp", "X", "Y","hzn","hzn_nom","top", "bot", "cec", "oc", "clay")
+D <- D[!is.na(D$labsampnum),]
 summary(D)
 
 # checking layer depth
-D[which(D$idp %in% D[which(D$bot-D$top < 1),2]),]
+D$hzn <- as.character(D$hzn)
+D$labsampnum <- as.character(D$labsampnum)
+D[which(
+  D$idp %in% 
+    D[
+      which(
+        D$bot-D$top < 1
+      ),
+      2]
+),
+]
+
 D[D$labsampnum=="90P00484",5] <- "BC"
 D <- D[!(D$idp == 10174 & D$labsampnum == "83P01445"),]
 D <- D[!(D$idp == 26252 | D$idp == 26253 | D$idp == 26254 | D$idp == 26255 | 
@@ -63,9 +76,13 @@ D <- D[!(D$hzn==""),]
 
 D[which(D$idp %in% D[D$hzn=="","idp"]),] # should be zero
 
-
-
-
+D[which(
+  D$idp %in%
+  D[which(is.na(D$cec) ), "idp"],#& is.na(D$oc) & is.na(D$clay)), "idp"], 
+  ),
+  ]
+D <- D[D$hzn != "R",]
+D <- D[!(is.na(D$cec) & is.na(D$oc) & is.na(D$clay)),]
 
 
 
