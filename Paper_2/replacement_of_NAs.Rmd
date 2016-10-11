@@ -8,7 +8,7 @@ output: pdf_document
 ```{r, echo=FALSE, warning=FALSE}
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration")
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/2_Calibration")
 sp <- read.csv("calib.data-sp.csv")[,-1]
 covar <- read.csv("calib.data-covar.csv")[,-1]
 ################### TO BE SOLVED ####################sp[which(sp$id.p %in% sp$id.p[is.na(sp$phw)]),]
@@ -144,7 +144,7 @@ length(t$id.p[complete.cases(t)]) # number of complete cases
 
 This could be the calibration data.
 ```{r}
-write.csv(t[complete.cases(t),], "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.0.csv")
+write.csv(t[complete.cases(t),], "/mnt/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.0.csv")
 ############################################################################################
 ```
 
@@ -192,7 +192,7 @@ dim(t[complete.cases(t),])
 
 This could be the calibration data.
 ```{r}
-write.csv(t[complete.cases(t),], "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.1.csv")
+write.csv(t[complete.cases(t),], "/mnt/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.1.csv")
 ############################################################################################
 ```
 
@@ -230,7 +230,7 @@ dim(t[complete.cases(t),])[1] #number of soil profiles
 ```
 This could be the calibration data.
 ```{r}
-write.csv(t[complete.cases(t),], "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.2.csv")
+write.csv(t[complete.cases(t),], "/mnt/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.2.csv")
 ############################################################################################
 ```
 
@@ -258,7 +258,7 @@ dim(t[complete.cases(t),])[1] #number of soil profiles
 ```
 This could be the calibration data.
 ```{r}
-write.csv(t[complete.cases(t),], "/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.3.csv")
+write.csv(t[complete.cases(t),], "/mnt/L0135974_DATA/UserData/BaseARG/2_Calibration/calib.data-5.3.csv")
 ############################################################################################
 ```
 
