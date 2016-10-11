@@ -41,7 +41,7 @@ name(profiles)
 # [6] "hzn_desgn"    "cec_sum"      "cec_nh4"      "c_tot"        "oc"          
 # [11] "clay_tot_psa" "clay_f" 
 D <- profiles[,c(1:4,10,9,7,8,11,12,15,16,17,18)]
-summary(D[D$hzn_top==0,])
+summary(D)
 
 # copy values from c_tot to oc where oc == NA
 D$oc[is.na(D$oc)] <- D$c_tot[which(is.na(D$oc))]
@@ -76,53 +76,80 @@ D <- D[!(D$hzn==""),]
 
 D[which(D$idp %in% D[D$hzn=="","idp"]),] # should be zero
 
-D[which(
-  D$idp %in%
-  D[which(is.na(D$cec) ), "idp"],#& is.na(D$oc) & is.na(D$clay)), "idp"], 
-  ),
-  ]
-D <- D[D$hzn != "R",]
-D <- D[!(is.na(D$cec) & is.na(D$oc) & is.na(D$clay)),]
+summary(D)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/covar")
+## extarct values from rasters (covariates)
+name(D)
+D.sp <- unique(D[,c(2,3,4)])
 library(raster)
+library(maptools)
+library(sp)
 
-files <- list.files(pattern = ".dat$")
+# list of sdat files (DEM)
+files <- 
+  list.files(
+    path = "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/",
+    pattern = ".dat$")
 header <- gsub(".sdat", "", files)
-header <-  c("chnbl", "EVI_M_JanFeb_250", "EVI_SD_JanFeb_250", "LS", "rsp",
-             "slope", "srtm250", "twi", "Valley Depth", "vdchn") 
+header <-  c("dem", "twi", "vdchn") 
 
-coordinates(D) <- ~X+Y
+coordinates(D.sp) <- ~X+Y
 #define crs
 wgs84 <- CRS("+init=epsg:4326")
 UTM14N <- CRS("+init=epsg:32614")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # assign projection
-proj4string(D) <- wgs84
-D <- spTransform(D, UTM14N)
+proj4string(D.sp) <- wgs84
+D.sp <- spTransform(x = D.sp, UTM14N)
 
-D@data[,7+seq_along(files)] <- NA
-names(D@data)[8:17] <- header
+D.sp@data[,1+seq_along(files)] <- NA
+names(D.sp@data)[2:4] <- header
 
+# extract values from sdat files
 for(i in seq_along(files)){
-  D@data[,7+i] <- extract(x = raster(files[i]), y = D) 
+  D.sp@data[,1+i] <-
+    extract(
+      x = raster(
+        paste0(
+          "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/",
+          files[i]
+          )
+        ),
+      y = D.sp)
 }
-D <- as.data.frame(D)
+
+# list of tif files (modis)
+files <- 
+  list.files(
+    path = "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/",
+    pattern = ".tif$")
+header <- gsub(".sdat", "", files)
+header <-  c("evisd", "lstm", "ndwi.a", "ndwi.b") 
+
+# transform projection
+D.sp <- spTransform(x = D.sp, modis)
+
+D.sp@data[,4+seq_along(files)] <- NA
+names(D.sp@data)[5:8] <- header
+
+# extract values from tiff files
+for(i in seq_along(files)){
+  D.sp@data[,4+i] <-
+    extract(
+      x = raster(
+        paste0(
+          "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/",
+          files[i]
+        )
+      ),
+      y = D.sp)
+}
+
+D.sp <- as.data.frame(D.sp)[,c(-9,-10)]
+
+D <- merge(D,D.sp, by = "idp")
+
 head(D,20)
 
 A0 <- D[D$top<15 & D$bot>15,]
@@ -132,20 +159,20 @@ C150 <- D[D$top<150 & D$bot>150,]
 # step(lm(oc ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
 #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
 #           X + Y, A0), direction = "both")
-summary(lm(formula = oc ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + 
-     LS + srtm250 + twi + Valley.Depth + vdchn + X, data = A0))
+summary(lm(formula = oc ~ dem + twi + vdchn + evisd + lstm + 
+             ndwi.a + ndwi.b + X + Y, data = B70))
 
 # step(lm(cec ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
 #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
 #           X + Y, A0), direction = "both")
-summary(lm(formula = cec ~ chnbl + EVI_M_JanFeb_250 + LS + srtm250 + 
-             Valley.Depth + vdchn + X, data = A0))
+summary(lm(formula = cec ~ dem + twi + vdchn + evisd + lstm + 
+             ndwi.a + ndwi.b + X + Y, data = B70))
 
 # step(lm(clay ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
 #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
 #           X + Y, A0), direction = "both")
-summary(lm(formula = clay ~ chnbl + EVI_M_JanFeb_250 + srtm250 + twi + 
-             Valley.Depth + vdchn + X, data = A0))
+summary(lm(formula = clay ~ dem + twi + vdchn + evisd + lstm + 
+             ndwi.a + ndwi.b + X + Y, data = B70))
 #------------------==============----------------------===============#
 
 # step(lm(oc ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
