@@ -235,4 +235,29 @@ foreach(k = seq_along(period)) %dopar%{
   rm(std)
 }
 
-#### End processing (so far)
+#### get evisd (as in second paper)
+# get lstm (same as paper 2)
+library(raster)
+rm(list=ls())
+setwd("~/big/USA/MODIS/")
+f <-list.files("output/EVI/single/", pattern = ".vrt$")
+f
+
+writeRaster(
+  x = (
+    calc(
+    stack(
+      paste0(
+        "output/EVI/single/",
+        f
+      )
+    ),
+    fun = sd,
+    na.rm=TRUE
+  )/10000),
+  filename = 
+    "output/EVI/evisd.tif",
+  overwrite = TRUE
+)
+
+
