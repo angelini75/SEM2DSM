@@ -302,5 +302,25 @@ foreach(
   rm(std)
 }
 
-  
+# get lstm (same as paper 2)
+library(raster)
+rm(list=ls())
+setwd("~/big/USA/MODIS/")
+f <-list.files("output/LST/", pattern = "sd.tif$")
+f
+
+writeRaster(
+  x = mean(
+    stack(
+      paste0(
+        "output/LST/",
+        f
+      )
+    ),
+    na.rm = TRUE
+  ),
+  filename = 
+    "output/LST/lstm.tif",
+  overwrite = TRUE
+)
 
