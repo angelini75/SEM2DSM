@@ -306,7 +306,7 @@ foreach(
 library(raster)
 rm(list=ls())
 setwd("~/big/USA/MODIS/")
-f <-list.files("output/LST/", pattern = "sd.tif$")
+f <-list.files("output/LST/", pattern = "mean.tif$")
 f
 
 writeRaster(
