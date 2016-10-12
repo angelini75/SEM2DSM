@@ -145,34 +145,55 @@ for(i in seq_along(files)){
       ),
       y = D.sp)
 }
+##################################
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/covar")
 
-D.sp <- as.data.frame(D.sp)[,c(-9,-10)]
+files <- list.files(pattern = ".dat$")
+header <- gsub(".sdat", "", files)
+header <-  c("chnbl", "EVI_M_JanFeb_250", "EVI_SD_JanFeb_250", "LS", "rsp",
+             "slope", "srtm250", "twi", "Valley Depth", "vdchn") 
 
-D <- merge(D,D.sp, by = "idp")
+# assign projection
+D.sp <- spTransform(D.sp, UTM14N)
+
+D.sp@data[,8+seq_along(files)] <- NA
+names(D.sp@data)[9:18] <- header
+
+for(i in seq_along(files)){
+  D.sp@data[,8+i] <- extract(x = raster(files[i]), y = D.sp) 
+}
+#####################################
+D.sp <- as.data.frame(D.sp)
+name(D.sp)
+
+D <- merge(D,D.sp[,c(-19,-20)], by = "idp")
 
 head(D,20)
+
 
 A0 <- D[D$top<15 & D$bot>15,]
 B70 <- D[D$top<70 & D$bot>70,]
 C150 <- D[D$top<150 & D$bot>150,]
 
+
 # step(lm(oc ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
 #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
 #           X + Y, A0), direction = "both")
-summary(lm(formula = oc ~ dem + twi + vdchn + evisd + lstm + 
-             ndwi.a + ndwi.b + X + Y, data = B70))
+summary(lm(formula = oc ~ twi + evisd + ndwi.a + X + Y + chnbl + EVI_M_JanFeb_250 + 
+             EVI_SD_JanFeb_250 + LS + srtm250, data = A0))
 
-# step(lm(cec ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
-#           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
-#           X + Y, A0), direction = "both")
-summary(lm(formula = cec ~ dem + twi + vdchn + evisd + lstm + 
-             ndwi.a + ndwi.b + X + Y, data = B70))
+step(lm(clay ~ dem + twi + vdchn + evisd + lstm + 
+          ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
+          EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
+          Valley.Depth + vdchn, A0), direction = "both")
+summary(lm(formula = cec ~ dem + vdchn + evisd + ndwi.a + Y + chnbl + 
+             EVI_M_JanFeb_250 + rsp, data = A0))
 
 # step(lm(clay ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
 #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
 #           X + Y, A0), direction = "both")
-summary(lm(formula = clay ~ dem + twi + vdchn + evisd + lstm + 
-             ndwi.a + ndwi.b + X + Y, data = B70))
+summary(lm(formula = clay ~ evisd + ndwi.a + ndwi.b + Y + chnbl + EVI_M_JanFeb_250 + 
+             rsp + srtm250, data =A0))
 #------------------==============----------------------===============#
 
 # step(lm(oc ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
