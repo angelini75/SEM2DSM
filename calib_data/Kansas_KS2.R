@@ -2,7 +2,7 @@ setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/USDA/NCSS/")
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 
-d <- read.csv("KS_2.csv")#[,-5:-6]
+d <- read.csv("KS_2.csv")#[,-3:-4]
 names(d)
 #pedon <- read.table("csv/NCSS_Pedon_Taxonomy.csv", sep = "\t", header = T)
 layer <- read.csv("csv/NCSS_Layer.csv", sep = "\t")
@@ -139,20 +139,44 @@ for(i in seq_along(files)){
       y = profiles.r)
 }
 #########################
+# statistics
+library(ggplot2)
+library(reshape2)
 
 profiles.r <- as.data.frame(profiles.r)
 head(profiles.r,20)
 
+length(unique(profiles.r[,c(2)]))
+summary(unique(profiles.r[,c(2,20:26)]))
+name(profiles.r)
+meltp <- melt(unique(profiles.r[,c(2,20:26)]),id.vars = c("idp"))
+
+ggplot(data = meltp,
+       aes(x = value, fill=variable)) + geom_histogram() + 
+  facet_wrap( ~ variable, scales = "free_x")
+
+meltp <- melt(unique(profiles.r[profiles.r$hzn == "A" |
+                                  profiles.r$hzn == "B" |
+                                  profiles.r$hzn == "C" |
+                                  profiles.r$hzn == "BC",
+                                c(2:3,7:9)]),id.vars = c("idp","hzn"))
+
+ggplot(data = meltp,
+       aes(x = value, fill = hzn)) + geom_density(alpha = 0.4) + 
+  facet_wrap( ~ variable,scales = "free")
+
+
+# 
 A0 <- profiles.r[profiles.r$top<5 & profiles.r$bot>5,]
 B70 <- profiles.r[profiles.r$top<70 & profiles.r$bot>70,]
-C150 <- profiles.r[profiles.r$top<150 & profiles.r$bot>150,]
+C150 <- profiles.r[profiles.r$top<200 & profiles.r$bot>150,]
 
 step(lm(oc ~ dem + twi + vdchn + evisd + lstm + 
           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
           EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
           Valley.Depth + vdchn, A0), direction = "both")
 summary(lm(formula = oc ~ vdchn + evisd + ndwi.a + ndwi.b + X + Y + chnbl + 
-             EVI_M_JanFeb_250 + LS + rsp + srtm250, data = A0))
+             EVI_M_JanFeb_250 + LS + rsp + dem, data = A0))
 
 step(lm(cec ~ dem + twi + vdchn + evisd + lstm + 
           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
@@ -216,6 +240,7 @@ summary(lm(formula = cec ~ chnbl + rsp + srtm250 + Valley.Depth + vdchn +
 library(aqp)
 names(profiles.r)[3] <- "name"
 s <- profiles.r
+s$name <- as.character(s$name)
 s$name[s$name== "E" |s$name==  "AB" | s$name== "BA" |s$name==  "EB"] <- "transAB"
 s$name[s$name== "BC" |s$name==  "CB"] <- "transBC"
 s$name[s$name== "C" |s$name==  "R"] <- "C"
