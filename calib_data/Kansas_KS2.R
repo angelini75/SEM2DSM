@@ -214,7 +214,7 @@ summary(lm(formula = cec ~ chnbl + rsp + srtm250 + Valley.Depth + vdchn +
 ## AQP ## 
 #install.packages('aqp', repos="http://R-Forge.R-project.org")
 library(aqp)
-names(profiles.r)[4] <- "name"
+names(profiles.r)[3] <- "name"
 s <- profiles.r
 s$name[s$name== "E" |s$name==  "AB" | s$name== "BA" |s$name==  "EB"] <- "transAB"
 s$name[s$name== "BC" |s$name==  "CB"] <- "transBC"
