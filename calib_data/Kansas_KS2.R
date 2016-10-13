@@ -139,6 +139,31 @@ for(i in seq_along(files)){
       y = profiles.r)
 }
 #########################
+# Argentinian data
+setwd("~/Documents/SEM2DSM1/Paper_2/data/")
+
+d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
+d <- d[,c(-12:-16,-20,-21,-25)]
+
+meltp <- melt(unique(d,id.vars = c("id.p")))
+
+ggplot(data = meltp,
+       aes(x = value, fill=variable)) + geom_histogram() + 
+  facet_wrap( ~ variable, scales = "free_x")
+d$H <- NA
+e <- data.frame(d[,c(1,2,5,8,11:20)])
+e$H <- "A"
+names(e)[2:4] <- c("CEC.B","OC.B","clay.B")
+e <- rbind(e,d[,c(1,3,6,9,11:20)])
+e$H[is.na(e$H)] <- "B"
+
+names(e)[2:4] <- c("CEC.C","OC.C","clay.C")
+e <- rbind(e,d[,c(1,4,7,10,11:20)])
+e$H[is.na(e$H)] <- "C"
+names(e)[2:4] <- c("CEC","OC","Clay")
+### 
+# US data
+
 # statistics
 library(ggplot2)
 library(reshape2)
@@ -155,16 +180,25 @@ ggplot(data = meltp,
        aes(x = value, fill=variable)) + geom_histogram() + 
   facet_wrap( ~ variable, scales = "free_x")
 
-meltp <- melt(unique(profiles.r[profiles.r$hzn == "A" |
-                                  profiles.r$hzn == "B" |
-                                  profiles.r$hzn == "C" |
-                                  profiles.r$hzn == "BC",
-                                c(2:3,7:9)]),id.vars = c("idp","hzn"))
+us <- profiles.r[profiles.r$hzn == "A" |
+                   profiles.r$hzn == "B" |
+                   profiles.r$hzn == "C", c(2:3,7:9,20:28)]
+us$country <- "US"
+e$country <- "Arg"
+names(us)[c(1,2,3,4,5,7,8)] <- c("id.p","H","CEC","OC","Clay","twi","vdchn")
+s <- rbind(e,us[,c(1,3:8,10,9,11:14,2,15)])
+melt.sp <- melt(s, id.vars = c("id.p","H", "country"))
 
-ggplot(data = meltp,
-       aes(x = value, fill = hzn)) + geom_density(alpha = 0.4) + 
+ggplot(data = melt.sp[melt.sp$variable == "CEC" |
+                        melt.sp$variable == "OC" |
+                        melt.sp$variable == "Clay",],
+       aes(x = value, fill = country)) + geom_density(alpha = 0.4) + 
+  facet_wrap( ~ variable+H,scales = "free")
+ggplot(data = unique(melt.sp[!(melt.sp$variable == "CEC" |
+                        melt.sp$variable == "OC" |
+                        melt.sp$variable == "Clay"),]),
+       aes(x = value, fill = country)) + geom_density(alpha = 0.4) + 
   facet_wrap( ~ variable,scales = "free")
-
 
 # 
 A0 <- profiles.r[profiles.r$top<5 & profiles.r$bot>5,]
