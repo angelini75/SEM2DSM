@@ -36,7 +36,38 @@ setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 #------------------------------------------------#
 
 d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
+d <- d[,c(-12:-16,-20,-21,-25)]
 
+meltp <- melt(unique(d,id.vars = c("id.p")))
+
+ggplot(data = meltp,
+       aes(x = value, fill=variable)) + geom_histogram() + 
+  facet_wrap( ~ variable, scales = "free_x")
+d$H <- NA
+e <- data.frame(d[,c(1,2,5,8,11:20)])
+e$H <- "A"
+names(e)[2:4] <- c("CEC.B","OC.B","clay.B")
+e <- rbind(e,d[,c(1,3,6,9,11:20)])
+e$H[is.na(e$H)] <- "B"
+
+names(e)[2:4] <- c("CEC.C","OC.C","clay.C")
+e <- rbind(e,d[,c(1,4,7,10,11:20)])
+e$H[is.na(e$H)] <- "C"
+names(e)[2:4] <- c("CEC","OC","Clay")
+
+meltp <- melt(e,id.vars = c("id.p","H"))
+ggplot(data = meltp[meltp$variable=="CEC" |
+                      meltp$variable=="OC" |
+                      meltp$variable=="Clay",],
+       aes(x = value, fill = H)) + geom_density(alpha = 0.4) + 
+  facet_wrap( ~ variable,scales = "free")
+ggplot(data = unique(meltp[!(meltp$variable=="CEC" |
+                      meltp$variable=="OC" |
+                      meltp$variable=="Clay"),]),
+       aes(x = value)) + geom_density(alpha = 0.4) + 
+  facet_wrap( ~ variable,scales = "free")
+#############
+d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
 # Descriptive statistics and normality test. ####
 round(stat.desc(d,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
