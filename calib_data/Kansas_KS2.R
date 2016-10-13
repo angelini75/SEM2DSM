@@ -211,6 +211,8 @@ step(lm(oc ~ dem + twi + vdchn + evisd + lstm +
           Valley.Depth + vdchn, A0), direction = "both")
 summary(lm(formula = oc ~ vdchn + evisd + ndwi.a + ndwi.b + X + Y + chnbl + 
              EVI_M_JanFeb_250 + LS + rsp + dem, data = A0))
+summary(lm(formula = oc ~ dem + twi + vdchn + evisd + lstm + 
+             ndwi.a + ndwi.b + X + Y, data = A0))
 
 step(lm(cec ~ dem + twi + vdchn + evisd + lstm + 
           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
