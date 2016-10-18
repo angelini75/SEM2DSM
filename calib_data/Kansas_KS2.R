@@ -341,3 +341,20 @@ xyplot(top ~ p.q50 | which, data=ab, ylab='Depth',
        cf=ab$contributing_fraction,
        layout=c(2,1), scales=list(x=list(alternating=1))
 )
+
+idp <- unique(us$id.p)
+
+idp.C <- unique(us$id.p[us$H == "C"])
+
+idp.noC <- idp[which(!(idp %in% idp.C))]
+
+us.noC <- d4[which(d4$pedon_key %in% idp.noC), ]
+
+
+
+
+
+
+
+
+
