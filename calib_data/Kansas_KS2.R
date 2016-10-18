@@ -200,78 +200,79 @@ ggplot(data = unique(melt.sp[!(melt.sp$variable == "CEC" |
        aes(x = value, fill = country)) + geom_density(alpha = 0.4) + 
   facet_wrap( ~ variable,scales = "free")
 
+#### THIS SECTION WAS USEFUL FOR TESTING MLR APPROACH ####
+# BEGIN NOT RUN
+# A0 <- profiles.r[profiles.r$top<5 & profiles.r$bot>5,]
+# B70 <- profiles.r[profiles.r$top<70 & profiles.r$bot>70,]
+# C150 <- profiles.r[profiles.r$top<200 & profiles.r$bot>150,]
 # 
-A0 <- profiles.r[profiles.r$top<5 & profiles.r$bot>5,]
-B70 <- profiles.r[profiles.r$top<70 & profiles.r$bot>70,]
-C150 <- profiles.r[profiles.r$top<200 & profiles.r$bot>150,]
-
-step(lm(oc ~ dem + twi + vdchn + evisd + lstm + 
-          ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
-          EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
-          Valley.Depth + vdchn, A0), direction = "both")
-summary(lm(formula = oc ~ vdchn + evisd + ndwi.a + ndwi.b + X + Y + chnbl + 
-             EVI_M_JanFeb_250 + LS + rsp + dem, data = A0))
-summary(lm(formula = oc ~ dem + twi + vdchn + evisd + lstm + 
-             ndwi.a + ndwi.b + X + Y, data = A0))
-
-step(lm(cec ~ dem + twi + vdchn + evisd + lstm + 
-          ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
-          EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
-          Valley.Depth + vdchn, A0), direction = "both")
-summary(lm(formula = cec ~ vdchn + evisd + lstm + ndwi.a + chnbl + EVI_M_JanFeb_250 + 
-             LS + srtm250, data = A0))
-
-step(lm(clay ~ dem + twi + vdchn + evisd + lstm + 
-          ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
-          EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
-          Valley.Depth + vdchn, A0), direction = "both")
-summary(lm(formula = clay ~ vdchn + lstm + ndwi.a + chnbl + EVI_M_JanFeb_250 + 
-             EVI_SD_JanFeb_250 + LS + srtm250, data = A0))
-#------------------==============----------------------===============#
-
-step(lm(oc ~ dem + twi + vdchn + evisd + lstm + 
-          ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
-          EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
-          Valley.Depth + vdchn, B70), direction = "both")
-summary(lm(formula = oc ~ dem + vdchn + ndwi.a + chnbl + EVI_M_JanFeb_250 + 
-             rsp + slope, data = B70))
-
-step(lm(cec ~ dem + twi + vdchn + evisd + lstm + 
-          ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
-          EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
-          Valley.Depth + vdchn, B70), direction = "both")
-summary(lm(formula = cec ~ dem + vdchn + evisd + ndwi.a + ndwi.b + X + 
-             chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + rsp + Valley.Depth, 
-           data = B70))
-
-step(lm(clay ~ dem + twi + vdchn + evisd + lstm + 
-          ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
-          EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
-          Valley.Depth + vdchn, B70), direction = "both")
-summary(lm(formula = clay ~ dem + twi + vdchn + evisd + lstm + ndwi.a + 
-             ndwi.b + Y + chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + 
-             rsp, data = B70))
-#---------------===================------------===============---------#
-# step(lm(oc ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
-#           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
-#           X + Y, C150), direction = "both")
-summary(lm(formula = oc ~ chnbl + srtm250 + twi + Valley.Depth + vdchn + 
-             Y, data = C150))
-
-# step(lm(cec ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
-#           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
-#           X + Y, C150), direction = "both")
-summary(lm(formula = cec ~ chnbl + rsp + srtm250 + Valley.Depth + vdchn + 
-             X + Y, data = C150))
+# step(lm(oc ~ dem + twi + vdchn + evisd + lstm + 
+#           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
+#           EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
+#           Valley.Depth + vdchn, A0), direction = "both")
+# summary(lm(formula = oc ~ vdchn + evisd + ndwi.a + ndwi.b + X + Y + chnbl + 
+#              EVI_M_JanFeb_250 + LS + rsp + dem, data = A0))
+# summary(lm(formula = oc ~ dem + twi + vdchn + evisd + lstm + 
+#              ndwi.a + ndwi.b + X + Y, data = A0))
 # 
-# step(lm(clay ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
-#           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
-#           X + Y, C150), direction = "both")
-(summary(lm(formula = clay ~ chnbl + srtm250 + twi + Valley.Depth + vdchn + 
-             X, data = C150)))#$r.squared
+# step(lm(cec ~ dem + twi + vdchn + evisd + lstm + 
+#           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
+#           EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
+#           Valley.Depth + vdchn, A0), direction = "both")
+# summary(lm(formula = cec ~ vdchn + evisd + lstm + ndwi.a + chnbl + EVI_M_JanFeb_250 + 
+#              LS + srtm250, data = A0))
+# 
+# step(lm(clay ~ dem + twi + vdchn + evisd + lstm + 
+#           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
+#           EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
+#           Valley.Depth + vdchn, A0), direction = "both")
+# summary(lm(formula = clay ~ vdchn + lstm + ndwi.a + chnbl + EVI_M_JanFeb_250 + 
+#              EVI_SD_JanFeb_250 + LS + srtm250, data = A0))
+# #------------------==============----------------------===============#
+# 
+# step(lm(oc ~ dem + twi + vdchn + evisd + lstm + 
+#           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
+#           EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
+#           Valley.Depth + vdchn, B70), direction = "both")
+# summary(lm(formula = oc ~ dem + vdchn + ndwi.a + chnbl + EVI_M_JanFeb_250 + 
+#              rsp + slope, data = B70))
+# 
+# step(lm(cec ~ dem + twi + vdchn + evisd + lstm + 
+#           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
+#           EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
+#           Valley.Depth + vdchn, B70), direction = "both")
+# summary(lm(formula = cec ~ dem + vdchn + evisd + ndwi.a + ndwi.b + X + 
+#              chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + rsp + Valley.Depth, 
+#            data = B70))
+# 
+# step(lm(clay ~ dem + twi + vdchn + evisd + lstm + 
+#           ndwi.a + ndwi.b + X + Y + chnbl + EVI_M_JanFeb_250 + 
+#           EVI_SD_JanFeb_250 + LS + rsp + slope + srtm250 + twi + 
+#           Valley.Depth + vdchn, B70), direction = "both")
+# summary(lm(formula = clay ~ dem + twi + vdchn + evisd + lstm + ndwi.a + 
+#              ndwi.b + Y + chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + 
+#              rsp, data = B70))
+# #---------------===================------------===============---------#
+# # step(lm(oc ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
+# #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
+# #           X + Y, C150), direction = "both")
+# summary(lm(formula = oc ~ chnbl + srtm250 + twi + Valley.Depth + vdchn + 
+#              Y, data = C150))
+# 
+# # step(lm(cec ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
+# #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
+# #           X + Y, C150), direction = "both")
+# summary(lm(formula = cec ~ chnbl + rsp + srtm250 + Valley.Depth + vdchn + 
+#              X + Y, data = C150))
+# # 
+# # step(lm(clay ~ chnbl + EVI_M_JanFeb_250 + EVI_SD_JanFeb_250 + LS + 
+# #           rsp + slope + srtm250 + twi + Valley.Depth + vdchn + 
+# #           X + Y, C150), direction = "both")
+# (summary(lm(formula = clay ~ chnbl + srtm250 + twi + Valley.Depth + vdchn + 
+#              X, data = C150)))#$r.squared
+# END NOT RUN 
 
-
-## AQP ## 
+## AQP FOR PLOT HORIZON FREQUENCY ####
 #install.packages('aqp', repos="http://R-Forge.R-project.org")
 library(aqp)
 names(profiles.r)[3] <- "name"
