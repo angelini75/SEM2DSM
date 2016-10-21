@@ -348,7 +348,7 @@ idp.C <- unique(us$id.p[us$H == "C"])
 
 idp.noC <- idp[which(!(idp %in% idp.C))]
 
-us.noC <- d4[which(d4$pedon_key %in% idp.noC), ]
+us.noC <- layer[which(layer$pedon_key %in% idp.noC), ]
 
 
 
