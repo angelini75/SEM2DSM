@@ -210,31 +210,35 @@ profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt$")] <- "Bt"
 profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt1")] <- "Bt1"
 profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt2")] <- "Bt2"
 profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt[3-9]")] <- "Bt9"
+profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bw")] <- "Bw"
+profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^B2.")] <- "Bw"
+profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bk.")] <- "Bk"
+profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^C")] <- "C"
 
-##### to be continued...
+profiles.e$oc <- log10(profiles.e$oc)
 
-length(unique(profiles.r[,c(2)]))
-summary(unique(profiles.r[,c(2,20:26)]))
-name(profiles.r)
-meltp <- melt(unique(profiles.r[,c(2,20:26)]),id.vars = c("idp"))
+B <- profiles.e$hzn_nom[grep(profiles.e$hzn_nom,pattern = "^B")] 
+B <- B[grep(B,pattern = "[^BC].")]
+B <- B[grep(B,pattern = "[^Bt]..")]
+B <- B[grep(B,pattern = "[^Bt]...")]
 
-ggplot(data = meltp,
-       aes(x = value, fill=variable)) + geom_histogram() + 
-  facet_wrap( ~ variable, scales = "free_x")
 
-us <- profiles.r[profiles.r$hzn == "B" |
-                   profiles.r$hzn == "C", c(2:3,7:9,20:28)]
-us$country <- "US"
-e$country <- "Arg"
-names(us)[c(1,2,3,4,5,7,8)] <- c("id.p","H","CEC","OC","Clay","twi","vdchn")
-s <- rbind(e,us[,c(1,3:8,10,9,11:14,2,15)])
-melt.sp <- melt(s, id.vars = c("id.p","H", "country"))
+length(unique(profiles.e[,c(2)]))
+summary(unique(profiles.e[,c(2,20:26)]))
+name(profiles.e)
+meltp <- melt(unique(profiles.e[, c(2,8:12,32)]),id.vars = c("idp", "hzn_key"))
 
-ggplot(data = melt.sp[melt.sp$variable == "CEC" |
-                        melt.sp$variable == "OC" |
-                        melt.sp$variable == "Clay",],
-       aes(x = value, fill = country)) + geom_density(alpha = 0.4) + 
-  facet_wrap( ~ variable+H,scales = "free")
+
+ggplot(data = meltp[meltp$hzn_key == "Bt" |
+                      meltp$hzn_key == "Bt1" |
+                      meltp$hzn_key == "Bt2" |
+                      meltp$hzn_key == "Bt9" |
+                      meltp$hzn_key == "C" |
+                      meltp$hzn_key == "Btk" ,],
+       aes(x = value, fill = hzn_key)) + geom_density(alpha = 0.2) + 
+  facet_wrap( ~ variable,scales = "free")
+
+
 ggplot(data = unique(melt.sp[!(melt.sp$variable == "CEC" |
                                  melt.sp$variable == "OC" |
                                  melt.sp$variable == "Clay"),]),
@@ -242,34 +246,11 @@ ggplot(data = unique(melt.sp[!(melt.sp$variable == "CEC" |
   facet_wrap( ~ variable,scales = "free")
 
 
-length(unique(profiles.r[,c(2)]))
-summary(unique(profiles.r[,c(2,20:26)]))
-name(profiles.r)
-meltp <- melt(unique(profiles.r[,c(2,20:26)]),id.vars = c("idp"))
+ggplot(data = meltp[meltp$variable == "top" |
+                        meltp$variable == "bot",],
+       aes(x = value, fill = variable)) + geom_density(alpha = 0.4) + 
+  facet_wrap( ~ hzn_key,scales = "free")
 
-ggplot(data = meltp,
-       aes(x = value, fill=variable)) + geom_histogram() + 
-  facet_wrap( ~ variable, scales = "free_x")
-
-us <- profiles.r[profiles.r$hzn == "A" |
-                   profiles.r$hzn == "B" |
-                   profiles.r$hzn == "C", c(2:3,7:9,20:28)]
-us$country <- "US"
-e$country <- "Arg"
-names(us)[c(1,2,3,4,5,7,8)] <- c("id.p","H","CEC","OC","Clay","twi","vdchn")
-s <- rbind(e,us[,c(1,3:8,10,9,11:14,2,15)])
-melt.sp <- melt(s, id.vars = c("id.p","H", "country"))
-
-ggplot(data = melt.sp[melt.sp$variable == "CEC" |
-                        melt.sp$variable == "OC" |
-                        melt.sp$variable == "Clay",],
-       aes(x = value, fill = country)) + geom_density(alpha = 0.4) + 
-  facet_wrap( ~ variable+H,scales = "free")
-ggplot(data = unique(melt.sp[!(melt.sp$variable == "CEC" |
-                                 melt.sp$variable == "OC" |
-                                 melt.sp$variable == "Clay"),]),
-       aes(x = value, fill = country)) + geom_density(alpha = 0.4) + 
-  facet_wrap( ~ variable,scales = "free")
 
 # ggplot(data = melt.sp[melt.sp$variable == "CEC" |
 #                         melt.sp$variable == "OC" |
@@ -385,11 +366,54 @@ ggplot(data = unique(melt.sp[!(melt.sp$variable == "CEC" |
 #              X, data = C150)))#$r.squared
 # END NOT RUN 
 
+# explore spatial
+
+
+
+profiles.e <- profiles.e[profiles.e$hzn_disc == "",]
+name(profiles.e)
+
+s <- profile.e[profiles.e$hzn == "A"|
+            profiles.e$hzn == "B"|
+            profiles.e$hzn == "B"]
+
+#### working here
+
+s <- profiles.e[profiles.e$hzn == "C",c(2,8:12,30,31)]
+
+profiles.e <- profiles.e[profiles.e$hzn_disc == "",]
+name(profiles.e)
+s <- profiles.e[profiles.e$hzn == "A",c(2,8:12,30,31)]
+
+
+
+library(raster)
+library(sp)
+#devtools::install_github("environmentalinformatics-marburg/mapview", ref = "develop")
+library(mapview)
+
+coordinates(sA) <- ~X+Y
+proj4string(sA) <- modis
+mercator <- CRS("+init=epsg:3785")
+sA <- spTransform(sA, mercator)
+
+
+spplot(sA)
+sp::
+
+data(meuse)
+coordinates(meuse) <- ~x+y
+proj4string(meuse) <- CRS("+init=epsg:28992")
+
+mapview(meuse, burst = TRUE)
+
+
+
 ## AQP FOR PLOT HORIZON FREQUENCY ####
 #install.packages('aqp', repos="http://R-Forge.R-project.org")
 library(aqp)
-names(profiles.r)[3] <- "name"
-s <- profiles.r
+names(profiles.e)# <- "name"
+s <- profiles.e
 s$name <- as.character(s$name)
 s$name[s$name== "E" |s$name==  "AB" | s$name== "BA" |s$name==  "EB"] <- "transAB"
 s$name[s$name== "BC" |s$name==  "CB"] <- "transBC"
