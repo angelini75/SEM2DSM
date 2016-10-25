@@ -367,47 +367,50 @@ ggplot(data = meltp[meltp$variable == "top" |
 # END NOT RUN 
 
 # explore spatial
-
-
-
-profiles.e <- profiles.e[profiles.e$hzn_disc == "",]
-name(profiles.e)
-
-s <- profile.e[profiles.e$hzn == "A"|
-            profiles.e$hzn == "B"|
-            profiles.e$hzn == "B"]
-
-#### working here
-
-s <- profiles.e[profiles.e$hzn == "C",c(2,8:12,30,31)]
-
-profiles.e <- profiles.e[profiles.e$hzn_disc == "",]
-name(profiles.e)
-s <- profiles.e[profiles.e$hzn == "A",c(2,8:12,30,31)]
-
-
-
 library(raster)
 library(sp)
 #devtools::install_github("environmentalinformatics-marburg/mapview", ref = "develop")
 library(mapview)
 
-coordinates(sA) <- ~X+Y
-proj4string(sA) <- modis
+profiles.e <- profiles.e[profiles.e$hzn_disc == "",]
+name(profiles.e)
+
+
+s <- profiles.e[profiles.e$hzn == "C",c(2,8:12,30,31)]
+
+profiles.e <- profiles.e[profiles.e$hzn_disc == "",]
+name(profiles.e)
+s <- profiles.e[profiles.e$hzn == "A" | 
+                  profiles.e$hzn == "B" |
+                  profiles.e$hzn == "C",
+                c(2,6,8:12,30,31)]
+s$hzn_c <- "a"
+s$hzn_c[s$hzn=="C"] <- "c"
+s[which(s$idp %in% unique(s$idp[s$hzn_c == "c"])),10] <- "c"
+name(s)
+s <- unique(s[,c(1,8:10)])
+
+
+coordinates(s) <- ~X+Y
+proj4string(s) <- modis
 mercator <- CRS("+init=epsg:3785")
-sA <- spTransform(sA, mercator)
+s <- spTransform(s, mercator)
 
 
-spplot(sA)
-sp::
-
-data(meuse)
-coordinates(meuse) <- ~x+y
-proj4string(meuse) <- CRS("+init=epsg:28992")
-
-mapview(meuse, burst = TRUE)
-
-
+mapview(s, burst = TRUE)
+mapView(s, map = NULL,
+        map.types = mapviewGetOption("basemaps"), zcol = NULL, burst = TRUE,
+        color = c("#FF00FF","#0000AF", "#0489B1"), alpha = 0.5,
+        col.regions = color, alpha.regions = 0.2,
+        na.color = mapviewGetOption("na.color"), at = NULL, cex = 5, lwd = 2,
+        popup = popupTable(s), label, legend = mapviewGetOption("legend"),
+        legend.opacity = 1, layer.name = deparse(
+          substitute(x, env = parent.frame())), 
+        verbose = mapviewGetOption("verbose"),
+        homebutton = TRUE)
+s <- as.data.frame(s)
+length(unique(s[s$hzn_c=="c",1:2])[,1])
+length(unique(s[s$hzn_c=="a",1:2])[,1])
 
 ## AQP FOR PLOT HORIZON FREQUENCY ####
 #install.packages('aqp', repos="http://R-Forge.R-project.org")
