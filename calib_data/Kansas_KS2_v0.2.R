@@ -398,16 +398,20 @@ s <- spTransform(s, mercator)
 
 
 mapview(s, burst = TRUE)
-mapView(s, map = NULL,
+mapview::viewExtent(s)
+map <- mapview(s, map = NULL,
         map.types = mapviewGetOption("basemaps"), zcol = NULL, burst = TRUE,
-        color = c("#FF00FF","#0000AF", "#0489B1"), alpha = 0.5,
-        col.regions = color, alpha.regions = 0.2,
+        color = c("#FF00FF", "#0489B1"), alpha = 0.6, alpha.regions = 0.2,
         na.color = mapviewGetOption("na.color"), at = NULL, cex = 5, lwd = 2,
-        popup = popupTable(s), label, legend = mapviewGetOption("legend"),
+        popup = popupTable(s), legend = mapviewGetOption("legend"),
         legend.opacity = 1, layer.name = deparse(
           substitute(x, env = parent.frame())), 
         verbose = mapviewGetOption("verbose"),
         homebutton = TRUE)
+
+mapview::mapshot(map,file = "actual.pdf")
+mapview::viewExtent(s)
+
 s <- as.data.frame(s)
 length(unique(s[s$hzn_c=="c",1:2])[,1])
 length(unique(s[s$hzn_c=="a",1:2])[,1])
@@ -417,6 +421,7 @@ length(unique(s[s$hzn_c=="a",1:2])[,1])
 library(aqp)
 names(profiles.e)# <- "name"
 s <- profiles.e
+names(s)[6] <- "name"
 s$name <- as.character(s$name)
 s$name[s$name== "E" |s$name==  "AB" | s$name== "BA" |s$name==  "EB"] <- "transAB"
 s$name[s$name== "BC" |s$name==  "CB"] <- "transBC"
@@ -450,7 +455,7 @@ xyplot(top ~ value, groups=variable, data=a.long, subset=value > 0,
        #prepanel=panel.depth_function,
        cf=a.long$contributing_fraction
        )
-#aqp::panel.depth_function()
+
 # # # # # ------------ ----- --- ---- ------------ ------------- --------- -----
 library(lattice)
 library(grid)
@@ -481,17 +486,7 @@ xyplot(top ~ p.q50 | which, data=ab, ylab='Depth',
        cf=ab$contributing_fraction,
        layout=c(2,1), scales=list(x=list(alternating=1))
 )
-
-idp <- unique(us$id.p)
-
-idp.C <- unique(us$id.p[us$H == "C"])
-
-idp.noC <- idp[which(!(idp %in% idp.C))]
-
-us.noC <- layer[which(layer$pedon_key %in% idp.noC), ]
-
-
-
+# # # # --------- --------- --------- -------- --------- --------- --------- ---
 
 
 
