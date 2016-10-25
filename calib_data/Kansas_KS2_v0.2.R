@@ -488,7 +488,56 @@ xyplot(top ~ p.q50 | which, data=ab, ylab='Depth',
 )
 # # # # --------- --------- --------- -------- --------- --------- --------- ---
 
+D <- profiles.e[
+  which(
+    profiles.e$idp %in%
+      unique(
+        profiles.e$idp[
+          profiles.e$hzn == "C"
+          ]
+      )
+  ),
+  ]
+D <- D[D$hzn == "A" |
+         D$hzn == "B" |
+         D$hzn == "C",]
 
+D$hzn <- as.character(D$hzn)
+summary(D)
+name(D)
+covar <- unique(D[,c(2,13:31)])
+D <- D[,c(2,6,8:12)]
+name(D)
+#compute soil properties per id.hor
+D1 <- melt(data = D, id.vars = c("idp","hzn"))
+
+cast(data = D, ,margins = 2,formula =  mean,value = clay)
+
+library(dplyr)
+D2 <- cbind(d1[,c(1:10)],d1[,11:34],d1[,c(36:46)])
+#d2[,26:33][is.na(d2[,26:33])] <- 0
+#### merge horizons
+## horizon boundaries
+
+limits <- cbind(ddply(d1,.(id.hor), summarise, mintop=min(top))[,1:2],
+                maxbot=(ddply(d1,.(id.hor), summarise, maxbot=max(bottom))[,2]))
+## soil properties 
+names(d2)[11:34]
+####  aggregation of horizon by id.hor. Warning! = If one horizon has NA the other horizons result in NA
+
+
+
+d2.2 <- group_by(.data = d2, id.hor)
+
+summarise(d2.2, n())
+
+d2.4 <- unique(merge(d2.2[,c(1:3,5,8,44)],summarise(d2.2, n()), by = "id.hor"))
+for(i in 11:33){
+  d2.3 <- d2.2[,c(1,i,45)]
+  names(d2.3)[2] <- "X"
+  d2.4[,i-3] <- summarise(.data = d2.3, weighted.mean(x = X, w = weight, na.rm = TRUE))[,2]
+  names(d2.4)[i-3] <- names(d2.2)[i]
+}
 
 
 
