@@ -215,12 +215,12 @@ profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^B2.")] <- "Bw"
 profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bk.")] <- "Bk"
 profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^C")] <- "C"
 
-profiles.e$oc <- log10(profiles.e$oc)
+#profiles.e$oc <- log10(profiles.e$oc)
 
-B <- profiles.e$hzn_nom[grep(profiles.e$hzn_nom,pattern = "^B")] 
-B <- B[grep(B,pattern = "[^BC].")]
-B <- B[grep(B,pattern = "[^Bt]..")]
-B <- B[grep(B,pattern = "[^Bt]...")]
+# B <- profiles.e$hzn_nom[grep(profiles.e$hzn_nom,pattern = "^B")] 
+# B <- B[grep(B,pattern = "[^BC].")]
+# B <- B[grep(B,pattern = "[^Bt]..")]
+# B <- B[grep(B,pattern = "[^Bt]...")]
 
 
 length(unique(profiles.e[,c(2)]))
@@ -413,6 +413,7 @@ mapview::mapshot(map,file = "actual.pdf")
 mapview::viewExtent(s)
 
 # Alternative
+# http://rgraphgallery.blogspot.nl/2013/04/rg68-get-google-map-and-plot-data-in-it.html
 library(ggmap)
 dhanmap5 = get_(location = c(lon = -95.5, lat = 38.5), zoom = 8, 
                    maptype = 'roadmap', source = "osm")
@@ -516,6 +517,29 @@ D <- profiles.e[
       )
   ),
   ]
+
+D <- D[
+  which(
+    D$idp %in%
+      unique(
+        D$idp[
+          D$hzn == "B"
+          ]
+      )
+  ),
+  ]
+
+D <- D[
+  which(
+    D$idp %in%
+      unique(
+        D$idp[
+          D$hzn == "A"
+          ]
+      )
+  ),
+  ]
+
 D <- D[D$hzn == "A" |
          D$hzn == "B" |
          D$hzn == "C",]
@@ -526,37 +550,64 @@ name(D)
 covar <- unique(D[,c(2,13:31)])
 D <- D[,c(2,6,8:12)]
 name(D)
+D$thick <- D$bot - D$top
+D$thick[D$thick==0] <- 8
+D <- D[,c(1,2,5:8)]
 #compute soil properties per id.hor
-D1 <- melt(data = D, id.vars = c("idp","hzn"))
-
-cast(data = D, ,margins = 2,formula =  mean,value = clay)
-
 library(dplyr)
-D2 <- cbind(d1[,c(1:10)],d1[,11:34],d1[,c(36:46)])
-#d2[,26:33][is.na(d2[,26:33])] <- 0
-#### merge horizons
-## horizon boundaries
+library(reshape2)
 
-limits <- cbind(ddply(d1,.(id.hor), summarise, mintop=min(top))[,1:2],
-                maxbot=(ddply(d1,.(id.hor), summarise, maxbot=max(bottom))[,2]))
-## soil properties 
-names(d2)[11:34]
-####  aggregation of horizon by id.hor. Warning! = If one horizon has NA the other horizons result in NA
+D1 <- data.frame(idp = unique(D$idp))
+D2 <- 
+  merge(D1,
+        dcast(data = 
+                ddply(D,
+                      .(idp,hzn),
+                      summarise,
+                      clay = weighted.mean(x = clay,
+                                           w =  thick,
+                                           na.rm = TRUE)
+                ),
+              idp ~ hzn 
+        ),
+        by = "idp"
+        )
+names(D2)[2:4] <- paste0("clay.",names(D2)[2:4])
 
+D2 <- 
+  merge(D2,
+        dcast(data = 
+                ddply(D,
+                      .(idp,hzn),
+                      summarise, 
+                      weighted.mean(x = cec,
+                                           w =  thick,
+                                           na.rm = TRUE)
+                ),
+              idp ~ hzn 
+        ),
+        by = "idp"
+  )
+names(D2)[5:7] <- paste0("cec.",names(D2)[2:4])
 
+D2 <- 
+  merge(D2,
+        dcast(data = 
+                ddply(D,
+                      .(idp,hzn),
+                      summarise, 
+                      weighted.mean(x = oc,
+                                    w =  thick,
+                                    na.rm = TRUE)
+                ),
+              idp ~ hzn 
+        ),
+        by = "idp"
+  )
+names(D2)[8:10] <- paste0("oc.",names(D2)[2:4])
 
-d2.2 <- group_by(.data = d2, id.hor)
+data <- merge(D2, covar,by="idp")
 
-summarise(d2.2, n())
-
-d2.4 <- unique(merge(d2.2[,c(1:3,5,8,44)],summarise(d2.2, n()), by = "id.hor"))
-for(i in 11:33){
-  d2.3 <- d2.2[,c(1,i,45)]
-  names(d2.3)[2] <- "X"
-  d2.4[,i-3] <- summarise(.data = d2.3, weighted.mean(x = X, w = weight, na.rm = TRUE))[,2]
-  names(d2.4)[i-3] <- names(d2.2)[i]
-}
-
-
+ melt(data = D, id.vars = c("idp","hzn"))
 
 
