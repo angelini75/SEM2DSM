@@ -397,7 +397,7 @@ mercator <- CRS("+init=epsg:3785")
 s <- spTransform(s, mercator)
 
 
-mapview(s, burst = TRUE)
+#mapview(s, burst = TRUE)
 mapview::viewExtent(s)
 map <- mapview(s, map = NULL,
         map.types = mapviewGetOption("basemaps"), zcol = NULL, burst = TRUE,
@@ -408,9 +408,27 @@ map <- mapview(s, map = NULL,
           substitute(x, env = parent.frame())), 
         verbose = mapviewGetOption("verbose"),
         homebutton = TRUE)
-
+map + viewExtent(s)
 mapview::mapshot(map,file = "actual.pdf")
 mapview::viewExtent(s)
+
+# Alternative
+library(ggmap)
+dhanmap5 = get_(location = c(lon = -95.5, lat = 38.5), zoom = 8, 
+                   maptype = 'roadmap', source = "osm")
+dhanmap5 = ggmap(dhanmap5)
+# data
+myd <- spTransform(s, wgs84)
+myd <-  as.data.frame(myd)
+myd
+# the bubble chart
+library(grid)
+dhanmap5 +   
+  geom_point(
+    aes(x = X, y = Y, colour = hzn_c),
+    data = myd) +
+  scale_colour_discrete()
+
 
 s <- as.data.frame(s)
 length(unique(s[s$hzn_c=="c",1:2])[,1])
