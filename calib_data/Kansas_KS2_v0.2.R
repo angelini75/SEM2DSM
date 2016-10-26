@@ -545,7 +545,9 @@ D <- D[D$hzn == "A" |
          D$hzn == "C",]
 
 D$hzn <- as.character(D$hzn)
-summary(D)
+table(D[,c(2,6)])
+as.matrix(table(D[,c(2,6)]))==0
+
 name(D)
 covar <- unique(D[,c(2,13:31)])
 D <- D[,c(2,6,8:12)]
@@ -553,6 +555,7 @@ name(D)
 D$thick <- D$bot - D$top
 D$thick[D$thick==0] <- 8
 D <- D[,c(1,2,5:8)]
+summary(D)
 #compute soil properties per id.hor
 library(dplyr)
 library(reshape2)
@@ -608,6 +611,4 @@ names(D2)[8:10] <- paste0("oc.",names(D2)[2:4])
 
 data <- merge(D2, covar,by="idp")
 
- melt(data = D, id.vars = c("idp","hzn"))
-
-
+write.csv(data, "calib-data.KS.0.1.csv")
