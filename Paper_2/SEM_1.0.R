@@ -527,6 +527,47 @@ mod.clayb <- lm(clay.B ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
 mod.clayc <- lm(clay.C ~ dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
                   twi + ndwi.a)
 
+mod.sp <- lm(cbind(CEC.A, CEC.B, CEC.C,
+                   OC.A, OC.B, OC.C, 
+                   clay.A, clay.B, clay.C) ~
+                     dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
+                  twi + ndwi.a)
+
+summary(mod.sp)
+class(mod.sp)
+summary(mod.ceca)
+summary(manova(mod.sp))
+library(car)
+Manova(mod.sp, type = "II")
+
+# Call:
+#   lm(formula = CEC.A ~ dem + river + vdchn + X + Y + evisd + lstm + 
+#        ndwi.b + twi + ndwi.a)
+# 
+# Residuals:
+#   Min      1Q  Median      3Q     Max 
+# -2.0564 -0.5796 -0.0032  0.5282  4.4090 
+# 
+# Coefficients:
+#   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  5.475e-15  5.260e-02   0.000 1.000000    
+# dem          4.233e-01  1.591e-01   2.661 0.008224 ** 
+# river       -1.416e+00  1.537e+00  -0.921 0.357820    
+# vdchn       -4.357e-02  6.836e-02  -0.637 0.524408    
+# X           -4.968e-01  1.273e+00  -0.390 0.696567    
+# Y           -1.061e+00  1.094e+00  -0.970 0.332971    
+# evisd        2.998e-01  8.928e-02   3.358 0.000893 ***
+# lstm         1.146e-01  1.076e-01   1.065 0.287681    
+# ndwi.b      -4.808e-02  6.846e-02  -0.702 0.483106    
+# twi          6.059e-03  6.727e-02   0.090 0.928294    
+# ndwi.a       1.930e-02  9.978e-02   0.193 0.846750    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 0.9019 on 283 degrees of freedom
+# Multiple R-squared:  0.2143,	Adjusted R-squared:  0.1865 
+# F-statistic: 7.719 on 10 and 283 DF,  p-value: 6.337e-11
+# 
 
 beta.lm <- matrix(data = 0, nrow = 19, ncol = 19,dimnames = 
                     list(rownames(beta), colnames(beta)))
