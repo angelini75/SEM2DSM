@@ -674,11 +674,10 @@ for (i in 2:10) {
 }
 
 
-for(i in 1:9){
-  reportMLR$mean_theta[i] <- mean(theta[,i])
-  reportMLR$median_th[i] <- median(theta[,i])
-}
-reportMLR
+reportMLR$mean_theta[1:9] <- theta.MLR.mean[2:10]
+reportMLR$median_th[1:9] <- theta.MLR.median[2:10]
+
+round(reportMLR,3)
 #d.stat <- read.csv("summary.calibdata.csv")
 STt <- as.data.frame(STt)
 STt$SS <- NA 
@@ -688,7 +687,7 @@ for(i in seq_along(names(d))){
 
 reportMLR$R2 <- 1 - (as.numeric(reportMLR$SS) / as.numeric(STt$SS[2:10]))
 reportMLR
-
+write.csv(reportMLR, "reportMLR.csv")
 
 # VALIDATION ####
 setwd("~/Documents/SEM2DSM1/Paper_2/data/")
