@@ -688,6 +688,119 @@ for(i in seq_along(names(d))){
 reportMLR$R2 <- 1 - (as.numeric(reportMLR$SS) / as.numeric(STt$SS[2:10]))
 reportMLR
 write.csv(reportMLR, "reportMLR.csv")
+################################################################################
+# Predicting soil properties with mean values ####
+# Cross-validation
+# P <- predicted, C <- calibration, V <- validation, R <- residuals
+P <- as.data.frame(D[1:10])
+P[,11:19] <- NA
+names(P)[11:19] <- paste0(names(D)[2:10],".pred")
+attach(C)
+V <- D[,2:10]
+for(i in seq_along(D[,1])){
+  C <- D[-i,]
+  # calibration LOO
+  P[i,11:19] <- sapply(C[,2:10],mean)
+  V[i,] <- sapply(C[,2:10],var)
+}
+####
+unstd<- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] * st[i,2]) + st[i,1]
+  }
+  y
+}
+####
+theta.MEAN.mean <- rep(NA,10)
+theta.MEAN.median <- rep(NA,10)
+R <- P[,1:10]
+R[2:10] <- P[,2:10]-P[,11:19]
+
+for(i in 2:10){
+  theta.MEAN.mean[i] <- mean(R[,i]^2)
+  theta.MEAN.median[i] <- median(R[,i]^2)
+}
+
+
+P[2:10] <- unstd(P[,2:10], STt[2:10,])
+P[11:19] <- unstd(P[,11:19], STt[2:10,])
+R <- P[,1:10]
+R[2:10] <- P[,2:10]-P[,11:19]
+
+# Accuracy measures of MLR
+# create report
+
+reportMEAN <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
+                        mean_theta = NA, median_th = NA)
+for (i in 2:10) {
+  # ME <- mean error 
+  ME  <-  mean(R[,i])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((R[,i]) ^ 2))
+  MSE <- mean((R[,i]) ^ 2)
+  # SS (Sum of squares)
+  SS <- sum((R[,i]) ^ 2)
+  # fill report table
+  reportMEAN[i-1,1:4] <- c(names(P)[i], ME, RMSE, SS)
+}
+
+
+reportMEAN$mean_theta[1:9] <- theta.MEAN.mean[2:10]
+reportMEAN$median_th[1:9] <- theta.MEAN.median[2:10]
+
+#d.stat <- read.csv("summary.calibdata.csv")
+STt <- as.data.frame(STt)
+STt$SS <- NA 
+for(i in seq_along(names(d))){
+  STt$SS[i] <- sum(( d[i] - STt$mean[i])^2)
+}
+
+reportMEAN$R2 <- 1 - (as.numeric(reportMEAN$SS) / as.numeric(STt$SS[2:10]))
+reportMEAN
+
+
+CEC.v <- rbind(as.matrix(P[,c(2,2+9)]),
+              as.matrix(P[,c(3,3+9)]),
+              as.matrix(P[,c(4,4+9)]))
+colnames(CEC.v) <- c("CECo","CECp")
+CEC.v <- as.data.frame(CEC.v)
+rsq.v <- data.frame(CEC=NA,OC=NA,clay=NA)
+rsq.v[,1] <- 1 - (sum((CEC.v$CECo - CEC.v$CECp)^2)/
+                   sum((mean(CEC.v$CECo)-CEC.v$CECo)^2))
+lim = round(c(min(c(CEC.v[,1],CEC.v[,2])), max(c(CEC.v[,1],CEC.v[,2]))))
+plot(CEC.v[,2]~CEC.v[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "CEC residuals", col = "dark red")
+abline(0,1)
+abline(lm(CEC.v[,2]~CEC.v[,1]),col = "blue")
+
+OC.v <- rbind(as.matrix(P[,c(5,5+9)]),
+              as.matrix(P[,c(6,6+9)]),
+              as.matrix(P[,c(7,7+9)]))
+colnames(OC.v) <- c("OCo","OCp")
+OC.v <- as.data.frame(OC.v)
+rsq.v[,2] <- 1 - (sum((OC.v$OCo - OC.v$OCp)^2)/
+                    sum((mean(OC.v$OCo)-OC.v$OCo)^2))
+lim = round(c(min(c(OC.v[,1],OC.v[,2])), max(c(OC.v[,1],OC.v[,2]))))
+plot(OC.v[,2]~OC.v[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "OC residuals", col = "dark red")
+abline(0,1)
+abline(lm(OC.v[,2]~OC.v[,1]),col = "blue")
+
+clay.v <- rbind(as.matrix(P[,c(8,8+9)]),
+                as.matrix(P[,c(9,9+9)]),
+                as.matrix(P[,c(10,10+9)]))
+colnames(clay.v) <- c("clayo","clayp")
+clay.v <- as.data.frame(clay.v)
+rsq.v[,3] <- 1 - (sum((clay.v$clayo - clay.v$clayp)^2)/
+                    sum((mean(clay.v$clayo)-clay.v$clayo)^2))
+lim = round(c(min(c(clay.v[,1],clay.v[,2])), max(c(clay.v[,1],clay.v[,2]))))
+plot(clay.v[,2]~clay.v[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "clay residuals", col = "dark red")
+abline(0,1)
+abline(lm(clay.v[,2]~clay.v[,1]),col = "blue")
+
+rsq.v
 
 # VALIDATION ####
 setwd("~/Documents/SEM2DSM1/Paper_2/data/")
