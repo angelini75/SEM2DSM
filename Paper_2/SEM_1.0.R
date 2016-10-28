@@ -632,6 +632,25 @@ for(i in seq_along(D[,1])){
   
   P[i,11:19] <- predict(mod.sp, V)
 }
+####
+unstd<- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] * st[i,2]) + st[i,1]
+  }
+  y
+}
+####
+theta.MLR.mean <- rep(NA,10)
+theta.MLR.median <- rep(NA,10)
+R <- P[,1:10]
+R[2:10] <- P[,2:10]-P[,11:19]
+for(i in 2:10){
+  theta.MLR.mean[i] <- mean((R[,i]^2)/as.numeric(summary(mod.sp)[[i-1]][6])^2)
+  theta.MLR.median[i] <- median((R[,i]^2)/as.numeric(summary(mod.sp)[[i-1]][6])^2)
+}
+
+
 P[2:10] <- unstd(P[,2:10], STt[2:10,])
 P[11:19] <- unstd(P[,11:19], STt[2:10,])
 R <- P[,1:10]
@@ -639,6 +658,7 @@ R[2:10] <- P[,2:10]-P[,11:19]
 
 # Accuracy measures of MLR
 # create report
+
 reportMLR <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
                      mean_theta = NA, median_th = NA)
 for (i in 2:10) {
@@ -652,6 +672,7 @@ for (i in 2:10) {
   # fill report table
   reportMLR[i-1,1:4] <- c(names(P)[i], ME, RMSE, SS)
 }
+
 
 for(i in 1:9){
   reportMLR$mean_theta[i] <- mean(theta[,i])
