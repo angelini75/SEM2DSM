@@ -560,6 +560,7 @@ rownames(Sigma.hat.lm) <- colnames(Sigma.hat)
 colnames(Sigma.hat.lm) <- colnames(Sigma.hat)
 Sigma.hat.lm[lower.tri(Sigma.hat.lm)] <- NA
 
+library(lattice)
 sigmah.lm <- levelplot(Sigma.hat.lm[1:9,9:1],
                        col.regions=colors,
                        at=seq(0,1.1,0.1),
@@ -597,7 +598,7 @@ plot(predict.lm(mod.cecb)~predict.lm(mod.cecc))
 
 sum(sum(()))^.5
 
-### CROSS-VALIDATION MLR ####
+### CROSS-VALIDATION Multivariate LR ####
 # comparison with multivariate 
 attach(D)
 mod.sp <- lm(cbind(CEC.A, CEC.B, CEC.C,
@@ -606,13 +607,48 @@ mod.sp <- lm(cbind(CEC.A, CEC.B, CEC.C,
                dem + river + vdchn + X + Y + evisd + lstm + ndwi.b +
                twi + ndwi.a)
 
-summary(mod.sp)
-class(mod.sp)
-summary(mod.ceca)
-summary(manova(mod.sp))
-library(car)
-Manova(mod.sp, type = "II")
-mod.ceca$residuals - mod.sp$residuals[,1] #same
+var(mod.sp$residuals)
+diag(psi.lm)[1:9] - diag(var(mod.sp$residuals))[1:9]
+
+psi.lm[1:9,1:9] <- var(mod.sp$residuals)[1:9,1:9]
+
+IB.lm.inv <- solve(diag(nrow(beta.lm)) - beta.lm)
+lambda.lm <- diag( nrow(beta.lm) )
+Sigma.hat.lm <- lambda.lm %*% IB.lm.inv %*% psi.lm %*% t(IB.lm.inv) %*% t(lambda.lm) 
+rownames(Sigma.hat.lm) <- colnames(Sigma.hat)
+colnames(Sigma.hat.lm) <- colnames(Sigma.hat)
+Sigma.hat.lm[lower.tri(Sigma.hat.lm)] <- NA
+
+library(lattice)
+sigmah.lm <- levelplot(Sigma.hat.lm[1:9,9:1],
+                       col.regions=colors,
+                       at=seq(0,1.1,0.1),
+                       xlab = NULL, ylab = NULL,                                                                                                                                                                                                                
+                       scales=list(x=list(rot=90)))
+DIF.lm <- abs(Sigma.hat.lm - S)
+DIF.lm[lower.tri(DIF.lm)] <- NA
+
+dif.lm <- levelplot(DIF.lm[1:9,9:1],
+                    col.regions=colors,
+                    at=seq(0,0.4,0.05),
+                    xlab = NULL, ylab = NULL,                                                                                                                                                                                                                
+                    scales=list(x=list(rot=90)))
+
+# plotting ####
+print(dif, split = c(1,1,2,1),)
+print(dif.lm, split=c(2,1,2,1), newpage=FALSE)
+print(c(dif, dif.lm))
+
+print(c(sigmah,s, sigmah.lm), main =NULL)
+
+
+# summary(mod.sp)
+# class(mod.sp)
+# summary(mod.ceca)
+# summary(manova(mod.sp))
+# library(car)
+# Manova(mod.sp, type = "II")
+# mod.ceca$residuals - mod.sp$residuals[,1] #same
 
 # Cross-validation
 # P <- predicted, C <- calibration, V <- validation, R <- residuals
