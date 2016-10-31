@@ -461,6 +461,50 @@ report2
 library(semPlot)
 semPaths(my.fit.lv.ML,what = "est",style = "LISREL", layout = "circle")
 
+### Autocorrelation in SEM residuals ####
+
+Res[2:10] <- Res[,2:10]-Res[,11:19]
+Res <- Res[,1:10]
+names(Res)[1] <- "id.p"
+
+R <- merge(Res, unique(d[,c(1,26,27)], by = "id.p"))
+
+library(sp)
+library(gstat)
+# R as geo
+coordinates(R) <- ~X+Y
+
+# define gstat object and compute variogram:
+par(mfrow = c(3, 3), # 2 x 2 pictures on one plot
+   pty = "s")       # square plotting region,
+# independent of device size
+for(i in 2:10){
+  rm(g)
+  rm(vg)
+  rm(vgm)
+  g <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
+            data = R)
+  vg <-  variogram(g)
+  # vg = variogram(g, width = 20000, cutoff = 600000)
+  # vg = variogram(g, boundaries = c(1E4,2E4,4E4,7E4,1E5,2E5,4E5,7E5,1E6))
+  # print(plot(vg, plot.numbers = TRUE, main = names(R@data)[i]))
+  
+  # # choose initial variogram model and plot:
+  vgm <- vgm(nugget = var(R@data[,i]),
+             psill=var(R@data[,i]),
+             range=5E4,
+             model = "Sph")
+  #plot(vg, vgm, main = names(R@data)[i])
+  # 
+  # # fit variogram model:
+  vgm <-  fit.variogram(vg, vgm, fit.method = 2)
+  print(plot(vg, vgm, main = names(R@data)[i]))
+  print(names(R@data)[i])
+  print(vgm)
+  print(attr(vgm, "SSErr"))
+}
+
+
 # COVARIATION ASSESSMENT ####
 # write.csv(round(residuals(my.fit.lv.ML, "raw")$cov[1:9,1:9], 3), 
 #           "residual.matrix.csv")
