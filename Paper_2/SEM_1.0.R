@@ -480,7 +480,8 @@ g <- list()
 vg <- list()
 vgm <- list()
 
-for(i in 2:10){
+# CEC
+for(i in 2:4){
   g[[i-1]] <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
             data = R)
   vg[[i-1]] <-  variogram(g[[i-1]])
@@ -501,25 +502,96 @@ for(i in 2:10){
   print(vgm[[i-1]])
   print(attr(vgm[[i-1]], "SSErr"))
 }
+# OC
+for(i in 5:7){
+  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
+                     data = R)
+  vg[[i-1]] <-  variogram(g[[i-1]])
+  # vg = variogram(g, width = 20000, cutoff = 600000)
+  # vg = variogram(g, boundaries = c(1E4,2E4,4E4,7E4,1E5,2E5,4E5,7E5,1E6))
+  # print(plot(vg, plot.numbers = TRUE, main = names(R@data)[i]))
+  
+  # # choose initial variogram model and plot:
+  vgm[[i-1]] <- vgm(nugget = var(R@data[,i]),
+                    psill=var(R@data[,i]),
+                    range=5E4,
+                    model = "Sph")
+  #plot(vg, vgm, main = names(R@data)[i])
+  # 
+  # # fit variogram model:
+  vgm[[i-1]] <-  fit.variogram(vg[[i-1]], vgm[[i-1]], fit.method = 1)
+  print(names(R@data)[i])
+  print(vgm[[i-1]])
+  print(attr(vgm[[i-1]], "SSErr"))
+}
+# Clay
+for(i in 8:10){
+  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
+                     data = R)
+  vg[[i-1]] <-  variogram(g[[i-1]])
+  # vg = variogram(g, width = 20000, cutoff = 600000)
+  # vg = variogram(g, boundaries = c(1E4,2E4,4E4,7E4,1E5,2E5,4E5,7E5,1E6))
+  # print(plot(vg, plot.numbers = TRUE, main = names(R@data)[i]))
+  
+  # # choose initial variogram model and plot:
+  vgm[[i-1]] <- vgm(nugget = var(R@data[,i]),
+                    psill=var(R@data[,i]),
+                    range=5E4,
+                    model = "Sph")
+  #plot(vg, vgm, main = names(R@data)[i])
+  # 
+  # # fit variogram model:
+  vgm[[i-1]] <-  fit.variogram(vg[[i-1]], vgm[[i-1]], fit.method = 2)
+  print(names(R@data)[i])
+  print(vgm[[i-1]])
+  print(attr(vgm[[i-1]], "SSErr"))
+}
 
-plot(variogramLine(vgm[[1]], maxdist=50000), type="l", lwd=2,col="#00AA00", 
-     main="Semivariogram of residuals of CEC.A (green), CEC.B (red) and CEC.C (blue)",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,50)) 
-lines(variogramLine(vgm[[2]], maxdist=50000), lwd=2, col="#AA0000")
+par(mfrow = c(1, 3), pty = "s")
+plot(variogramLine(vgm[[1]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
+     main="CEC",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(5,35))
+legend(x= "topleft",legend = "SSErr", bty = "n")
+legend(x= 12,legend = round(attr(vgm[[1]], "SSErr"),3), text.col ="#AA0000", bty = "n")
+lines(variogramLine(vgm[[2]], maxdist=50000), lwd=2, col="#00AA00")
+legend(x= 17,legend = round(attr(vgm[[2]], "SSErr"),3), text.col="#00AA00", bty = "n")
 lines(variogramLine(vgm[[3]], maxdist=50000), lwd=2, col="#0000AA")
+legend(x= 31,legend = round(attr(vgm[[3]], "SSErr"),3), text.col="#0000AA", bty = "n")
 
-plot(variogramLine(vgm[[4]], maxdist=50000), type="l", lwd=2,col="#00AA00", 
-     main="Semivariogram of residuals of OC.A (green), OC.B (red) and OC.C (blue)",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,1)) 
-lines(variogramLine(vgm[[5]], maxdist=50000), lwd=2, col="#AA0000")
+plot(variogramLine(vgm[[4]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
+     main="OC",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,0.5)) 
+legend(x= "topleft",legend = "SSErr", bty = "n")
+legend(x= 0.25,legend = round(attr(vgm[[4]], "SSErr"),3), text.col ="#AA0000", bty = "n")
+lines(variogramLine(vgm[[5]], maxdist=50000), lwd=2, col="#00AA00")
+legend(x= 0.07,legend = round(attr(vgm[[5]], "SSErr"),3), text.col ="#00AA00", bty = "n")
 lines(variogramLine(vgm[[6]], maxdist=50000), lwd=2, col="#0000AA")
+legend(x= 0.016,legend = round(attr(vgm[[6]], "SSErr"),3), text.col ="#0000AA", bty = "n")
 
-plot(variogramLine(vgm[[7]], maxdist=50000), type="l", lwd=2,col="#00AA00", 
-     main="Semivariogram of residuals of clay.A (green), clay.B (red) and clay.C (blue)",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,50)) 
-lines(variogramLine(vgm[[8]], maxdist=50000), lwd=2, col="#AA0000")
+plot(variogramLine(vgm[[7]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
+     main="Clay",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(10,50)) 
+legend(x= "topleft",legend = "SSErr", bty = "n")
+legend(x= 19,legend = round(attr(vgm[[7]], "SSErr"),3), text.col ="#AA0000", bty = "n")
+lines(variogramLine(vgm[[8]], maxdist=50000), lwd=2, col="#00AA00")
+legend(x= 29,legend = round(attr(vgm[[8]], "SSErr"),3), text.col ="#00AA00", bty = "n")
 lines(variogramLine(vgm[[9]], maxdist=50000), lwd=2, col="#0000AA")
+legend(x= 44,legend = round(attr(vgm[[9]], "SSErr"),3), text.col ="#0000AA", bty = "n")
+par(mfrow = c(1, 1))
 
+title("Semivariograms of residuals",
+  sub="red: A horizon, green: B horizon, blue: C horizon")
+
+
+vgm[[4]] <- vgm(nugget = 0.1,
+                  psill=0.1,
+                  range=5E4,
+                  model = "Wav")
+plot(vg[[4]], vgm[[4]],ylim=c(0,0.5))
+vgm[[4]] <-  fit.variogram(vg[[4]], vgm[[4]], fit.method = 2)
+plot(vg[[4]], vgm[[4]],ylim=c(0,0.5))
+attr(vgm[[4]], "SSErr")
+vgm[[4]]
 # COVARIATION ASSESSMENT ####
 # write.csv(round(residuals(my.fit.lv.ML, "raw")$cov[1:9,1:9], 3), 
 #           "residual.matrix.csv")
