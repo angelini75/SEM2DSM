@@ -100,6 +100,40 @@ D[,1] <- d[,1]
 # statistics
 round(stat.desc(D,norm = TRUE),0)
 
+#### correlogram
+library(psych)
+corr <- d[,2:10]
+par(mfrow=c(1,1),pty = "s")
+pairs.panels(corr, 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             ellipses = TRUE # show correlation ellipses
+             )#, cex= 1)  # plot correlogram
+## correlogram ####
+library(reshape)
+corr <- melt(corr)
+corr$hzn <- NA
+corr$hzn[grep(x = corr$variable,pattern = ".A$")] <- "A"
+corr$hzn[grep(x = corr$variable,pattern = ".B$")] <- "B"
+corr$hzn[grep(x = corr$variable,pattern = ".C$")] <- "C"
+corr$sp <- NA
+corr$sp[grep(x = corr$variable,pattern = "^CEC.")] <- "CEC"
+corr$sp[grep(x = corr$variable,pattern = "^OC.")] <- "OC"
+corr$sp[grep(x = corr$variable,pattern = "^clay")] <- "Clay"
+corr <- corr[,c(3,4,2)]
+names(corr)[2] <- "variable"
+corr$hzn <- as.factor(corr$hzn)
+corr$variable <- as.factor(corr$variable)
+
+library(GGally)
+ggpairs(data = corr,
+        mapping = aes(x=value, fill=variable))
+  
+# Get and store the summary files
+
+sapply(inputData, summary)  # get summary statistics for all columns
+
 # SEM ####
 # Model without latent variables (CFA) ####
 ## disabled
