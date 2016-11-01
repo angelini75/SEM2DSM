@@ -461,6 +461,7 @@ report2
 library(semPlot)
 semPaths(my.fit.lv.ML,what = "est",style = "LISREL", layout = "circle")
 
+#########################################
 ### Autocorrelation in SEM residuals ####
 
 Res[2:10] <- Res[,2:10]-Res[,11:19]
@@ -474,36 +475,50 @@ library(gstat)
 # R as geo
 coordinates(R) <- ~X+Y
 
-# define gstat object and compute variogram:
-par(mfrow = c(3, 3), # 2 x 2 pictures on one plot
-   pty = "s")       # square plotting region,
 # independent of device size
+g <- list()
+vg <- list()
+vgm <- list()
+
 for(i in 2:10){
-  rm(g)
-  rm(vg)
-  rm(vgm)
-  g <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
+  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
             data = R)
-  vg <-  variogram(g)
+  vg[[i-1]] <-  variogram(g[[i-1]])
   # vg = variogram(g, width = 20000, cutoff = 600000)
   # vg = variogram(g, boundaries = c(1E4,2E4,4E4,7E4,1E5,2E5,4E5,7E5,1E6))
   # print(plot(vg, plot.numbers = TRUE, main = names(R@data)[i]))
   
   # # choose initial variogram model and plot:
-  vgm <- vgm(nugget = var(R@data[,i]),
+  vgm[[i-1]] <- vgm(nugget = var(R@data[,i]),
              psill=var(R@data[,i]),
              range=5E4,
              model = "Sph")
   #plot(vg, vgm, main = names(R@data)[i])
   # 
   # # fit variogram model:
-  vgm <-  fit.variogram(vg, vgm, fit.method = 2)
-  print(plot(vg, vgm, main = names(R@data)[i]))
+  vgm[[i-1]] <-  fit.variogram(vg[[i-1]], vgm[[i-1]], fit.method = 2)
   print(names(R@data)[i])
-  print(vgm)
-  print(attr(vgm, "SSErr"))
+  print(vgm[[i-1]])
+  print(attr(vgm[[i-1]], "SSErr"))
 }
 
+plot(variogramLine(vgm[[1]], maxdist=50000), type="l", lwd=2,col="#00AA00", 
+     main="Semivariogram of residuals of CEC.A (green), CEC.B (red) and CEC.C (blue)",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,50)) 
+lines(variogramLine(vgm[[2]], maxdist=50000), lwd=2, col="#AA0000")
+lines(variogramLine(vgm[[3]], maxdist=50000), lwd=2, col="#0000AA")
+
+plot(variogramLine(vgm[[4]], maxdist=50000), type="l", lwd=2,col="#00AA00", 
+     main="Semivariogram of residuals of OC.A (green), OC.B (red) and OC.C (blue)",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,1)) 
+lines(variogramLine(vgm[[5]], maxdist=50000), lwd=2, col="#AA0000")
+lines(variogramLine(vgm[[6]], maxdist=50000), lwd=2, col="#0000AA")
+
+plot(variogramLine(vgm[[7]], maxdist=50000), type="l", lwd=2,col="#00AA00", 
+     main="Semivariogram of residuals of clay.A (green), clay.B (red) and clay.C (blue)",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,50)) 
+lines(variogramLine(vgm[[8]], maxdist=50000), lwd=2, col="#AA0000")
+lines(variogramLine(vgm[[9]], maxdist=50000), lwd=2, col="#0000AA")
 
 # COVARIATION ASSESSMENT ####
 # write.csv(round(residuals(my.fit.lv.ML, "raw")$cov[1:9,1:9], 3), 
