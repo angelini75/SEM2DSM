@@ -127,9 +127,10 @@ corr$hzn <- as.factor(corr$hzn)
 corr$variable <- as.factor(corr$variable)
 
 library(GGally)
-GGally::ggpairs(d[,2:10])  
-GGally::ggpairs(corr)  
-scatmat()
+library(ggplot2)
+# GGally::ggpairs(d[,2:10])  
+# GGally::ggpairs(corr)  
+# scatmat()
 ggscatmat(d[,2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
 # ggpairs(d[, 2:4], #axisLabels= "none", 
 #   upper = list(continuous = wrap("cor", size = 4, alignPercent = 1), combo = "box", discrete = "facetbar" ),
