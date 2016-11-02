@@ -102,17 +102,17 @@ round(stat.desc(D,norm = TRUE),0)
 
 #### correlogram
 library(psych)
-corr <- d[,2:10]
+corr <- d[,1:10]
 par(mfrow=c(1,1),pty = "s")
-pairs.panels(corr, 
+pairs.panels(d[2:10], 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = TRUE,  # show density plots
              ellipses = TRUE # show correlation ellipses
              )#, cex= 1)  # plot correlogram
 ## correlogram ####
-library(reshape)
-corr <- melt(corr)
+library(reshape2)
+corr <- melt(corr,id.vars = "id.p")
 corr$hzn <- NA
 corr$hzn[grep(x = corr$variable,pattern = ".A$")] <- "A"
 corr$hzn[grep(x = corr$variable,pattern = ".B$")] <- "B"
@@ -121,15 +121,28 @@ corr$sp <- NA
 corr$sp[grep(x = corr$variable,pattern = "^CEC.")] <- "CEC"
 corr$sp[grep(x = corr$variable,pattern = "^OC.")] <- "OC"
 corr$sp[grep(x = corr$variable,pattern = "^clay")] <- "Clay"
-corr <- corr[,c(3,4,2)]
-names(corr)[2] <- "variable"
+corr <- corr[,c(1,4,5,3)]
+names(corr)[3] <- "variable"
 corr$hzn <- as.factor(corr$hzn)
 corr$variable <- as.factor(corr$variable)
 
 library(GGally)
-ggpairs(data = corr,
-        mapping = aes(x=value, fill=variable))
-  
+GGally::ggpairs(d[,2:10])  
+GGally::ggpairs(corr)  
+scatmat()
+ggscatmat(d[,2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+# ggpairs(d[, 2:4], #axisLabels= "none", 
+#   upper = list(continuous = wrap("cor", size = 4, alignPercent = 1), combo = "box", discrete = "facetbar" ),
+#   diag = list(continuous = "densityDiag", discrete ="barDiag"),
+#   lower = list(continuous = wrap("points", alpha = 0.15), combo = wrap("dot", alpha = 0.4)),
+# ) + theme(axis.text.x = element_text(angle = 45, vjust = 1, color = "black"),
+#           #axis. = element_text(size = 8,margin = 12, color = "#555555"),
+#           plot.margin = unit(x = c(15,15,15,15), units = "cm"))
+# 
+# 
+# p <- ggplot(corr, aes(value,hzn)) + geom_point()
+# 
+# p + facet_grid(hzn~variable)
 # Get and store the summary files
 
 sapply(inputData, summary)  # get summary statistics for all columns
