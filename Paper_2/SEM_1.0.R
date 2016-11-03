@@ -902,7 +902,8 @@ for(i in seq_along(names(d))){
 
 reportMLR$R2 <- 1 - (as.numeric(reportMLR$SS) / as.numeric(STt$SS[2:10]))
 reportMLR
-write.csv(reportMLR, "reportMLR.csv")
+
+write.csv(reportMLR, "~/Documents/SEM2DSM1/Paper_2/reports/reportMLR.csv")
 ################################################################################
 # Predicting soil properties with mean values ####
 # Cross-validation
