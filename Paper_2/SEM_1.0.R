@@ -382,10 +382,24 @@ Res <- cbind(pre[,1], unstd(pre[,2:10], STt[2:10,]), unstd(pre[,28:36],
                                                            STt[2:10,]))
 # plot residuals
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
+
+lim.cec <- c(min(cbind(Res[,2:4],Res[,11:13])), max(cbind(Res[,2:4],Res[,11:13])))
+lim.oc <- c(min(cbind(Res[,5:7],Res[,14:16])), max(cbind(Res[,5:7],Res[,14:16])))
+lim.clay <- c(min(cbind(Res[,8:10],Res[,17:19])), max(cbind(Res[,8:10],Res[,17:19])))
+
+lim <- data.frame(min=NA,max=NA)
+lim[1:3,1] <- lim.cec[1]
+lim[1:3,2] <- lim.cec[2]
+lim[4:6,1] <- lim.oc[1]
+lim[4:6,2] <- lim.oc[2]
+lim[7:9,1] <- lim.clay[1]
+lim[7:9,2] <- lim.clay[2]
+
+
 for (i in 2:10) {
-  lim = c(min(c(Res[,i],Res[,i+9])), max(c(Res[,i],Res[,i+9])))
+  limi = c(lim[i-1,1],lim[i-1,2])
   plot(Res[,i+9] ~ Res[,i], main = paste(names(Res)[i]), xlab = "measured",
-       ylab = "predicted", col = "dark red", xlim = lim, ylim = lim)
+       ylab = "predicted", col = "dark red", xlim = limi, ylim = limi)
   abline(0,1)
   abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
 }
