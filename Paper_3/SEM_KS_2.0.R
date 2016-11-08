@@ -1,16 +1,25 @@
-############### #### ### ## # - SEM for second paper - # ## ### #### ###########
+############### #### ### ## # - SEM for Third Paper - # ## ### #### ###########
 # Purpose        : Load, standardise and create a SE model
 # Maintainer     : Marcos Angelini  (marcos.angelini@wur.nl); 
-# Contributions  : Gerard?
+# Contributions  : 
 # Status         : 
 # Note           : 
-# sessionInfo(@RStudio desktop)  lenovo ThinkPad T430 (4 cores)
-# R version 3.0.2 (2013-09-25)
+# SessionInfo()
+# R version 3.3.2 (2016-10-31)
 # Platform: x86_64-pc-linux-gnu (64-bit)
+# Running under: Ubuntu 16.04.1 LTS
+# 
+# locale:
+#   [1] LC_CTYPE=en_GB.UTF-8       LC_NUMERIC=C               LC_TIME=en_GB.UTF-8       
+# [4] LC_COLLATE=en_GB.UTF-8     LC_MONETARY=en_GB.UTF-8    LC_MESSAGES=en_GB.UTF-8   
+# [7] LC_PAPER=en_GB.UTF-8       LC_NAME=C                  LC_ADDRESS=C              
+# [10] LC_TELEPHONE=C             LC_MEASUREMENT=en_GB.UTF-8 LC_IDENTIFICATION=C       
+# 
 # attached base packages:
-#   [1] stats     graphics  grDevices utils     datasets  methods   base   
-# other attached packages:
-#   [1] questionr_0.5
+#   [1] stats     graphics  grDevices utils     datasets  methods   base     
+# 
+# loaded via a namespace (and not attached):
+#   [1] tools_3.3.2
 
 # Libraries ####
 library(lavaan)
@@ -21,7 +30,7 @@ rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 # chose one
 #setwd("~/big/SEM2DSM1/Paper_2/data/")
-setwd("~/Documents/SEM2DSM1/Paper_2/data/")
+setwd("~/Documents/SEM2DSM1/Paper_3/data/")
 
 # Dictionary of elements in this script ######
 # d = calibration dataset. It comes from replacement_of_NAs.Rm 
@@ -35,27 +44,33 @@ setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 # mod = modification indices (for respecification)
 #------------------------------------------------#
 
-d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
-d <- d[,c(-12:-16,-20,-21,-25)]
-
-meltp <- melt(unique(d,id.vars = c("id.p")))
+d <- read.csv("calib-data.KS.0.1.csv")[,c(-1)] #remove water variable 
+name(d)
+d <- d[,c(-11:-20)]
+names(d)[5:10] <- c("cec.A","cec.B","cec.C","oc.A","oc.B","oc.C")
+library(reshape)
+library(ggplot2)
+meltp <- unique(melt(d,id.vars = c("idp")))
 
 ggplot(data = meltp,
        aes(x = value, fill=variable)) + geom_histogram() + 
   facet_wrap( ~ variable, scales = "free_x")
 d$H <- NA
-e <- data.frame(d[,c(1,2,5,8,11:20)])
+name(d)
+e <- data.frame(d[,c(1,2,5,8,11:19)])
 e$H <- "A"
-names(e)[2:4] <- c("CEC.B","OC.B","clay.B")
+name(e)
+names(e)[2:4] <- c("clay.B","cec.B","oc.B")
 e <- rbind(e,d[,c(1,3,6,9,11:20)])
+name(e)
 e$H[is.na(e$H)] <- "B"
 
-names(e)[2:4] <- c("CEC.C","OC.C","clay.C")
+names(e)[2:4] <- c("clay.C","cec.C","oc.C")
 e <- rbind(e,d[,c(1,4,7,10,11:20)])
 e$H[is.na(e$H)] <- "C"
-names(e)[2:4] <- c("CEC","OC","Clay")
+names(e)[2:4] <- c("Clay","CEC","OC")
 
-meltp <- melt(e,id.vars = c("id.p","H"))
+meltp <- melt(e,id.vars = c("idp","H"))
 ggplot(data = meltp[meltp$variable=="CEC" |
                       meltp$variable=="OC" |
                       meltp$variable=="Clay",],
@@ -67,22 +82,20 @@ ggplot(data = unique(meltp[!(meltp$variable=="CEC" |
        aes(x = value)) + geom_density(alpha = 0.4) + 
   facet_wrap( ~ variable,scales = "free")
 #############
-d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
+#d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
 # Descriptive statistics and normality test. ####
-round(stat.desc(d,norm = TRUE),3)
+round(stat.desc(d[,-20],norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
 # But some covariates need to be transformed. First, we store original mean and 
 # sd in ST
-ST <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+ST <- t(stat.desc(d[,c(-20)],norm = TRUE)[c(9,13),])
  
 # Based on normtest.W the following covariates need to be transformed
-d$wdist <- d$wdist^0.5
-d$maxc <- (d$maxc+20000)^2
-d$slope <- d$slope^0.25
-d$twi <- log10(d$twi)
-d$vdchn <- log10(d$vdchn+10)
+d$twi.1 <- log10(d$twi.1)
+d$vdchn.1 <- log10(d$vdchn.1+10)
 d$ndwi.a <- (d$ndwi.a+10)^.3
 # New statistics
+d <- d[,-20:-21]
 round(stat.desc(d,norm = TRUE),3)
 # New mean and sd
 STt <- t(stat.desc(d,norm = TRUE)[c(9,13),])
@@ -128,25 +141,9 @@ corr$variable <- as.factor(corr$variable)
 
 library(GGally)
 library(ggplot2)
-# GGally::ggpairs(d[,2:10])  
-# GGally::ggpairs(corr)  
-# scatmat()
-ggscatmat(d[,2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
-# ggpairs(d[, 2:4], #axisLabels= "none", 
-#   upper = list(continuous = wrap("cor", size = 4, alignPercent = 1), combo = "box", discrete = "facetbar" ),
-#   diag = list(continuous = "densityDiag", discrete ="barDiag"),
-#   lower = list(continuous = wrap("points", alpha = 0.15), combo = wrap("dot", alpha = 0.4)),
-# ) + theme(axis.text.x = element_text(angle = 45, vjust = 1, color = "black"),
-#           #axis. = element_text(size = 8,margin = 12, color = "#555555"),
-#           plot.margin = unit(x = c(15,15,15,15), units = "cm"))
-# 
-# 
-# p <- ggplot(corr, aes(value,hzn)) + geom_point()
-# 
-# p + facet_grid(hzn~variable)
-# Get and store the summary files
 
-sapply(inputData, summary)  # get summary statistics for all columns
+ggscatmat(d[,2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+
 
 # SEM ####
 # Model without latent variables (CFA) ####
