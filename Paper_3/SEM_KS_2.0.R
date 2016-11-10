@@ -44,10 +44,40 @@ setwd("~/Documents/SEM2DSM1/Paper_3/data/")
 # mod = modification indices (for respecification)
 #------------------------------------------------#
 
-d <- read.csv("calib-data.KS.0.1.csv")[,c(-1)] #remove water variable 
+
+d <- read.csv("calib-data.KS.0.1.csv")[,c(-1)] 
 name(d)
 d <- d[,c(-11:-20)]
-names(d)[5:10] <- c("cec.A","cec.B","cec.C","oc.A","oc.B","oc.C")
+names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
+# Descriptive statistics and normality test. ####
+round(stat.desc(d[,-20],norm = TRUE),3)
+# Soil properties does not present strong deviation from normality.
+# But some covariates need to be transformed. First, we store original mean and 
+# sd in ST
+ST <- t(stat.desc(d[,c(-20)],norm = TRUE)[c(9,13),])
+
+# Based on normtest.W the following covariates need to be transformed
+d$twi.1 <- log10(d$twi.1)
+d$vdchn.1 <- log10(d$vdchn.1+10)
+d$ndwi.a <- (d$ndwi.a+10)^.3
+
+# OC as log10 of OC
+# d$oc.A <- log10(d$oc.A)
+# d$oc.B <- log10(d$oc.B)
+# d$oc.C <- log10(d$oc.C)
+
+# d$clay.A <- log10(d$clay.A)
+# d$clay.B <- log10(d$clay.B)
+# d$clay.C <- log10(d$clay.C)
+# 
+# d$cec.A <- log10(d$cec.A)
+# d$cec.B <- log10(d$cec.B)
+# d$cec.C <- log10(d$cec.C)
+
+
+
+
+
 library(reshape)
 library(ggplot2)
 meltp <- unique(melt(d,id.vars = c("idp")))
@@ -60,12 +90,12 @@ name(d)
 e <- data.frame(d[,c(1,2,5,8,11:19)])
 e$H <- "A"
 name(e)
-names(e)[2:4] <- c("clay.B","cec.B","oc.B")
+names(e)[2:4] <- c("clay.B","CEC.B","OC.B")
 e <- rbind(e,d[,c(1,3,6,9,11:20)])
 name(e)
 e$H[is.na(e$H)] <- "B"
 
-names(e)[2:4] <- c("clay.C","cec.C","oc.C")
+names(e)[2:4] <- c("clay.C","CEC.C","OC.C")
 e <- rbind(e,d[,c(1,4,7,10,11:20)])
 e$H[is.na(e$H)] <- "C"
 names(e)[2:4] <- c("Clay","CEC","OC")
@@ -82,20 +112,10 @@ ggplot(data = unique(meltp[!(meltp$variable=="CEC" |
        aes(x = value)) + geom_density(alpha = 0.4) + 
   facet_wrap( ~ variable,scales = "free")
 #############
-#d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
-# Descriptive statistics and normality test. ####
-round(stat.desc(d[,-20],norm = TRUE),3)
-# Soil properties does not present strong deviation from normality.
-# But some covariates need to be transformed. First, we store original mean and 
-# sd in ST
-ST <- t(stat.desc(d[,c(-20)],norm = TRUE)[c(9,13),])
- 
-# Based on normtest.W the following covariates need to be transformed
-d$twi.1 <- log10(d$twi.1)
-d$vdchn.1 <- log10(d$vdchn.1+10)
-d$ndwi.a <- (d$ndwi.a+10)^.3
+
 # New statistics
 d <- d[,-20:-21]
+names(d)[12:13] <- c("twi", "vdchn")
 round(stat.desc(d,norm = TRUE),3)
 # New mean and sd
 STt <- t(stat.desc(d,norm = TRUE)[c(9,13),])
@@ -124,25 +144,10 @@ pairs.panels(d[2:10],
              ellipses = TRUE # show correlation ellipses
              )#, cex= 1)  # plot correlogram
 ## correlogram ####
-library(reshape2)
-corr <- melt(corr,id.vars = "id.p")
-corr$hzn <- NA
-corr$hzn[grep(x = corr$variable,pattern = ".A$")] <- "A"
-corr$hzn[grep(x = corr$variable,pattern = ".B$")] <- "B"
-corr$hzn[grep(x = corr$variable,pattern = ".C$")] <- "C"
-corr$sp <- NA
-corr$sp[grep(x = corr$variable,pattern = "^CEC.")] <- "CEC"
-corr$sp[grep(x = corr$variable,pattern = "^OC.")] <- "OC"
-corr$sp[grep(x = corr$variable,pattern = "^clay")] <- "Clay"
-corr <- corr[,c(1,4,5,3)]
-names(corr)[3] <- "variable"
-corr$hzn <- as.factor(corr$hzn)
-corr$variable <- as.factor(corr$variable)
-
 library(GGally)
 library(ggplot2)
 
-ggscatmat(d[,2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggscatmat(d[c(-192,-188),2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
 
 
 # SEM ####
@@ -213,6 +218,7 @@ ggscatmat(d[,2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_tex
 
 # Model with latent variables ####
 ## Model (re)specification
+
 my.model.lv <- '
 # Measurement model (lamda and epsilon)
 #--------------------#
@@ -226,25 +232,25 @@ clay.Ar =~ 1*clay.A
 clay.Br =~ 1*clay.B
 clay.Cr =~ 1*clay.C
 ## Measurement error #
-CEC.A ~~ 0.1 * CEC.A
-CEC.B ~~ 0.1 * CEC.B
+CEC.A ~~ 0.05 * CEC.A
+CEC.B ~~ 0.05 * CEC.B
 CEC.C ~~ 0.05 * CEC.C
-OC.A ~~ 0.2 * OC.A
-OC.B ~~ 0.6 * OC.B
-OC.C ~~ 0.6 * OC.C
-clay.A ~~ 0.3 * clay.A
-clay.B ~~ 0.14 * clay.B
-clay.C ~~ 0.12 *clay.C
+OC.A ~~ 0.05 * OC.A
+OC.B ~~ 0.05 * OC.B
+OC.C ~~ 0.05 * OC.C
+clay.A ~~ 0.05 * clay.A
+clay.B ~~ 0.05 * clay.B
+clay.C ~~ 0.05 *clay.C
 
 #--------------------#
 
 # Structural model (gamma and betta matrices)
 #--------------------#
-clay.Cr ~ dem + river + vdchn + X + 0*Y 
+clay.Cr ~ dem + vdchn + X + 0*Y 
 clay.Ar ~ clay.Cr + 
 evisd + lstm + ndwi.b 
 clay.Br ~ clay.Ar + clay.Cr + 
-vdchn + twi + river + 0*Y + ndwi.b
+vdchn + twi + 0*Y + ndwi.b
 
 OC.Ar ~ clay.Ar +
 evisd + lstm + ndwi.b  
@@ -273,9 +279,7 @@ clay.Br  ~       X
 clay.Br  ~     dem
 clay.Br  ~    lstm
   OC.Br  ~       X
-  OC.Ar  ~   river
 # # 
- CEC.Cr  ~   river
  CEC.Br  ~  ndwi.a
  CEC.Cr  ~       X
 clay.Cr  ~  ndwi.a
@@ -302,7 +306,7 @@ summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
 fitMeasures(my.fit.lv.ML,fit.measures = 
               c("chisq","df","pvalue","cfi","rmsea","gfi", "srmr"))
 mod <- modindices(my.fit.lv.ML,sort. = T)
-mod[mod$mi>3 & (mod$op == "~~"|mod$op == "~~"),] 
+mod[mod$mi>3 & (mod$op == "~"|mod$op == "~"),] 
 
 
 # CROSS-VALIDATION #####
@@ -320,42 +324,44 @@ Var <- pre[-(1:nrow(pre)),c(2:10)] # model variance (constant)
 pb = txtProgressBar(min = 0, max = length(d[,1]), initial = 0, style = 3)
 
 # Loop: cal is calibration data, pre is prediction place
-for(i in seq_along(D[,1])){ 
-  cal <- D[-i,]
-  pre[i,] <- D[ i,]
+# for(i in seq_along(D[,1])){ 
+#   cal <- D[,]
+#   pre[i,] <- D[ i,]
   # Fiting #
-  my.fit.lv.ML <- sem(model = my.model.lv,data = cal, fixed.x = T,
+  my.fit.lv.ML <- sem(model = my.model.lv,data = D, fixed.x = T,
                       estimator = "ML")
   # Matrix dedinition (Section 3.3 2nd paper and Fig. 5) #
   # Matrix of Beta coefficients
-  B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] 
+  B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9]
   # Identity matrix (Kappa coefficients)
   I <- diag(nrow = 9, ncol = 9)
   # Matrix of Gamma coefficients
-  A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:19]
+  A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:18]
   # Matrix of Psi coefficients (model error variance-covariance)
-  V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] 
+  V <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9]
   # Matrix of measurement error (Epsylon)
-  Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] 
+  Th <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9]
   IB <- solve(I - B)
   # Running Prediction @ i location #
   # p is a matrix with the 10 external drivers
+for(i in seq_along(D[,1])){ 
+  pre[i,] <- D[ i,]
   p = as.vector(as.matrix(pre[i,colnames(A)])) # values of covariates ordered
-  p = matrix(p, nrow = 10, ncol = 1)           # by lavaan sequence
-  # prediction 
-  pre[i,28:36] = t(IB %*% A %*% p) # key equation 
+  p = matrix(p, nrow = 9, ncol = 1)           # by lavaan sequence
+  # prediction
+  pre[i,20:28] = t(IB %*% A %*% p) # key equation
   # calculate standarised squared standard error
   ## theta is standarised squared standard error
   ## theta = ((observed-predicted)^2)/error variance=(standard error^2)
   a[i,] <- pre[i,c(2:10)] # observed values
-  b[i,] <- pre[i,c(28:36)] # predicted values
+  b[i,] <- pre[i,c(20:28)] # predicted values
   v <- diag(IB%*%V%*%t(IB)+Th) # error variance (it is not diagonal!)
   resids[i,] <- a[i,] - b[i,] # residuals
-  theta[i,] <- (resids[i,]^2)/v # theta 
-  
+  theta[i,] <- (resids[i,]^2)/v # theta
+
   # Error variance #
   Var[i,] <- diag(IB %*% V %*% t(IB))
-  
+
   #bar time
   setTxtProgressBar(pb, i)
 }
@@ -375,7 +381,7 @@ unstd<- function(x, st){
 
 # Accuracy measures ####
 # Residuals #
-Res <- cbind(pre[,1], unstd(pre[,2:10], STt[2:10,]), unstd(pre[,28:36],
+Res <- cbind(pre[,1], unstd(pre[,2:10], STt[2:10,]), unstd(pre[,20:28],
                                                            STt[2:10,]))
 # plot residuals
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
