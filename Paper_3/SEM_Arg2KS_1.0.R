@@ -14,14 +14,11 @@
 
 # Libraries ####
 library(lavaan)
-library(pastecs)
-library(utils)
 
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 # chose one
-#setwd("~/big/SEM2DSM1/Paper_2/data/")
-setwd("~/Documents/SEM2DSM1/Paper_2/data/")
+
 
 # Dictionary of elements in this script ######
 # d = calibration dataset. It comes from replacement_of_NAs.Rm 
@@ -35,57 +32,25 @@ setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 # mod = modification indices (for respecification)
 #------------------------------------------------#
 
-d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
-d <- d[,c(-12:-16,-20,-21,-25)]
-
-meltp <- melt(unique(d,id.vars = c("id.p")))
-
-ggplot(data = meltp,
-       aes(x = value, fill=variable)) + geom_histogram() + 
-  facet_wrap( ~ variable, scales = "free_x")
-d$H <- NA
-e <- data.frame(d[,c(1,2,5,8,11:20)])
-e$H <- "A"
-names(e)[2:4] <- c("CEC.B","OC.B","clay.B")
-e <- rbind(e,d[,c(1,3,6,9,11:20)])
-e$H[is.na(e$H)] <- "B"
-
-names(e)[2:4] <- c("CEC.C","OC.C","clay.C")
-e <- rbind(e,d[,c(1,4,7,10,11:20)])
-e$H[is.na(e$H)] <- "C"
-names(e)[2:4] <- c("CEC","OC","Clay")
-
-meltp <- melt(e,id.vars = c("id.p","H"))
-ggplot(data = meltp[meltp$variable=="CEC" |
-                      meltp$variable=="OC" |
-                      meltp$variable=="Clay",],
-       aes(x = value, fill = H)) + geom_density(alpha = 0.4) + 
-  facet_wrap( ~ variable,scales = "free")
-ggplot(data = unique(meltp[!(meltp$variable=="CEC" |
-                      meltp$variable=="OC" |
-                      meltp$variable=="Clay"),]),
-       aes(x = value)) + geom_density(alpha = 0.4) + 
-  facet_wrap( ~ variable,scales = "free")
-#############
-d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
+e <- read.csv("~/Documents/SEM2DSM1/Paper_2/data/calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
 # Descriptive statistics and normality test. ####
-round(stat.desc(d,norm = TRUE),3)
+round(stat.desc(e,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
 # But some covariates need to be transformed. First, we store original mean and 
 # sd in ST
-ST <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+STe <- t(stat.desc(e,norm = TRUE)[c(9,13),])
  
 # Based on normtest.W the following covariates need to be transformed
-d$wdist <- d$wdist^0.5
-d$maxc <- (d$maxc+20000)^2
-d$slope <- d$slope^0.25
-d$twi <- log10(d$twi)
-d$vdchn <- log10(d$vdchn+10)
-d$ndwi.a <- (d$ndwi.a+10)^.3
+e$wdist <- e$wdist^0.5
+e$maxc <- (e$maxc+20000)^2
+e$slope <- e$slope^0.25
+e$twi <- log10(e$twi)
+e$vdchn <- log10(e$vdchn+10)
+e$ndwi.a <- (e$ndwi.a+10)^.3
 # New statistics
-round(stat.desc(d,norm = TRUE),3)
+round(stat.desc(e,norm = TRUE),3)
 # New mean and sd
-STt <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+STte <- t(stat.desc(e,norm = TRUE)[c(9,13),])
 
 # standardised data set ####
 std <- function(x, st){
@@ -95,128 +60,12 @@ std <- function(x, st){
   }
   y
 }
-D <- std(d,STt)
-D[,1] <- d[,1] 
-# statistics
-round(stat.desc(D,norm = TRUE),0)
-
-#### correlogram
-library(psych)
-corr <- d[,1:10]
-par(mfrow=c(1,1),pty = "s")
-pairs.panels(d[2:10], 
-             method = "pearson", # correlation method
-             hist.col = "#00AFBB",
-             density = TRUE,  # show density plots
-             ellipses = TRUE # show correlation ellipses
-             )#, cex= 1)  # plot correlogram
-## correlogram ####
-library(reshape2)
-corr <- melt(corr,id.vars = "id.p")
-corr$hzn <- NA
-corr$hzn[grep(x = corr$variable,pattern = ".A$")] <- "A"
-corr$hzn[grep(x = corr$variable,pattern = ".B$")] <- "B"
-corr$hzn[grep(x = corr$variable,pattern = ".C$")] <- "C"
-corr$sp <- NA
-corr$sp[grep(x = corr$variable,pattern = "^CEC.")] <- "CEC"
-corr$sp[grep(x = corr$variable,pattern = "^OC.")] <- "OC"
-corr$sp[grep(x = corr$variable,pattern = "^clay")] <- "Clay"
-corr <- corr[,c(1,4,5,3)]
-names(corr)[3] <- "variable"
-corr$hzn <- as.factor(corr$hzn)
-corr$variable <- as.factor(corr$variable)
-
-library(GGally)
-library(ggplot2)
-# GGally::ggpairs(d[,2:10])  
-# GGally::ggpairs(corr)  
-# scatmat()
-ggscatmat(d[,2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
-# ggpairs(d[, 2:4], #axisLabels= "none", 
-#   upper = list(continuous = wrap("cor", size = 4, alignPercent = 1), combo = "box", discrete = "facetbar" ),
-#   diag = list(continuous = "densityDiag", discrete ="barDiag"),
-#   lower = list(continuous = wrap("points", alpha = 0.15), combo = wrap("dot", alpha = 0.4)),
-# ) + theme(axis.text.x = element_text(angle = 45, vjust = 1, color = "black"),
-#           #axis. = element_text(size = 8,margin = 12, color = "#555555"),
-#           plot.margin = unit(x = c(15,15,15,15), units = "cm"))
-# 
-# 
-# p <- ggplot(corr, aes(value,hzn)) + geom_point()
-# 
-# p + facet_grid(hzn~variable)
-# Get and store the summary files
-
-sapply(inputData, summary)  # get summary statistics for all columns
-
-# SEM ####
-# Model without latent variables (CFA) ####
-## disabled
-
-# my.model <- '
-# clay.C ~ a01*river + a02*X + a03*Y + a04*vdchn + a05*dem 
-# clay.A ~ b01*clay.C + 
-#          a07*evisd + a08*lstm + a09*ndwi.b 
-# clay.B ~ b02*clay.A + b03*clay.C + 
-#          a10*vdchn + a11*twi + a12*river + a13*Y + a14*ndwi.b
-# 
-# OC.A ~ b04*clay.A +
-#        a15*evisd + a16*lstm + a17*ndwi.b  
-# OC.B ~ b05*OC.A + b06*clay.B + 
-#        a18*evisd + a19*lstm + a20*ndwi.a + a21*vdchn
-# 
-# CEC.A ~ b07*OC.A + b08*clay.A 
-# CEC.B ~ b09*OC.B + b10*clay.B
-# CEC.C ~ b11*clay.C
-# 
-# CEC.A ~~ CEC.B + CEC.C
-# CEC.C ~~ CEC.B
-# OC.C ~ OC.B + clay.C
-# 
-# #modifications in order of relevances
-# clay.C ~~  CEC.C # 1st suggestion. CFI 0.933 and RMSEA 0.068 means that
-#                  # the model is moderately good
-# clay.B  ~    dem # 2nd suggestion, which is reasonable 
-# clay.B ~~   OC.B #
-# clay.B ~~  CEC.B
-# '
-# my.fit.ML <- sem(model = my.model,data = D, meanstructure = FALSE,
-# fixed.x = T, estimator = "ML")
-# summary(my.fit.ML, fit.measures=TRUE, rsquare = T)
-# mod <- modindices(my.fit.ML)
-# mod[mod$mi>5,] # suggestion where mi is higher than 10 (most significant mi)
-# as.data.frame(lavaan::fitMeasures(my.fit.ML,fit.measures = "all"))
-
-# WEPAL document WEPAL_ISE900.pdf ####
-# search for literature
-# CEC (NH4) sd = 1.68 cmol+/kg CV 10.5%
-# CO sd = 0.218 % CV 11.8%
-# clay sd = 3.11 % CV 14.1%
-
-# measurement error as a constant
-(1.68/STt[2:4,2])^2 # standardised measurement error for CEC
-(0.218/STt[5:7,2])^2 # standardised measurement error for OC
-(3.11/STt[8:10,2])^2 # standardised measurement error for clay
-
-# measurement error as relative to the mean value
-(0.105)^2 # standardised measurement error for CEC
-(0.118)^2 # standardised measurement error for OC
-(0.141)^2 # standardised measurement error for clay
-
-# model error variance when measurement errors are zero
-# they are constrains for measurement error
-# CEC.Ar            0.389    0.032   12.124    0.000
-# CEC.Br            0.362    0.030   12.124    0.000
-# CEC.Cr            0.568    0.047   12.124    0.000
-# OC.Ar             0.730    0.060   12.124    0.000
-# OC.Br             0.922    0.076   12.124    0.000
-# OC.Cr             0.946    0.078   12.124    0.000
-# clay.Ar           0.841    0.069   12.124    0.000
-# clay.Br           0.357    0.029   12.124    0.000
-# clay.Cr           0.568    0.047   12.124    0.000
+E <- std(e,STte)
+E[,1] <- e[,1] 
 
 # Model with latent variables ####
 ## Model (re)specification
-my.model.lv <- '
+my.model.lv.e <- '
 # Measurement model (lamda and epsilon)
 #--------------------#
 CEC.Ar =~ 1*CEC.A
@@ -243,16 +92,16 @@ clay.C ~~ 0.12 *clay.C
 
 # Structural model (gamma and betta matrices)
 #--------------------#
-clay.Cr ~ dem + river + vdchn + X + 0*Y 
+clay.Cr ~ dem + vdchn 
 clay.Ar ~ clay.Cr + 
-evisd + lstm + ndwi.b 
+          evisd + lstm + ndwi.b 
 clay.Br ~ clay.Ar + clay.Cr + 
-vdchn + twi + river + 0*Y + ndwi.b
+          vdchn + twi + ndwi.b
 
 OC.Ar ~ clay.Ar +
-evisd + lstm + ndwi.b  
+        evisd + lstm + ndwi.b  
 OC.Br ~ OC.Ar + clay.Br + 
-evisd + lstm + ndwi.a + vdchn
+        evisd + lstm + ndwi.a + vdchn
 OC.Cr ~ OC.Br 
 
 CEC.Ar ~ OC.Ar + clay.Ar 
@@ -269,18 +118,13 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 # lavaan suggestions
 #------------------#
-  OC.Ar  ~       Y
-clay.Ar  ~       X
   OC.Ar  ~     dem
-clay.Br  ~       X
 clay.Br  ~     dem
 clay.Br  ~    lstm
-  OC.Br  ~       X
-  OC.Ar  ~   river
+clay.Cr  ~    lstm
 # # 
- CEC.Cr  ~   river
  CEC.Br  ~  ndwi.a
- CEC.Cr  ~       X
+ CEC.Cr  ~     dem
 clay.Cr  ~  ndwi.a
 clay.Cr  ~   evisd
 # # 
@@ -291,21 +135,21 @@ clay.Cr  ~   evisd
 #------------------#
 '
 # Model calibration ####
-my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE, 
+my.fit.lv.ML.e <- sem(model = my.model.lv.e,data = E, meanstructure = FALSE, 
                     fixed.x = T)
 
 # Model evaluation ####
-summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
+summary(my.fit.lv.ML.e, fit.measures=TRUE, rsquare = F)
 # model Rsquare
 
 # r2 <- rbind(r2,round(inspect(my.fit.lv.ML, "rsquare")[1:9] * 
 #               inspect(my.fit.lv.ML, "rsquare")[10:18],3))
 # r2
 # Model respecification: modification indices ####
-fitMeasures(my.fit.lv.ML,fit.measures = 
+fitMeasures(my.fit.lv.ML.e,fit.measures = 
               c("chisq","df","pvalue","cfi","rmsea","gfi", "srmr"))
-mod <- modindices(my.fit.lv.ML,sort. = T)
-mod[mod$mi>3 & (mod$op == "~~"|mod$op == "~~"),] 
+mod.e <- modindices(my.fit.lv.ML.e,sort. = T)
+mod.e[mod.e$mi>3 & (mod.e$op == "~"|mod.e$op == "~~"),] 
 
 
 # CROSS-VALIDATION #####
