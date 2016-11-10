@@ -68,25 +68,23 @@ clay.Ar =~ 1*clay.A
 clay.Br =~ 1*clay.B
 clay.Cr =~ 1*clay.C
 ## Measurement error #
-CEC.A ~~ 0.1 * CEC.A
-CEC.B ~~ 0.1 * CEC.B
-CEC.C ~~ 0.05 * CEC.C
-OC.A ~~ 0.2 * OC.A
-OC.B ~~ 0.6 * OC.B
-OC.C ~~ 0.6 * OC.C
-clay.A ~~ 0.3 * clay.A
-clay.B ~~ 0.14 * clay.B
-clay.C ~~ 0.12 *clay.C
+# CEC.A ~~ 0.1 * CEC.A
+# CEC.B ~~ 0.1 * CEC.B
+# CEC.C ~~ 0.05 * CEC.C
+# OC.A ~~ 0.2 * OC.A
+# OC.B ~~ 0.6 * OC.B
+# OC.C ~~ 0.6 * OC.C
+# clay.A ~~ 0.3 * clay.A
+# clay.B ~~ 0.14 * clay.B
+# clay.C ~~ 0.12 *clay.C
 
 #--------------------#
 
-# Structural model (gamma and betta matrices)
+# Structural model (gamma and beta matrices)
 #--------------------#
 clay.Cr ~ dem + vdchn 
-clay.Ar ~ clay.Cr + 
-evisd + lstm + ndwi.b 
-clay.Br ~ clay.Ar + clay.Cr + 
-vdchn + twi + ndwi.b
+clay.Ar ~ clay.Cr + evisd + lstm + ndwi.b 
+clay.Br ~ clay.Ar + clay.Cr + dem + vdchn + twi + ndwi.b
 
 OC.Ar ~ clay.Ar +
 evisd + lstm + ndwi.b  
@@ -95,33 +93,33 @@ evisd + lstm + ndwi.a + vdchn
 OC.Cr ~ OC.Br 
 
 CEC.Ar ~ OC.Ar + clay.Ar 
-CEC.Br ~ clay.Br
-CEC.Cr ~ clay.Cr
+CEC.Br ~ OC.Br + clay.Br
+CEC.Cr ~ OC.Cr + clay.Cr
 #------------------#
 
 # Model error covariance (Psi)
 #------------------#
 CEC.Ar ~~ CEC.Br + CEC.Cr
 CEC.Cr ~~ CEC.Br
-OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
+#OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
 #------------------#
 
 # lavaan suggestions
 #------------------#
-OC.Ar  ~     dem
-clay.Br  ~     dem
-clay.Br  ~    lstm
-clay.Cr  ~    lstm
-# # 
-CEC.Br  ~  ndwi.a
-CEC.Cr  ~     dem
-clay.Cr  ~  ndwi.a
-clay.Cr  ~   evisd
-# # 
-CEC.Ar ~~ clay.Br
-CEC.Ar ~~ clay.Cr
-OC.Cr ~~ clay.Cr
-CEC.Cr ~~ clay.Ar
+# OC.Ar  ~     dem
+# clay.Br  ~     dem
+# clay.Br  ~    lstm
+# clay.Cr  ~    lstm
+# # # 
+# CEC.Br  ~  ndwi.a
+# CEC.Cr  ~     dem
+# clay.Cr  ~  ndwi.a
+# clay.Cr  ~   evisd
+# # # 
+# CEC.Ar ~~ clay.Br
+# CEC.Ar ~~ clay.Cr
+# OC.Cr ~~ clay.Cr
+# CEC.Cr ~~ clay.Ar
 #------------------#
 '
 # Model calibration ####
@@ -130,6 +128,8 @@ my.fit.lv.ML.e <- sem(model = my.model.lv.e,data = E, meanstructure = FALSE,
 
 # Model evaluation ####
 summary(my.fit.lv.ML.e, fit.measures=TRUE, rsquare = F)
+mod.e <- modindices(my.fit.lv.ML.e,sort. = T)
+mod.e[mod.e$mi>3 & (mod.e$op == "~"|mod.e$op == "~~"),] 
 #------------------------------------------------------------#####
 
 #### This code come from SEM_KS2.0.R
@@ -172,6 +172,14 @@ std <- function(x, st){
 }
 D <- std(d,STt)
 D[,1] <- d[,1] 
+D[,2:10] <- D[,colnames(E)[2:10]]
+# Model validation ####
+my.fit.lv.ML.d <- sem(model = my.model.lv.e,data = D, meanstructure = FALSE, 
+                      fixed.x = T)
+# Model evaluation ####
+summary(my.fit.lv.ML.d, fit.measures=TRUE, rsquare = F)
+# mod <- modindices(my.fit.lv.ML.d,sort. = T)
+# mod[mod$mi>3 & (mod$op == "~"|mod$op == "~"),] 
 
 #### Prediction ####
 pre <- cbind(D[1,], matrix(nrow=1,ncol= 9, data = NA,
@@ -182,10 +190,8 @@ v <- pre[-(1:nrow(pre)),c(2:10)] #variance(s)
 resids <- pre[-(1:nrow(pre)),c(2:10)] #residuals
 theta <- pre[-(1:nrow(pre)),c(2:10)] # for mean and median
 Var <- pre[-(1:nrow(pre)),c(2:10)] # model variance (constant)
-pb = txtProgressBar(min = 0, max = length(d[,1]), initial = 0, style = 3)
 
 # Loop: cal is calibration data, pre is prediction place
-
 # Matrix dedinition (Section 3.3 2nd paper and Fig. 5) #
 # Matrix of Beta coefficients
 B <- inspect(my.fit.lv.ML.e, "est")$beta[1:9,1:9]
@@ -205,21 +211,18 @@ for(i in seq_along(D[,1])){
   p = as.vector(as.matrix(pre[i,colnames(A)])) # values of covariates ordered
   p = matrix(p, nrow = 7, ncol = 1)           # by lavaan sequence
   # prediction
-  pre[i,20:26] = t(IB %*% A %*% p) # key equation
+  pre[i,20:28] = t(IB %*% A %*% p) # key equation
   # calculate standarised squared standard error
   ## theta is standarised squared standard error
   ## theta = ((observed-predicted)^2)/error variance=(standard error^2)
   a[i,] <- pre[i,c(2:10)] # observed values
-  b[i,] <- pre[i,c(20:26)] # predicted values
+  b[i,] <- pre[i,c(20:28)] # predicted values
   v <- diag(IB%*%V%*%t(IB)+Th) # error variance (it is not diagonal!)
   resids[i,] <- a[i,] - b[i,] # residuals
   theta[i,] <- (resids[i,]^2)/v # theta
   
   # Error variance #
   Var[i,] <- diag(IB %*% V %*% t(IB))
-  
-  #bar time
-  setTxtProgressBar(pb, i)
 }
 
 # Model variance
@@ -292,11 +295,88 @@ for(i in seq_along(names(d))){
 
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt$SS[2:10]))
 report
+# > report
+# Soil_property                    ME              RMSE               SS mean_theta median_th         R2
+# 1        clay.A -8.13906053375816e-16  11.2150962095849  24149.449534127   1.053935 0.4044461 0.04980644
+# 2        clay.B -6.71491456279294e-14  14.1657025026762 38528.0884597109   1.519931 0.9465283 0.03410628
+# 3        clay.C -3.72052318762931e-14  14.4363487350168  40014.367641412   1.300804 0.6880442 0.04407188
+# 4         CEC.A  2.77179515414891e-14   9.1998603724659 16250.3867275907   1.192665 0.3270950 0.06196571
+# 5         CEC.B -2.17980247206017e-14  9.18703482619708 16205.1089083696   1.014783 0.4078339 0.05027280
+# 6         CEC.C  -1.1518563880486e-14  8.93336100797746 15322.5482685796   1.002315 0.3310788 0.01143328
+# 7          OC.A -1.78329573330416e-15  1.20760452199481 279.995266856124   1.035802 0.3993229 0.04414984
+# 8          OC.B -9.04658292721905e-16 0.284069138225369 15.4934928560839   1.600814 0.8762842 0.03178272
+# 9          OC.C -4.65897943608216e-16 0.123405811509595 2.92396690835362   1.334580 0.6329824 0.04580599
+
+# Analysis by Soil Property
+# plot mesured vs predicted combined ####
+par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
+
+rsq<- NULL
+CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
+             as.matrix(Res[,c(4,13)]))
+colnames(CEC) <- c("CECo","CECp")
+rownames(CEC) <- 1:length(rownames(CEC))
+CEC <- as.data.frame(CEC)
+rsq[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
+                 sum((mean(CEC$CECo)-CEC$CECo)^2))
+lim = round(c(min(c(CEC[,1],CEC[,2])), max(c(CEC[,1],CEC[,2]))))
+plot(CEC[,2]~CEC[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "CEC residuals", col = "dark red")
+abline(0,1)
+abline(lm(CEC[,2]~CEC[,1]),col = "blue")
+
+OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
+            as.matrix(Res[,c(7,16)]))
+colnames(OC) <- c("OCo","OCp")
+rownames(OC) <- 1:length(rownames(OC))
+OC <- as.data.frame(OC)
+rsq[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
+                 sum((mean(OC$OCo)-OC$OCo)^2))
+lim = round(c(min(c(OC[,1],OC[,2])), max(c(OC[,1],OC[,2]))))
+plot(OC[,2]~OC[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "OC residuals", col = "dark red")
+abline(0,1)
+abline(lm(OC[,2]~OC[,1]),col = "blue")
+
+clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
+              as.matrix(Res[,c(10,19)]))
+
+colnames(clay) <- c("clayo","clayp")
+rownames(clay) <- 1:length(rownames(clay))
+clay <- as.data.frame(clay)
+rsq[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
+                 sum((mean(clay$clayo)-clay$clayo)^2))
+lim = round(c(min(c(clay[,1],clay[,2])), max(c(clay[,1],clay[,2]))))
+plot(clay[,2]~clay[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "Clay residuals", col = "dark red")
+abline(0,1)
+abline(lm(clay[,2]~clay[,1]),col = "blue")
 
 
+# create report by soil property
+report2 <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, r2 = NA)
+z <- cbind(CEC, OC, clay)
+for (i in c(1,3,5)) {
+  # ME <- mean error 
+  ME  <-  mean(z[,i] - z[,i + 1])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((z[,i] - z[,i + 1]) ^ 2))
+  MSE <- mean((z[,i] - z[,i + 1]) ^ 2)
+  # fill report table
+  report2[i,1:3] <- c(names(z)[i], ME, RMSE)
+}
 
+report2$r2[1] <- rsq[1]
+report2$r2[3] <- rsq[2]
+report2$r2[5] <- rsq[3]
 
+report2 <- report2[c(-4,-2),]
+report2
 
+# Soil_property                    ME             RMSE        r2
+# 1          CECo -3.50606654854419e-14 13.3523240821413 0.1514665
+# 3           OCo  -1.8666799153864e-15  9.1075788709089 0.0952693
+# 5         clayo -1.05132460040218e-15 0.71977611128942 0.5102711
 
 
 
