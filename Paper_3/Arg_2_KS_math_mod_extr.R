@@ -478,48 +478,6 @@ for (i in 2:10) {
   abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
 }
 
-# plot mesured vs predicted combined ####par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
-
-rsq<- NULL
-CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
-             as.matrix(Res[,c(4,13)]))
-colnames(CEC) <- c("CECo","CECp")
-rownames(CEC) <- 1:length(rownames(CEC))
-CEC <- as.data.frame(CEC)
-rsq[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
-                 sum((mean(CEC$CECo)-CEC$CECo)^2))
-lim = round(c(min(c(CEC[,1],CEC[,2])), max(c(CEC[,1],CEC[,2]))))
-plot(CEC[,2]~CEC[,1], xlim = lim, ylim= lim, xlab = "measured",
-     ylab = "predicted", main = "CEC residuals", col = "dark red")
-abline(0,1)
-abline(lm(CEC[,2]~CEC[,1]),col = "blue")
-
-OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
-            as.matrix(Res[,c(7,16)]))
-colnames(OC) <- c("OCo","OCp")
-rownames(OC) <- 1:length(rownames(OC))
-OC <- as.data.frame(OC)
-rsq[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
-                 sum((mean(OC$OCo)-OC$OCo)^2))
-lim = round(c(min(c(OC[,1],OC[,2])), max(c(OC[,1],OC[,2]))))
-plot(OC[,2]~OC[,1], xlim = lim, ylim= lim, xlab = "measured",
-     ylab = "predicted", main = "OC residuals", col = "dark red")
-abline(0,1)
-abline(lm(OC[,2]~OC[,1]),col = "blue")
-
-clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
-              as.matrix(Res[,c(10,19)]))
-
-colnames(clay) <- c("clayo","clayp")
-rownames(clay) <- 1:length(rownames(clay))
-clay <- as.data.frame(clay)
-rsq[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
-                 sum((mean(clay$clayo)-clay$clayo)^2))
-lim = round(c(min(c(clay[,1],clay[,2])), max(c(clay[,1],clay[,2]))))
-plot(clay[,2]~clay[,1], xlim = lim, ylim= lim, xlab = "measured",
-     ylab = "predicted", main = "Clay residuals", col = "dark red")
-abline(0,1)
-abline(lm(clay[,2]~clay[,1]),col = "blue")
 # create report.e
 report.e <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
                        mean_theta = NA, median_th = NA)
