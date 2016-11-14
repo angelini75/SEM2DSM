@@ -151,6 +151,8 @@ names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
 d <- d[d$idp!=26058,]
 d <- d[d$idp!=22961,]
 
+
+
 d <- cbind(d[1],d[,colnames(E)[2:10]],d[11:19])
 # Descriptive statistics and normality test. ####
 round(stat.desc(d[,-20],norm = TRUE),3)
@@ -163,6 +165,10 @@ ST <- t(stat.desc(d[,c(-20)],norm = TRUE)[c(9,13),])
 d$twi.1 <- log10(d$twi.1)
 d$vdchn.1 <- log10(d$vdchn.1+10)
 d$ndwi.a <- (d$ndwi.a+10)^.3
+# OC as log10 of OC
+d$OC.A <- log10(d$OC.A)
+d$OC.B <- log10(d$OC.B)
+d$OC.C <- log10(d$OC.C)
 
 # New statistics
 d <- d[,-20:-21]
@@ -251,6 +257,13 @@ unstd<- function(x, st){
 # Residuals #
 Res <- cbind(pre[,1], unstd(pre[,2:10], STt[2:10,]), unstd(pre[,20:28],
                                                            STt[2:10,]))
+# back transform OC
+[,8]<- 10^(pred[,8]+(Var[6]*M$sd[6]^2)*0.5)
+Res[c(5:7)] <- 10^(Res[c(5:7)])
+Res[c(14)] <- 10^(Res[14] + (Var[4] * STt[4 + 1, 2]^2) * 0.5)
+Res[c(15)] <- 10^(Res[15] + (Var[5] * STt[5 + 1, 2]^2) * 0.5)
+Res[c(16)] <- 10^(Res[16] + (Var[6] * STt[6 + 1, 2]^2) * 0.5)
+
 # plot residuals
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
 
@@ -304,6 +317,21 @@ for(i in seq_along(names(d))){
 
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt$SS[2:10]))
 report
+
+ST <- as.data.frame(ST)
+ST$SS <- NA 
+for(i in seq_along(names(d))){
+  ST$SS[i] <- sum(( d[i] - ST$mean[i])^2)
+}
+
+report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(ST$SS[2:10]))
+report
+
+
+
+
+
+
 # > report
 # Soil_property                    ME              RMSE               SS mean_theta median_th         R2
 # 1        clay.A -8.13906053375816e-16  11.2150962095849  24149.449534127   1.053935 0.4044461 0.04980644
@@ -316,9 +344,15 @@ report
 # 8          OC.B -9.04658292721905e-16 0.284069138225369 15.4934928560839   1.600814 0.8762842 0.03178272
 # 9          OC.C -4.65897943608216e-16 0.123405811509595 2.92396690835362   1.334580 0.6329824 0.04580599
 
+
+# Statistics with log10(OC)
+#   Soil_property                    ME              RMSE               SS mean_theta median_th         R2
+#            OC.A    0.0737883121116024  1.25335116623517  301.61071601339  1.0557795 0.5246712 0.44353690
+#            OC.B    0.0365582711336917 0.282103675337733 15.2798368586989  0.9899792 0.3855678 0.90497819
+#            OC.C    0.0239350424903057  0.12762878580584 3.12750853752443  0.9782184 0.4097314 0.98839888
 # Analysis by Soil Property
 # plot mesured vs predicted combined ####par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
-
+par(mfrow = c(1, 3), pty="s",mai=rep(0.7,4))
 rsq<- NULL
 CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
              as.matrix(Res[,c(4,13)]))
@@ -386,8 +420,10 @@ report2
 # 3           OCo  -1.8666799153864e-15  9.1075788709089 0.0952693
 # 5         clayo -1.05132460040218e-15 0.71977611128942 0.5102711
 
-
-
+ 
+# report2 w/ log10(OC)
+# Soil_property                    ME              RMSE        r2
+#           OCo    0.0447605419118666 0.745377026859205 0.4748143
 
 
 
