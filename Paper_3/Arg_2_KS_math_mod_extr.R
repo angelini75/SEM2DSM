@@ -166,9 +166,9 @@ d$twi.1 <- log10(d$twi.1)
 d$vdchn.1 <- log10(d$vdchn.1+10)
 d$ndwi.a <- (d$ndwi.a+10)^.3
 # OC as log10 of OC
-d$OC.A <- log10(d$OC.A)
-d$OC.B <- log10(d$OC.B)
-d$OC.C <- log10(d$OC.C)
+# d$OC.A <- log10(d$OC.A)
+# d$OC.B <- log10(d$OC.B)
+# d$OC.C <- log10(d$OC.C)
 
 # New statistics
 d <- d[,-20:-21]
@@ -257,12 +257,12 @@ unstd<- function(x, st){
 # Residuals #
 Res <- cbind(pre[,1], unstd(pre[,2:10], STt[2:10,]), unstd(pre[,20:28],
                                                            STt[2:10,]))
-# back transform OC
-[,8]<- 10^(pred[,8]+(Var[6]*M$sd[6]^2)*0.5)
-Res[c(5:7)] <- 10^(Res[c(5:7)])
-Res[c(14)] <- 10^(Res[14] + (Var[4] * STt[4 + 1, 2]^2) * 0.5)
-Res[c(15)] <- 10^(Res[15] + (Var[5] * STt[5 + 1, 2]^2) * 0.5)
-Res[c(16)] <- 10^(Res[16] + (Var[6] * STt[6 + 1, 2]^2) * 0.5)
+# # back transform OC
+# [,8]<- 10^(pred[,8]+(Var[6]*M$sd[6]^2)*0.5)
+# Res[c(5:7)] <- 10^(Res[c(5:7)])
+# Res[c(14)] <- 10^(Res[14] + (Var[4] * STt[4 + 1, 2]^2) * 0.5)
+# Res[c(15)] <- 10^(Res[15] + (Var[5] * STt[5 + 1, 2]^2) * 0.5)
+# Res[c(16)] <- 10^(Res[16] + (Var[6] * STt[6 + 1, 2]^2) * 0.5)
 
 # plot residuals
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
@@ -318,15 +318,15 @@ for(i in seq_along(names(d))){
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt$SS[2:10]))
 report
 
-ST <- as.data.frame(ST)
-ST$SS <- NA 
-for(i in seq_along(names(d))){
-  ST$SS[i] <- sum(( d[i] - ST$mean[i])^2)
-}
-
-report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(ST$SS[2:10]))
-report
-
+# ST <- as.data.frame(ST)
+# ST$SS <- NA 
+# for(i in seq_along(names(d))){
+#   ST$SS[i] <- sum(( d[i] - ST$mean[i])^2)
+# }
+# 
+# report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(ST$SS[2:10]))
+# report
+# 
 
 
 
