@@ -251,13 +251,13 @@ clay.C ~~ 0.05 *clay.C
 
 # Structural model (gamma and betta matrices)
 #--------------------#
-clay.Cr ~ dem + vdchn + twi + X + Y 
 clay.Ar ~ clay.Cr + clay.Br + evisd + lstm + ndwi.b + ndwi.a + Y + X + dem
-clay.Br ~ clay.Ar + clay.Cr + lstm + vdchn
+clay.Br ~ clay.Ar + clay.Cr + lstm + vdchn + X + Y + ndwi.b + ndwi.a
+clay.Cr ~ dem + vdchn + twi + X + Y + ndwi.b + ndwi.a
 
-OC.Ar ~ clay.Ar + evisd + lstm + ndwi.b + ndwi.a + dem + X + Y
-OC.Br ~ OC.Ar + clay.Br + clay.Ar
-OC.Cr ~ OC.Br + clay.Br + dem
+OC.Ar ~ clay.Ar + evisd + lstm + ndwi.b + ndwi.a + vdchn + X + Y
+OC.Br ~ OC.Ar + clay.Br + clay.Ar + ndwi.b + ndwi.a 
+OC.Cr ~ OC.Br + clay.Br + clay.Cr + dem + ndwi.b
 
 CEC.Ar ~ OC.Ar + clay.Ar 
 CEC.Br ~ clay.Br + OC.Br
@@ -275,6 +275,7 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 # lavaan suggestions
 #------------------#
 OC.Ar ~~  OC.Br
+CEC.Ar ~~ clay.Ar
 CEC.Br  ~ Y + dem + lstm
 CEC.Cr  ~ Y + X + dem + lstm
 #------------------#
