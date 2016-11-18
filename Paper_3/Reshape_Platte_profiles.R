@@ -44,7 +44,7 @@ d4 <- merge(d3,carbon[,c(1,4,7)], by = "labsampnum", all.x = T)
 profiles <- merge(d4,texture[,c(1,4,7,8)], by = "labsampnum", all.x = T)
 
 write.csv(profiles, "~/Documents/platte_area.csv")
-
+################################################################################
 profiles <- profiles[!is.na(profiles$hzn_top),]
 profiles <- profiles[!(is.na(profiles$cec_nh4) & is.na(profiles$clay_tot_psa)&
                          is.na(profiles$c_tot)),]
