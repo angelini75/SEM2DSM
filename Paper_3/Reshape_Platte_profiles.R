@@ -1,3 +1,6 @@
+# It comes from Kansas_KS2.R
+
+
 setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/USDA/NCSS/")
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
@@ -39,6 +42,8 @@ d2.e <- merge(d,layer[,c(1,2,5,11,12:17)], by = "pedon_key", all.x = TRUE)
 d3 <- merge(d2.e,CEC[,c(1,16:19)], by = "labsampnum", all.x = T)
 d4 <- merge(d3,carbon[,c(1,4,7)], by = "labsampnum", all.x = T)
 profiles <- merge(d4,texture[,c(1,4,7,8)], by = "labsampnum", all.x = T)
+
+write.csv(profiles, "~/Documents/platte_area.csv")
 
 profiles <- profiles[!is.na(profiles$hzn_top),]
 profiles <- profiles[!(is.na(profiles$cec_nh4) & is.na(profiles$clay_tot_psa)&
