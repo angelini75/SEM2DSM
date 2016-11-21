@@ -74,7 +74,7 @@ driver <- "HDF4_EOS:EOS_GRID:"
 band1 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"
 band2 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
 #define tiles
-tiles <- c("h09v05", "h10v04", "h10v05")
+tiles <- c("h10v04", "h10v05")
 #define years
 yrs <- as.character(2000:2015)
 #get periods
@@ -106,7 +106,8 @@ registerDoParallel(cores=10)
 foreach(i = seq_along(n)) %dopar%{
   download.file(n[i], 
                 destfile = paste("output/",tiles[1],"/",
-                                 substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
+                                 substr(x = n[i],start = 66,stop = 73),
+                                 ".hdf", sep=""), 
                 quiet = TRUE, mode = "wb", method = "wget")
   }
 
@@ -126,7 +127,8 @@ registerDoParallel(cores=10)
 foreach(i = seq_along(n)) %dopar%{
   download.file(n[i], 
                 destfile = paste("output/",tiles[2],"/",
-                                 substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
+                                 substr(x = n[i],start = 66,stop = 73),".hdf",
+                                 sep=""), 
                 quiet = TRUE, mode = "wb", method = "wget")
 }
 u2 <- c("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2007/145/",
@@ -199,7 +201,38 @@ foreach(i = seq_along(rescue)) %dopar%{
                 quiet = TRUE, mode = "wb", method = "wget")
 }
 # I changed missing file names and directory by hand afetr downloading.
+MCD43A4 <- read.csv(file = "MCD43A4_save_results_csv.csv")
 
+# two dataframes, one for each tile
+h10v04 <- MCD43A4[grep(pattern = "?h10v04",x = MCD43A4$Producer.Granule.ID),]
+h10v05 <- MCD43A4[grep(pattern = "?h10v05",x = MCD43A4$Producer.Granule.ID),]
+h10v04$Online.Access.URLs <- as.character(h10v04$Online.Access.URLs)
+h10v05$Online.Access.URLs <- as.character(h10v05$Online.Access.URLs)
+# Download the files
+foreach(i = seq_along(h10v04[,1])) %dopar%{
+  download.file(h10v04[i,5], 
+                destfile = paste("output/",
+                                 tiles[1],
+                                 "/",
+                                 substr(x = h10v04[i,2],start = 9,stop = 16),
+                                 ".hdf",
+                                 sep=""),
+                quiet = TRUE, 
+                mode = "wb",
+                method = "wget")
+}
+foreach(i = seq_along(h10v05[,1])) %dopar%{
+  download.file(h10v05[i,5], 
+                destfile = paste("output/",
+                                 tiles[2],
+                                 "/",
+                                 substr(x = h10v05[i,2],start = 9,stop = 16),
+                                 ".hdf",
+                                 sep=""),
+                quiet = TRUE, 
+                mode = "wb",
+                method = "wget")
+}
 # extracting and mosaicing bands
 # b      length      Rad  SNR
 # 1 	 620 -  670 	21.8 	128
