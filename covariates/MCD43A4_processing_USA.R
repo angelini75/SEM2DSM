@@ -71,8 +71,10 @@ URL <- "ftp://ladsweb.nascom.nasa.gov/allData/5"
 MODISP <- "MCD43A4"
 # driver and bands of HDF file for GDAL
 driver <- "HDF4_EOS:EOS_GRID:"
-band1 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band2"
-band2 <- ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
+bands <- data.frame(name = c(":MOD_Grid_BRDF:Nadir_Reflectance_Band2",
+                             ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"),
+                    file.name = c("B2", "B5"))
+
 #define tiles
 tiles <- c("h10v04", "h10v05")
 #define years
@@ -81,126 +83,36 @@ yrs <- as.character(2000:2015)
 period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/","",
                readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/"))
 # get file urls.
-u <- NULL
-for(i in seq_along(yrs)){
-  for(j in seq_along(period)){
-    u <-append(u,(paste0(URL,"/",MODISP,"/", yrs[i],"/",period[j], "/")))
-  }
-}
-
-u <- u[-1:-6]
+# u <- NULL
+# for(i in seq_along(yrs)){
+#   for(j in seq_along(period)){
+#     u <-append(u,(paste0(URL,"/",MODISP,"/", yrs[i],"/",period[j], "/")))
+#   }
+# }
+# 
+# u <- u[-1:-6]
 
 # TILE #1
-n <- NULL 
-for(i in seq_along(u)){
-  z <- readfiles(u[i])
-  n[i] <- z[grep(tiles[1], z)][1]
-  ifelse(test = is.na(n[i]),
-         n[i] <- z[grep(tiles[1], z)][1],
-         n[i])
-}
-u1 <- u[which(is.na(n))]
+# n <- NULL 
+# for(i in seq_along(u)){
+#   z <- readfiles(u[i])
+#   n[i] <- z[grep(tiles[1], z)][1]
+#   ifelse(test = is.na(n[i]),
+#          n[i] <- z[grep(tiles[1], z)][1],
+#          n[i])
+# }
+# u1 <- u[which(is.na(n))]
 
 # download HDF from urls
-registerDoParallel(cores=10)
-foreach(i = seq_along(n)) %dopar%{
-  download.file(n[i], 
-                destfile = paste("output/",tiles[1],"/",
-                                 substr(x = n[i],start = 66,stop = 73),
-                                 ".hdf", sep=""), 
-                quiet = TRUE, mode = "wb", method = "wget")
-  }
+# registerDoParallel(cores=10)
+# foreach(i = seq_along(n)) %dopar%{
+#   download.file(n[i], 
+#                 destfile = paste("output/",tiles[1],"/",
+#                                  substr(x = n[i],start = 66,stop = 73),
+#                                  ".hdf", sep=""), 
+#                 quiet = TRUE, mode = "wb", method = "wget")
+#   }
 
-# TILE #2
-n <- NULL 
-for(i in seq_along(u)){
-  z <- readfiles(u[i])
-  n[i] <- z[grep(tiles[2], z)][1]
-  ifelse(test = is.na(n[i]),
-         n[i] <- z[grep(tiles[2], z)][1],
-         n[i])
-}
-u2 <- u[which(is.na(n))]
-
-# download HDF from urls
-registerDoParallel(cores=10)
-foreach(i = seq_along(n)) %dopar%{
-  download.file(n[i], 
-                destfile = paste("output/",tiles[2],"/",
-                                 substr(x = n[i],start = 66,stop = 73),".hdf",
-                                 sep=""), 
-                quiet = TRUE, mode = "wb", method = "wget")
-}
-u2 <- c("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2007/145/",
-        "ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2010/113/")
-
-
-# TILE #3
-n <- NULL 
-for(i in seq_along(u)){
-  z <- readfiles(u[i])
-  n[i] <- z[grep(tiles[3], z)][1]
-  ifelse(test = is.na(n[i]),
-         n[i] <- z[grep(tiles[3], z)][1],
-         n[i])
-}
-u3 <- u[which(is.na(n))]
-
-# download HDF from urls
-registerDoParallel(cores=10)
-foreach(i = seq_along(n)) %dopar%{
-  download.file(n[i], 
-                destfile = paste("output/",tiles[3],"/",
-                                 substr(x = n[i],start = 66,stop = 73),".hdf", sep=""), 
-                quiet = TRUE, mode = "wb", method = "wget")
-}
-
-# rescuing missing files
-granules <- read.csv(file = "MCD43A4_2002-2010-2007-2001.csv")
-miss <- c("MCD43A4.A2002273.h09v05", "MCD43A4.A2007009.h09v05", "MCD43A4.A2007217.h09v05",
-          "MCD43A4.A2007281.h09v05", "MCD43A4.A2007337.h09v05", "MCD43A4.A2010057.h09v05",
-          "MCD43A4.A2007145.h10v04", "MCD43A4.A2010113.h10v04", "MCD43A4.A2001353.h10v05",
-          "MCD43A4.A2001361.h10v05", "MCD43A4.A2007273.h10v05", "MCD43A4.A2007321.h10v05")
-
-granules <- read.csv(file = "MCD43A4.csv")
-miss2 <- c("MCD43A4.A2002073.h10v05", "MCD43A4.A2007305.h10v05", "MCD43A4.A2002033.h10v05",
-           "MCD43A4.A2008049.h10v05", "MCD43A4.A2002137.h10v05", "MCD43A4.A2007241.h10v05",
-           "MCD43A4.A2002025.h10v05", "MCD43A4.A2002065.h10v05", "MCD43A4.A2007353.h10v05",
-           "MCD43A4.A2002113.h10v05", "MCD43A4.A2002129.h10v05", "MCD43A4.A2007249.h10v05",
-           "MCD43A4.A2008009.h10v05", "MCD43A4.A2002217.h10v05", "MCD43A4.A2002177.h10v05",
-           "MCD43A4.A2008001.h10v05", "MCD43A4.A2002105.h10v05", "MCD43A4.A2002185.h10v05",
-           "MCD43A4.A2002065.h10v04", "MCD43A4.A2007201.h10v05", "MCD43A4.A2002233.h10v05",
-           "MCD43A4.A2002241.h10v05")
-
-miss3 <- c("MCD43A4.A2006201.h10v04", "MCD43A4.A2008049.h10v04", "MCD43A4.A2008081.h10v04",
-           "MCD43A4.A2012273.h10v04", "MCD43A4.A2012281.h10v04", "MCD43A4.A2012297.h10v04",
-           "MCD43A4.A2012321.h10v04", "MCD43A4.A2012353.h10v04", "MCD43A4.A2013001.h10v04")
-
-rescue <- NULL
-for(i in seq_along(miss3)){
-   rescue[i] <- 
-      unique(
-         as.character(
-            granules[
-               which(
-                  grepl(
-                     pattern = miss3[i],
-                     x = granules$Producer.Granule.ID) == 1),
-               "Online.Access.URLs"
-               ]
-         )
-      )
-}
-registerDoParallel(cores=10)
-foreach(i = seq_along(rescue)) %dopar%{
-  download.file(
-    rescue[i],
-    destfile = paste(
-      "output/",
-      substr(x = rescue[i],start = 82,stop = 96),".hdf", sep=""), 
-                quiet = TRUE, mode = "wb", method = "wget")
-}
-# I changed missing file names and directory by hand afetr downloading.
 
 # Files to be download ####
 # http://reverb.echo.nasa.gov/reverb/
@@ -261,19 +173,16 @@ library(maptools)
 # subset extension in MODIS coordinate system (could be calculated from a shape file)
 aoi <- readShapePoly("Platte_area.shp")
 
+# define projections
+wgs84 <- CRS("+init=epsg:4326")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
 # assign projection
 proj4string(aoi) <- wgs84
 
 # use spTransform
 aoi <- spTransform(aoi, modis)
 
-wgs84 <- CRS("+init=epsg:4326")
-modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
-
-
-
-
-#mask.ext <- c(-8995835.65,4052136.73, -7932725.14,4469948.27) # xmin,ymin , xmax,ymax @QGIS K_3MODproj.shp
 
 
 f <-list.files("output/h10v04/", pattern = ".hdf$")
@@ -284,37 +193,47 @@ rasterOptions(tmpdir="~/big/USA/MODIS/output/temp/")
 
 registerDoParallel(cores=11)
 foreach(i = seq_along(f)) %dopar%{
-  hdfImage <- list()
-  for(j in seq_along(tiles)){
-    hdfImage[[j]] <- readGDAL(
-      paste0("HDF4_EOS:EOS_GRID:",
-             "output/",
-             tiles[j],
-             "/",
-             f[i],
-             ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
-      )
-    )  
+  for(k in seq_along(bands[,1])){
+    hdfImage <- list()
+    for(j in seq_along(tiles)){
+      hdfImage[[j]] <- readGDAL(
+        paste0("HDF4_EOS:EOS_GRID:",
+               "output/",
+               tiles[j],
+               "/",
+               f[i],
+               bands[k,1]
+        )
+      )  
+    }
+    m <- mosaic(
+      raster(hdfImage[[1]]),
+      raster(hdfImage[[2]]),
+      fun = mean
+    )
+    m <- crop(m, aoi)
+    writeRaster(x = m, 
+                filename = paste0("output/bands/",
+                                  f[i],
+                                  ".",
+                                  bands[k,2],
+                                  ".tif"),
+                overwrite=TRUE)
+    rm(m)
+    rm(hdfImage)
   }
-  m <- mosaic(
-    raster(hdfImage[[1]]),
-    raster(hdfImage[[2]]),
-    fun = mean
-  )
-  m <- crop(m, aoi)
-  writeRaster(x = m, filename = paste0("output/bands/",f[i],".B5.tif"), overwrite=TRUE)
-  rm(m)
-  rm(hdfImage)
 }
 #removeTmpFiles(h=24)
 showTmpFiles()
 ### Estimation NDWI
-bands <- c(".B2.tif", ".B5.tif")
-
 foreach(i = seq_along(f)) %dopar%{
   hdfImage <- list()
-  for(j in seq_along(bands)) {
-    hdfImage[[j]] <- raster(paste0("output/bands/",f[i],bands[j]))    
+  for(j in seq_along(bands[,1])) {
+    hdfImage[[j]] <- raster(paste0("output/bands/",
+                                   f[i],
+                                   ".",
+                                   bands[j,2],
+                                   ".tif"))    
   }
 
   ndwi <- (hdfImage[[1]] - hdfImage[[2]])/
@@ -330,60 +249,35 @@ foreach(i = seq_along(f)) %dopar%{
 list.per <- list()
 for(i in seq_along(period)){
   list.per[[i]] <- list.files(path = "output/bands/",
-                            pattern= paste0(period[i],
-                                           ".hdf.ndwi.tif"
-                                           )
-                            )
+                              pattern= paste0(period[i],
+                                              ".hdf.ndwi.tif"
+                              )
+  )
 }
 
 # stack images from the same period (raster package)
 # I found this script here http://markmail.org/thread/lsjnczi5fppddrpr
 registerDoParallel(cores=11)
-foreach(
-  i = seq_along(
-    period
-  )
-) %dopar% {
-  s <- 
-    stack(
-      paste0(
-        "output/bands/",
-        list.per[[i]]
-      )
-    )
+foreach(i = seq_along(period)) %dopar% {
+  s <- stack(paste0("output/bands/",
+                    list.per[[i]]))
  # s <- s/10000 # to reduce no significan digits
   # mean and sd  
-  m <- 
-    mean(
-      s,
-      na.rm = TRUE
-    )
-  std <- 
-    calc(
-      s,
-      fun = sd,
-      na.rm=TRUE
-    )
-  # save and delete objects
-  writeRaster(
-    x = m,
-    filename =  
-      paste0(
-        "output/NDWI/ndwi.",
-        period[i],".mean.tif"
-      ),
-    overwrite=T
-  )
+  m <- mean(s, na.rm = TRUE)
+  std <- calc(s, fun = sd, na.rm=TRUE)
   
-  writeRaster(
-    x = std,
-    filename =  
-      paste0(
-        "output/NDWI/ndwi.",
-        period[i],".sd.tif"
-      ),
-    overwrite = TRUE
-  )
+  # save and delete objects
+  writeRaster(x = m,
+              filename = paste0("output/NDWI/ndwi.",
+                                period[i],
+                                ".mean.tif"),
+              overwrite=T)
+  
+  writeRaster(x = std,
+              filename =  paste0("output/NDWI/ndwi.",
+                                 period[i],
+                                 ".sd.tif"),
+              overwrite = TRUE)
   
   rm(s)
   rm(m)
@@ -397,36 +291,18 @@ setwd("~/big/USA/MODIS/")
 f <-list.files("output/NDWI/", pattern = "mean.tif$")
 f[13:15]
 # "ndwi.097.mean.tif" "ndwi.105.mean.tif" "ndwi.113.mean.tif"
-writeRaster(
-  x = mean(
-    stack(
-      paste0(
-        "output/NDWI/",
-        f[13:15]
-      )
-    ),
-    na.rm = TRUE
-  ),
-  filename = 
-    "output/NDWI/ndwi.b.spring.tif",
-  overwrite = TRUE
-)
+writeRaster(x = mean(stack(paste0("output/NDWI/",
+                                  f[13:15])),
+                     na.rm = TRUE),
+            filename = "output/NDWI/ndwi.b.spring.tif",
+            overwrite = TRUE)
 
 #f[24:29]
 #[1] "ndwi.185.mean.tif" "ndwi.193.mean.tif" "ndwi.201.mean.tif" "ndwi.209.mean.tif" "ndwi.217.mean.tif"
 #[6] "ndwi.225.mean.tif"
 
-writeRaster(
-  x = mean(
-    stack(
-      paste0(
-        "output/NDWI/",
-        f[24:29]
-      )
-    ),
-    na.rm = TRUE
-  ),
-  filename = 
-    "output/NDWI/ndwi.a.summaer.tif",
-  overwrite = TRUE
-)
+writeRaster(x = mean(stack(paste0("output/NDWI/",
+                                  f[24:29])),
+                     na.rm = TRUE),
+            filename = "output/NDWI/ndwi.a.summaer.tif",
+            overwrite = TRUE)
