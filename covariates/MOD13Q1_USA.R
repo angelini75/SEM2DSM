@@ -23,11 +23,86 @@ library(rgdal)
 #library(gdalUtils)
 library(doParallel)
 
-### from REVERB it is posible to get a csv file with a query result
-# http://reverb.echo.nasa.gov/reverb/#utf8=%E2%9C%93&spatial_map=satellite&spatial_type=rectangle
-# it can be directly read from ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/ (Curl package)
-# be aware of repeated files
-files<-read.csv("MOD13Q1_reverb.csv") 
+# functions to read directories and files
+##read directories from ftp site (fixed MODIS periods). Function developed by Ype.
+readdir<-function(fil){
+  filenames <- try(getURL(fil,ftp.use.epsv = FALSE, dirlistonly = TRUE))
+  filenames <- paste(fil, strsplit(filenames, "\r*\n")[[1]], sep = "")
+  files <- filenames[grepl('\\.', substr(filenames,30,nchar(filenames)) )|
+                       grepl('readme', substr(filenames,30,nchar(filenames)) )|
+                       grepl('README', substr(filenames,30,nchar(filenames)) )]
+  dirs <- setdiff(filenames, files)
+  return(dirs)
+}
+
+readfiles<-function(fil){
+  filenames <- try(getURL(fil,ftp.use.epsv = FALSE, ftplistonly = TRUE))
+  filenames <- paste(fil, strsplit(filenames, "\r*\n")[[1]], sep = "")
+  files <- filenames[grepl('//.', substr(filenames,30,nchar(filenames)) )|
+                       grepl('readme', substr(filenames,30,nchar(filenames)) )|
+                       grepl('README', substr(filenames,30,nchar(filenames)) )]
+  filenames
+}
+
+#MODIS URL
+URL <- "ftp://ladsweb.nascom.nasa.gov/allData/5"
+#define MODIS product
+MODISP <- "MOD13Q1"
+# driver and bands of HDF file for GDAL
+driver <- "HDF4_EOS:EOS_GRID:"
+bands <- data.frame(name = c(":MODIS_Grid_16DAY_250m_500m_VI:250m 16 days EVI"),
+                    file.name = c("EVI"))
+#define tiles
+tiles <- c("h10v04", "h10v05")
+#define years
+yrs <- as.character(2000:2015)
+#get periods
+period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/","",
+               readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/"))
+
+# Files to be download ####
+# http://reverb.echo.nasa.gov/reverb/
+MODProd <- read.csv(file = "MOD13Q1_save_results_csv.csv")
+
+# two dataframes, one for each tile
+h10v04 <- MODProd[grep(pattern = "?h10v04",x = MODProd$Producer.Granule.ID),]
+h10v05 <- MODProd[grep(pattern = "?h10v05",x = MODProd$Producer.Granule.ID),]
+h10v04$Online.Access.URLs <- as.character(h10v04$Online.Access.URLs)
+h10v05$Online.Access.URLs <- as.character(h10v05$Online.Access.URLs)
+
+# Download the files ####
+registerDoParallel(cores=10)
+foreach(i = seq_along(h10v04[,1])) %dopar%{
+  download.file(h10v04[i,5], 
+                destfile = paste("output/",
+                                 tiles[1],
+                                 "/",
+                                 substr(x = h10v04[i,2],start = 9,stop = 16),
+                                 ".hdf",
+                                 sep=""),
+                quiet = TRUE, 
+                mode = "wb",
+                method = "wget")
+}
+foreach(i = seq_along(h10v05[,1])) %dopar%{
+  download.file(h10v05[i,5], 
+                destfile = paste("output/",
+                                 tiles[2],
+                                 "/",
+                                 substr(x = h10v05[i,2],start = 9,stop = 16),
+                                 ".hdf",
+                                 sep=""),
+                quiet = TRUE, 
+                mode = "wb",
+                method = "wget")
+}
+
+
+
+
+
+
+
 
 # to be aware
 paste(length(files$Granule.UR)," files here!", sep="")
