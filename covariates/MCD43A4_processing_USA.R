@@ -116,11 +116,11 @@ period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/","",
 
 # Files to be download ####
 # http://reverb.echo.nasa.gov/reverb/
-MCD43A4 <- read.csv(file = "MCD43A4_save_results_csv.csv")
+MODProd <- read.csv(file = "MCD43A4_save_results_csv.csv")
 
 # two dataframes, one for each tile
-h10v04 <- MCD43A4[grep(pattern = "?h10v04",x = MCD43A4$Producer.Granule.ID),]
-h10v05 <- MCD43A4[grep(pattern = "?h10v05",x = MCD43A4$Producer.Granule.ID),]
+h10v04 <- MODProd[grep(pattern = "?h10v04",x = MODProd$Producer.Granule.ID),]
+h10v05 <- MODProd[grep(pattern = "?h10v05",x = MODProd$Producer.Granule.ID),]
 h10v04$Online.Access.URLs <- as.character(h10v04$Online.Access.URLs)
 h10v05$Online.Access.URLs <- as.character(h10v05$Online.Access.URLs)
 
