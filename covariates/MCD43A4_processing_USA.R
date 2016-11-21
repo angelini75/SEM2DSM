@@ -201,6 +201,9 @@ foreach(i = seq_along(rescue)) %dopar%{
                 quiet = TRUE, mode = "wb", method = "wget")
 }
 # I changed missing file names and directory by hand afetr downloading.
+
+# Files to be download ####
+# http://reverb.echo.nasa.gov/reverb/
 MCD43A4 <- read.csv(file = "MCD43A4_save_results_csv.csv")
 
 # two dataframes, one for each tile
@@ -208,7 +211,9 @@ h10v04 <- MCD43A4[grep(pattern = "?h10v04",x = MCD43A4$Producer.Granule.ID),]
 h10v05 <- MCD43A4[grep(pattern = "?h10v05",x = MCD43A4$Producer.Granule.ID),]
 h10v04$Online.Access.URLs <- as.character(h10v04$Online.Access.URLs)
 h10v05$Online.Access.URLs <- as.character(h10v05$Online.Access.URLs)
-# Download the files
+
+# Download the files ####
+registerDoParallel(cores=10)
 foreach(i = seq_along(h10v04[,1])) %dopar%{
   download.file(h10v04[i,5], 
                 destfile = paste("output/",
@@ -254,12 +259,24 @@ library(doParallel)
 library(maptools)
 ############ Create mosaic 
 # subset extension in MODIS coordinate system (could be calculated from a shape file)
-extent(readShapePoints("K_3_MODproj.shp"))
+aoi <- readShapePoly("Platte_area.shp")
 
-mask.ext <- c(-8995835.65,4052136.73, -7932725.14,4469948.27) # xmin,ymin , xmax,ymax @QGIS K_3MODproj.shp
+# assign projection
+proj4string(aoi) <- wgs84
+
+# use spTransform
+aoi <- spTransform(aoi, modis)
+
+wgs84 <- CRS("+init=epsg:4326")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 
-f <-list.files("output/h09v05/", pattern = ".hdf$")
+
+
+#mask.ext <- c(-8995835.65,4052136.73, -7932725.14,4469948.27) # xmin,ymin , xmax,ymax @QGIS K_3MODproj.shp
+
+
+f <-list.files("output/h10v04/", pattern = ".hdf$")
 # f04 <- list.files("output/h10v04/", pattern = ".hdf$")
 # f[which(f %in% f04 == F)]
 #pj <- projection(hdfImage[[1]])
@@ -267,32 +284,27 @@ rasterOptions(tmpdir="~/big/USA/MODIS/output/temp/")
 
 registerDoParallel(cores=11)
 foreach(i = seq_along(f)) %dopar%{
-  hdfImage <- 
-    list()
+  hdfImage <- list()
   for(j in seq_along(tiles)){
-    hdfImage[[j]] <- 
-      readGDAL(
-        paste0(
-          "HDF4_EOS:EOS_GRID:",
-          "output/",
-          tiles[j],
-          "/",
-          f[i],
-          ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
-          )
-        )  
+    hdfImage[[j]] <- readGDAL(
+      paste0("HDF4_EOS:EOS_GRID:",
+             "output/",
+             tiles[j],
+             "/",
+             f[i],
+             ":MOD_Grid_BRDF:Nadir_Reflectance_Band5"
+      )
+    )  
   }
   m <- mosaic(
     raster(hdfImage[[1]]),
     raster(hdfImage[[2]]),
-    raster(hdfImage[[3]]),
     fun = mean
   )
-  m <- crop(m, mask.ext)
+  m <- crop(m, aoi)
   writeRaster(x = m, filename = paste0("output/bands/",f[i],".B5.tif"), overwrite=TRUE)
   rm(m)
   rm(hdfImage)
-  
 }
 #removeTmpFiles(h=24)
 showTmpFiles()
