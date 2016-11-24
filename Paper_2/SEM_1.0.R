@@ -544,7 +544,8 @@ vgm <- list()
 
 # CEC
 for(i in 2:4){
-  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
+  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), 
+                     formula = formula(paste0(names(R@data)[i],"~1")),
             data = R)
   vg[[i-1]] <-  variogram(g[[i-1]])
   # vg = variogram(g, width = 20000, cutoff = 600000)
@@ -566,7 +567,8 @@ for(i in 2:4){
 }
 # OC
 for(i in 5:7){
-  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
+  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), 
+                     formula = formula(paste0(names(R@data)[i],"~1")),
                      data = R)
   vg[[i-1]] <-  variogram(g[[i-1]])
   # vg = variogram(g, width = 20000, cutoff = 600000)
@@ -588,7 +590,8 @@ for(i in 5:7){
 }
 # Clay
 for(i in 8:10){
-  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), formula = formula(paste0(names(R@data)[i],"~1")),
+  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), 
+                     formula = formula(paste0(names(R@data)[i],"~1")),
                      data = R)
   vg[[i-1]] <-  variogram(g[[i-1]])
   # vg = variogram(g, width = 20000, cutoff = 600000)
@@ -609,36 +612,50 @@ for(i in 8:10){
   print(attr(vgm[[i-1]], "SSErr"))
 }
 
+# Three graphs (soil properties)
 par(mfrow = c(1, 3), pty = "s")
-plot(variogramLine(vgm[[1]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
-     main="CEC",
+### CEC
+## A
+plot(variogramLine(vgm[[1]], maxdist=50000), 
+     type="l", lwd=2,col="#AA0000", main="CEC",
      xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(5,35))
-legend(x= "topleft",legend = "SSErr", bty = "n")
-legend(x= 12,legend = round(attr(vgm[[1]], "SSErr"),3), text.col ="#AA0000", bty = "n")
+points(gamma ~ dist, vg[[1]], col="#770000")
+#legend(x= "topleft",legend = "SSErr", bty = "n")
+#legend(x= 12,legend = round(attr(vgm[[1]], "SSErr"),3), text.col ="#AA0000", 
+#        bty = "n")
+## B
 lines(variogramLine(vgm[[2]], maxdist=50000), lwd=2, col="#00AA00")
-legend(x= 17,legend = round(attr(vgm[[2]], "SSErr"),3), text.col="#00AA00", bty = "n")
+points(gamma ~ dist, vg[[2]], col="#007700")
+## C
 lines(variogramLine(vgm[[3]], maxdist=50000), lwd=2, col="#0000AA")
-legend(x= 31,legend = round(attr(vgm[[3]], "SSErr"),3), text.col="#0000AA", bty = "n")
+points(gamma ~ dist, vg[[3]], col="#000077")
 
+### OC
+## A
 plot(variogramLine(vgm[[4]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
      main="OC",
      xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,0.5)) 
-legend(x= "topleft",legend = "SSErr", bty = "n")
-legend(x= 0.25,legend = round(attr(vgm[[4]], "SSErr"),3), text.col ="#AA0000", bty = "n")
+points(gamma ~ dist, vg[[4]], col="#770000")
+## B
 lines(variogramLine(vgm[[5]], maxdist=50000), lwd=2, col="#00AA00")
-legend(x= 0.07,legend = round(attr(vgm[[5]], "SSErr"),3), text.col ="#00AA00", bty = "n")
+points(gamma ~ dist, vg[[5]], col="#007700")
+## C
 lines(variogramLine(vgm[[6]], maxdist=50000), lwd=2, col="#0000AA")
-legend(x= 0.016,legend = round(attr(vgm[[6]], "SSErr"),3), text.col ="#0000AA", bty = "n")
+points(gamma ~ dist, vg[[6]], col="#000077")
 
+### Clay
+## A
 plot(variogramLine(vgm[[7]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
      main="Clay",
      xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(10,50)) 
-legend(x= "topleft",legend = "SSErr", bty = "n")
-legend(x= 19,legend = round(attr(vgm[[7]], "SSErr"),3), text.col ="#AA0000", bty = "n")
+points(gamma ~ dist, vg[[7]], col="#770000")
+## B
 lines(variogramLine(vgm[[8]], maxdist=50000), lwd=2, col="#00AA00")
-legend(x= 29,legend = round(attr(vgm[[8]], "SSErr"),3), text.col ="#00AA00", bty = "n")
+points(gamma ~ dist, vg[[8]], col="#007700")
+## C
 lines(variogramLine(vgm[[9]], maxdist=50000), lwd=2, col="#0000AA")
-legend(x= 44,legend = round(attr(vgm[[9]], "SSErr"),3), text.col ="#0000AA", bty = "n")
+points(gamma ~ dist, vg[[9]], col="#000077")
+#############################################################################
 par(mfrow = c(1, 1))
 
 title("Semivariograms of residuals",
