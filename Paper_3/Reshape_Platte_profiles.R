@@ -1,14 +1,15 @@
 # It comes from Kansas_KS2.R
 
 
-setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/USDA/NCSS/")
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/USDA/")
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 
-d <- read.csv("Platte_NCSS_profiles.csv")#[,-3:-4]
+#d <- read.csv("Platte_NCSS_profiles.csv")#[,-3:-4]
 name(d)
-#pedon <- read.table("csv/NCSS_Pedon_Taxonomy.csv", sep = "\t", header = T)
-layer <- read.csv("csv/NCSS_Layer.csv", sep = "\t")
+d <- read.table("Finnell/Table.txt", header = TRUE, sep = "|")#[,-3:-4]
+pedon <- read.table("NCSS/csv/NCSS_Pedon_Taxonomy.csv", sep = ",", header = T)
+layer <- read.csv("NCSS/csv/NCSS_Layer.csv", sep = "\t")
 CEC <- read.csv("csv/CEC_and_Bases.csv", sep = "\t")
 carbon <- read.csv("csv/Carbon_and_Extractions.csv", sep = "\t")
 texture <- read.csv("csv/PSDA_and_Rock.csv", sep = "\t")
