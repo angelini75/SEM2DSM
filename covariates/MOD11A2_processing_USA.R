@@ -238,7 +238,7 @@ s <- stack(paste0("output/bands/", LST))
 a <- summary(s)
 a <- as.data.frame(t(a))
 a$name <- rownames(a)
-s <- s[[!(which(names(s) %in% a$name[a$`NA's`>30000]))]]
+s <- s[[(which(!(names(s) %in% a$name[a$`NA's`>30000])))]]
 # mean and sd  
 m <- mean(s, na.rm = TRUE)
 std <- calc(s, fun = sd, na.rm=TRUE)
