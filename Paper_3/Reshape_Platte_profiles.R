@@ -131,7 +131,7 @@ name(pe)
 pe <- pe[,c(-17,-18)]
 sp <- read.table(file = "Finnell/Table.txt", header = TRUE, sep = "|")
 name(sp)
-sp <- sp[,c(1,2,3,6,16:18,33,36,39)]
+sp <- sp[,c(1,2,6,16:18,33,36,39)]
 
 View(per[!(complete.cases(per[,11:13])),])
 pe <- pe[pe$labsampnum != "40A14293",]
@@ -176,9 +176,26 @@ abc <- as.data.frame(table(c(A,B,C)))
 abc <- as.numeric(as.character(abc$Var1[abc$Freq==3]))
 
 p <- per[which(per$idp %in% abc),]
+rownames(p) <- 1:length(p[,1])
+p <- p[c(-257:-261) ,]
+rownames(p) <- 1:length(p[,1])
+
+View(p[which(p$idp %in% unique(p$idp[is.na(p$cec)])),])
+mu <- unique(p$MUKEY[which(p$idp %in% unique(p$idp[is.na(p$cec)]))])
+str(sp)
+sp <- sp[with(sp, order(musym, mukey, -comppct_r,hzdept_r)), ]
+sp <- sp[which(sp$mukey %in% mu),]
+sp <- sp[with(sp, order(musym, mukey, -comppct_r,hzdept_r)), ]
+
+write.csv(p, "p.csv")
+write.csv(sp, "sp.csv")
+
+model <- lm(cec7_r ~ om_r + claytotal_r + hzdept_r, sp)
 
 
-sp[sp$mukey==1150163,]
+
+p[which(p$idp %in% unique(p$idp[is.na(p$cec)])),]
+
 #
 
 
