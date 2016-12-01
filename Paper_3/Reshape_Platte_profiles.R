@@ -7,6 +7,7 @@ name <- function(x) { as.data.frame(names(x))}
 
 d <- read.csv("NCSS/pedon_platte_extended.csv")#[,-3:-4]
 name(d)
+D <- d
 #d <- read.table("Finnell/Table.txt", header = TRUE, sep = "|")#[,-3:-4]
 pedon <- read.table("NCSS/csv/NCSS_Pedon_Taxonomy.csv", sep = ",", header = T)
 layer <- read.csv("NCSS/csv/NCSS_Layer.csv", sep = "\t")
@@ -102,8 +103,8 @@ profiles.e <- profiles.e[which(profiles.e$hzn != ""),]
 
 multigenetic <- unique(profiles.e$idp[profiles.e$hzn_disc != ""])
 
-pe <- profiles.e[which(!(profiles.e$idp %in% multigenetic)),]
-
+#pe <- profiles.e[which(!(profiles.e$idp %in% multigenetic)),]
+pe <- profiles.e[profiles.e$hzn_disc == "",]
 pe <- pe[pe$hzn == "A" |
            pe$hzn == "B"|
            pe$hzn == "C",]
@@ -132,15 +133,50 @@ sp <- read.table(file = "Finnell/Table.txt", header = TRUE, sep = "|")
 name(sp)
 sp <- sp[,c(1,2,3,6,16:18,33,36,39)]
 
-View(pe[!(complete.cases(pe[,11:13])),])
+View(per[!(complete.cases(per[,11:13])),])
 pe <- pe[pe$labsampnum != "40A14293",]
 pe <- pe[pe$labsampnum != "40A14461",]
 pe <- pe[pe$labsampnum != "40A14707",]
 pe <- pe[pe$labsampnum != "40A14716",]
 
-cecNA <- unique(pe$idp[is.na(pe$cec)])
+# first asumtion OC C horizon == median(pe$oc[pe$hzn == "C"])
+pe$oc[pe$hzn=="C" & is.na(pe$oc)] <- median(pe$oc[pe$hzn=="C"], na.rm=T)
 
-pe1 <- pe[which(pe$idp %in% cecNA),]
+# remove profiles with too many NA's
+per <- pe[pe$idp != 1833,]
+per <- per[per$idp != 1837,]
+per <- per[per$idp != 1838,]
+per <- per[per$idp != 1845,]
+per <- per[per$idp != 1846,]
+per <- per[per$idp != 2053,]
+per <- per[per$idp != 2117,]
+`2125` <- per[per$idp == 2125,][-10:-12,]
+per <- per[per$idp != 2125,]
+per <- rbind(per,`2125`)
+per <- per[!(per$idp == 2126 & per$hzn_nom == "C3"),]
+per <- per[per$idp != 2165,]
+per <- per[per$idp != 2166,]
+per <- per[!(per$idp == 2169 & (per$hzn_nom == "Ap" | 
+                                  per$hzn_nom == "B" |
+                                  per$hzn_nom == "Cr" )),]
+per <- per[per$idp != 7661,]
+per <- per[per$idp != 7662,]
+per <- per[per$idp != 14853,]
+per <- per[per$idp != 14854,]
+per <- per[per$idp != 17106,]
+per <- per[per$idp != 23819,]
+per <- per[per$idp != 23903,]
+per <- per[per$idp != 23904,]
+
+A <- unique(per$idp[per$hzn == "A"])
+B <- unique(per$idp[per$hzn == "B"])
+C <- unique(per$idp[per$hzn == "C"])
+
+abc <- as.data.frame(table(c(A,B,C)))
+abc <- as.numeric(as.character(abc$Var1[abc$Freq==3]))
+
+p <- per[which(per$idp %in% abc),]
+
 
 sp[sp$mukey==1150163,]
 #
@@ -154,9 +190,7 @@ sp[sp$mukey==1150163,]
 
 
 
-A <- unique(pe$idp[pe$hzn == "A"])
-B <- unique(pe$idp[pe$hzn == "B"])
-C <- unique(pe$idp[pe$hzn == "C"])
+
 
 sum(table(c(A,B,C))==3)
 
