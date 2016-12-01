@@ -5,14 +5,14 @@ setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/USDA/")
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 
-#d <- read.csv("Platte_NCSS_profiles.csv")#[,-3:-4]
+d <- read.csv("NCSS/pedon_platte_extended.csv")#[,-3:-4]
 name(d)
-d <- read.table("Finnell/Table.txt", header = TRUE, sep = "|")#[,-3:-4]
+#d <- read.table("Finnell/Table.txt", header = TRUE, sep = "|")#[,-3:-4]
 pedon <- read.table("NCSS/csv/NCSS_Pedon_Taxonomy.csv", sep = ",", header = T)
 layer <- read.csv("NCSS/csv/NCSS_Layer.csv", sep = "\t")
-CEC <- read.csv("csv/CEC_and_Bases.csv", sep = "\t")
-carbon <- read.csv("csv/Carbon_and_Extractions.csv", sep = "\t")
-texture <- read.csv("csv/PSDA_and_Rock.csv", sep = "\t")
+CEC <- read.csv("NCSS/csv/CEC_and_Bases.csv", sep = "\t")
+carbon <- read.csv("NCSS/csv/Carbon_and_Extractions.csv", sep = "\t")
+texture <- read.csv("NCSS/csv/PSDA_and_Rock.csv", sep = "\t")
 
 # pedon$site_key <- as.numeric(pedon$site_key)
 # pedon$latitude_decimal_degrees <- as.numeric(as.character(pedon$latitude_decimal_degrees))
@@ -44,15 +44,26 @@ d3 <- merge(d2.e,CEC[,c(1,16:19)], by = "labsampnum", all.x = T)
 d4 <- merge(d3,carbon[,c(1,4,7)], by = "labsampnum", all.x = T)
 profiles <- merge(d4,texture[,c(1,4,7,8)], by = "labsampnum", all.x = T)
 
-write.csv(profiles, "~/Documents/platte_area.csv")
+A <- unique(profiles$pedon_key[profiles$hzn_master == "A"])
+B <- unique(profiles$pedon_key[profiles$hzn_master == "B"])
+C <- unique(profiles$pedon_key[profiles$hzn_master == "C"])
+
+hz <- c(A,B,C)[-1239]
+hz <- as.data.frame(table(hz))
+hz <- as.numeric(as.character(hz$hz[hz$Freq==3]))
+
+profiles <- profiles[which(profiles$pedon_key %in% hz),]
+#write.csv(profiles, "~/Documents/platte_area.csv")
 ################################################################################
 profiles <- profiles[!is.na(profiles$hzn_top),]
-profiles <- profiles[!(is.na(profiles$cec_nh4) & is.na(profiles$clay_tot_psa)&
-                         is.na(profiles$c_tot)),]
-profiles <- profiles[!(is.na(profiles$cec_nh4) & is.na(profiles$cec_sum)&
-                         is.na(profiles$cec_nhcl)),]
-profiles <- profiles[!(is.na(profiles$c_tot) & is.na(profiles$oc)),]
-profiles <- profiles[!(is.na(profiles$clay_tot_psa) & is.na(profiles$clay_f)),]
+# profiles <- profiles[!(is.na(profiles$cec_nh4) &
+#                          is.na(profiles$clay_tot_psa) &
+#                          is.na(profiles$c_tot)),]
+# profiles <- profiles[!(is.na(profiles$cec_nh4) & 
+#                         is.na(profiles$cec_sum) &
+#                          is.na(profiles$cec_nhcl)),]
+# profiles <- profiles[!(is.na(profiles$c_tot) & is.na(profiles$oc)),]
+# profiles <- profiles[!(is.na(profiles$clay_tot_psa) & is.na(profiles$clay_f)),]
 
 # comparison between soil properties
 plot(profiles$c_tot~profiles$oc)
@@ -86,6 +97,68 @@ summary(profiles.e)
 # adding 30 cm to bottom horizons where bot == NA (2 cases)
 # profiles.r[profiles.r$idp == profiles.r$idp[which(is.na(profiles.r$bot))],]
 # profiles.r$bot[which(is.na(profiles.r$bot))] <- c(234, 200)
+
+profiles.e <- profiles.e[which(profiles.e$hzn != ""),]
+
+multigenetic <- unique(profiles.e$idp[profiles.e$hzn_disc != ""])
+
+pe <- profiles.e[which(!(profiles.e$idp %in% multigenetic)),]
+
+pe <- pe[pe$hzn == "A" |
+           pe$hzn == "B"|
+           pe$hzn == "C",]
+
+library(sp)
+library(maptools)
+coordinates(pe) <- ~X+Y
+NE <- readShapePoly("Finnell/SoilMaps/NE_ext.shp")
+KS <- readShapePoly("Finnell/SoilMaps/KS_ext.shp")
+
+NE@data <- NE@data[,c(-1:-2,-5:-6)]
+pe@data <- cbind(pe@data, over(pe,NE))
+KS@data <- KS@data[,c(-1:-2,-5:-6)]
+pe@data <- cbind(pe@data, over(pe,KS))
+pe <- as.data.frame(pe)
+pe$MUSYM <- as.numeric(as.character(pe$MUSYM))
+pe$MUSYM.1 <- as.numeric(as.character(pe$MUSYM.1))
+pe$MUKEY <- as.numeric(as.character(pe$MUKEY))
+pe$MUKEY.1 <- as.numeric(as.character(pe$MUKEY.1))
+
+pe$MUSYM[is.na(pe$MUSYM)] <- pe$MUSYM.1[is.na(pe$MUSYM)]
+pe$MUKEY[is.na(pe$MUKEY)] <- pe$MUKEY.1[is.na(pe$MUKEY)]
+name(pe)
+pe <- pe[,c(-17,-18)]
+sp <- read.table(file = "Finnell/Table.txt", header = TRUE, sep = "|")
+name(sp)
+sp <- sp[,c(1,2,3,6,16:18,33,36,39)]
+
+View(pe[!(complete.cases(pe[,11:13])),])
+pe <- pe[pe$labsampnum != "40A14293",]
+pe <- pe[pe$labsampnum != "40A14461",]
+pe <- pe[pe$labsampnum != "40A14707",]
+pe <- pe[pe$labsampnum != "40A14716",]
+
+cecNA <- unique(pe$idp[is.na(pe$cec)])
+
+pe1 <- pe[which(pe$idp %in% cecNA),]
+
+sp[sp$mukey==1150163,]
+#
+
+
+
+
+
+
+
+
+
+
+A <- unique(pe$idp[pe$hzn == "A"])
+B <- unique(pe$idp[pe$hzn == "B"])
+C <- unique(pe$idp[pe$hzn == "C"])
+
+sum(table(c(A,B,C))==3)
 
 setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/covar")
 library(raster)
