@@ -44,10 +44,21 @@ d2.e <- merge(d,layer[,c(1,2,5,11,12:17)], by = "pedon_key", all.x = TRUE)
 d3 <- merge(d2.e,CEC[,c(1,16:19)], by = "labsampnum", all.x = T)
 d4 <- merge(d3,carbon[,c(1,4,7)], by = "labsampnum", all.x = T)
 profiles <- merge(d4,texture[,c(1,4,7,8)], by = "labsampnum", all.x = T)
+profiles <- profiles[profiles$hzn_master != "",]
+paste("How many soil profiles there are in the area? ->",
+      length(unique(profiles$pedon_key)))
 
 A <- unique(profiles$pedon_key[profiles$hzn_master == "A"])
+paste("How many have A? ->", length(unique(A)))
+
 B <- unique(profiles$pedon_key[profiles$hzn_master == "B"])
+paste("How many have B? ->",length(unique(B)))
+
 C <- unique(profiles$pedon_key[profiles$hzn_master == "C"])
+paste("How many have C? ->", length(unique(C)))
+abc <- as.data.frame(table(c(A,B,C)))
+abc <- as.numeric(as.character(abc$Var1[abc$Freq==3]))
+paste("How many have A, B and C? ->", length(abc))
 
 hz <- c(A,B,C)[-1239]
 hz <- as.data.frame(table(hz))
@@ -56,7 +67,6 @@ hz <- as.numeric(as.character(hz$hz[hz$Freq==3]))
 profiles <- profiles[which(profiles$pedon_key %in% hz),]
 #write.csv(profiles, "~/Documents/platte_area.csv")
 ################################################################################
-profiles <- profiles[!is.na(profiles$hzn_top),]
 # profiles <- profiles[!(is.na(profiles$cec_nh4) &
 #                          is.na(profiles$clay_tot_psa) &
 #                          is.na(profiles$c_tot)),]
@@ -99,12 +109,12 @@ summary(profiles.e)
 # profiles.r[profiles.r$idp == profiles.r$idp[which(is.na(profiles.r$bot))],]
 # profiles.r$bot[which(is.na(profiles.r$bot))] <- c(234, 200)
 
-profiles.e <- profiles.e[which(profiles.e$hzn != ""),]
-
 multigenetic <- unique(profiles.e$idp[profiles.e$hzn_disc != ""])
+paste("How many profiles are multigenetic? ->", length(unique(multigenetic)))
 
 #pe <- profiles.e[which(!(profiles.e$idp %in% multigenetic)),]
-pe <- profiles.e[profiles.e$hzn_disc == "",]
+
+pe <- profiles.e[profiles.e$hzn_disc == "",] # remove discontinued horizons
 pe <- pe[pe$hzn == "A" |
            pe$hzn == "B"|
            pe$hzn == "C",]
@@ -129,7 +139,8 @@ pe$MUSYM[is.na(pe$MUSYM)] <- pe$MUSYM.1[is.na(pe$MUSYM)]
 pe$MUKEY[is.na(pe$MUKEY)] <- pe$MUKEY.1[is.na(pe$MUKEY)]
 name(pe)
 pe <- pe[,c(-17,-18)]
-sp <- read.table(file = "Finnell/Table.txt", header = TRUE, sep = "|")
+sp <- read.table(file = "Finnell/Table.txt", header = F, sep = "|")
+names(sp) <- names(read.table(file = "Finnell/Table_Nov.txt", header = T, sep = "|"))
 name(sp)
 sp <- sp[,c(1,2,6,16:18,33,36,39)]
 
@@ -168,34 +179,46 @@ per <- per[per$idp != 23819,]
 per <- per[per$idp != 23903,]
 per <- per[per$idp != 23904,]
 
+paste("how many profiles are in per? ->", length(unique(per$idp)))
+
 A <- unique(per$idp[per$hzn == "A"])
 B <- unique(per$idp[per$hzn == "B"])
 C <- unique(per$idp[per$hzn == "C"])
 
 abc <- as.data.frame(table(c(A,B,C)))
 abc <- as.numeric(as.character(abc$Var1[abc$Freq==3]))
+paste("how many profiles of per have ABC? ->", length(unique(abc)))
 
 p <- per[which(per$idp %in% abc),]
 rownames(p) <- 1:length(p[,1])
 p <- p[c(-257:-261) ,]
 rownames(p) <- 1:length(p[,1])
 
-View(p[which(p$idp %in% unique(p$idp[is.na(p$cec)])),])
-mu <- unique(p$MUKEY[which(p$idp %in% unique(p$idp[is.na(p$cec)]))])
-str(sp)
+#View(p[which(p$idp %in% unique(p$idp[is.na(p$cec)])),])
+# mu <- unique(p$MUKEY[which(p$idp %in% unique(p$idp[is.na(p$cec)]))])
+# str(sp)
 sp <- sp[with(sp, order(musym, mukey, -comppct_r,hzdept_r)), ]
-sp <- sp[which(sp$mukey %in% mu),]
-sp <- sp[with(sp, order(musym, mukey, -comppct_r,hzdept_r)), ]
+rownames(sp) <- 1:length(sp[,1]) 
+# sp <- sp[which(sp$mukey %in% mu),]
+# sp <- sp[with(sp, order(musym, mukey, -comppct_r,hzdept_r)), ]
 
 write.csv(p, "p.csv")
 write.csv(sp, "sp.csv")
+p <- read.csv("p.csv")[,-1]
+sp <- read.csv("sp.csv")[,-1]
 
-model <- lm(cec7_r ~ om_r + claytotal_r + hzdept_r, sp)
+paste(length(unique(p$idp[is.na(p$cec)])), "profiles without CEC")
+paste("how many profiles are in p? ->", length(unique(p$idp)))
 
+data <- p[which(p$idp %in% unique(p$idp[!is.na(p$cec)])),]
+paste("how many profiles are in data? ->", length(unique(data$idp)))
+sp[sp$mukey == 1691123,]
 
+# one replacement
+data$cec[is.na(data$cec)] <- sp[51464,9] # CEC extracted from the map
 
-p[which(p$idp %in% unique(p$idp[is.na(p$cec)])),]
-
+# 158 soil profiles
+write.csv(data, "data_KSNE.csv")
 #
 
 
