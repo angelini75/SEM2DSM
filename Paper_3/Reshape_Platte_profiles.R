@@ -96,7 +96,8 @@ profiles.e$oc[is.na(profiles.e$oc)] <- profiles.e$c_tot[which(is.na(profiles.e$o
 profiles.e <- profiles.e[,-14]
 
 # copy values from cec_tot to cec_nh4 where cec_nh4 == NA
-profiles.e$cec_nh4[is.na(profiles.e$cec_nh4)] <- profiles.e$cec_sum[which(is.na(profiles.e$cec_nh4))]
+profiles.e$cec_nh4[is.na(profiles.e$cec_nh4)] <- 
+  profiles.e$cec_sum[which(is.na(profiles.e$cec_nh4))]
 profiles.e <- profiles.e[,c(-12)]
 
 # names(profiles.r) <- c("labsampnum","idp", "X", "Y","hzn","hzn_nom","top", "bot", "cec", "oc", "clay")
@@ -140,7 +141,8 @@ pe$MUKEY[is.na(pe$MUKEY)] <- pe$MUKEY.1[is.na(pe$MUKEY)]
 name(pe)
 pe <- pe[,c(-17,-18)]
 sp <- read.table(file = "Finnell/Table.txt", header = F, sep = "|")
-names(sp) <- names(read.table(file = "Finnell/Table_Nov.txt", header = T, sep = "|"))
+names(sp) <- names(read.table(file = "Finnell/Table_Nov.txt", 
+                              header = T, sep = "|"))
 name(sp)
 sp <- sp[,c(1,2,6,16:18,33,36,39)]
 
@@ -218,23 +220,53 @@ sp[sp$mukey == 1691123,]
 data$cec[is.na(data$cec)] <- sp[51464,9] # CEC extracted from the map
 
 # 158 soil profiles
-write.csv(data, "data_KSNE.csv")
-#
+# write.csv(data, "data_KSNE.csv")
 
+################################################################################
+#                                    Start here                                #
+################################################################################
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/USDA/")
+rm(list=ls())
+name <- function(x) { as.data.frame(names(x))}
 
+d <- read.csv("data_KSNE.csv")[,-1]
+d$thick <- d$bot - d$top
+name(d)
+d <- d[,c(1,2,3,4,8,10,11, 17, 12:14)]
+names(d)[1] <- "idh"
+#compute soil properties per id.hor
+library(plyr)
+library(reshape2)
 
+d1 <- data.frame(idp = unique(d$idp))
+d2 <- merge(d1, dcast(data = 
+                        ddply(d, 
+                              .(idp,hzn),
+                              summarise,
+                              clay = weighted.mean(x = clay,
+                                                   w =  thick,
+                                                   na.rm = TRUE)),
+                      idp ~ hzn),
+            by = "idp")
 
+names(d2)[2:4] <- paste0("clay.",names(d2)[2:4])
 
+d2 <- merge(d2, dcast(data = 
+                        ddply(d, 
+                              .(idp,hzn),
+                              summarise,
+                              cec = weighted.mean(x = cec,
+                                                   w =  thick,
+                                                   na.rm = TRUE)),
+                      idp ~ hzn),
+            by = "idp")
+names(d2)[5:7] <- c("cec.A", "cec.B", "cec.C")
+d3 <- merge(unique(d[,c("idp", "X", "Y")]), d2, by = "idp")
 
-
-
-
-
-
-
-sum(table(c(A,B,C))==3)
-
-setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/covar")
+############################################################
+D <- d3
+#############################################################
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA")
 library(raster)
 
 files <- list.files(pattern = ".dat$")
