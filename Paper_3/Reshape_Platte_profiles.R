@@ -223,7 +223,7 @@ data$cec[is.na(data$cec)] <- sp[51464,9] # CEC extracted from the map
 # write.csv(data, "data_KSNE.csv")
 
 ################################################################################
-#                                    Start here                                #
+###                                  Start here                              ###
 ################################################################################
 setwd("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/USDA/")
 rm(list=ls())
