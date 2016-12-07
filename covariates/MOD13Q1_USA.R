@@ -111,7 +111,7 @@ foreach(i = seq_along(h10v05[,1])) %dopar%{
                                  substr(x = h10v05[i,2],start = 9,stop = 16),
                                  ".hdf",
                                  sep=""),
-                quiet = FALSE, 
+                quiet = TRUE, 
                 mode = "wb",
                 method = "wget",
                 extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
