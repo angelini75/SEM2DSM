@@ -19,7 +19,7 @@ rm(list=ls())
 setwd("~/big/USA/SRTM/") # @RStudio server
 library(raster)
 library(rgdal)
-library(RSAGA)
+
 #library(gdalUtils)
 library(doParallel)
 
