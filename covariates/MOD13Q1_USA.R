@@ -53,48 +53,68 @@ driver <- "HDF4_EOS:EOS_GRID:"
 bands <- data.frame(name = c(":MODIS_Grid_16DAY_250m_500m_VI:250m 16 days EVI"),
                     file.name = c("EVI"))
 #define tiles
-tiles <- c("h10v04", "h10v05")
+tiles <- c("h09v05", "h10v04", "h10v05")
 #define years
 yrs <- as.character(2000:2015)
 #get periods
+library(RCurl)
 period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/","",
                readdir("ftp://ladsweb.nascom.nasa.gov/allData/5/MOD13Q1/2005/"))
 
+readdir("152.61.133.130/MOLT/MOD13Q1.005")
+
 # Files to be download ####
 # http://reverb.echo.nasa.gov/reverb/
-MODProd <- read.csv(file = "MOD13Q1_save_results_csv.csv")
+MODProd <- read.csv(file = "MOD13Q1_reverb.csv")
 
-# two dataframes, one for each tile
+# two dataframes, one for each tile 
+h09v05 <- MODProd[grep(pattern = "?h09v05",x = MODProd$Producer.Granule.ID),]
 h10v04 <- MODProd[grep(pattern = "?h10v04",x = MODProd$Producer.Granule.ID),]
 h10v05 <- MODProd[grep(pattern = "?h10v05",x = MODProd$Producer.Granule.ID),]
+h09v05$Online.Access.URLs <- as.character(h09v05$Online.Access.URLs)
 h10v04$Online.Access.URLs <- as.character(h10v04$Online.Access.URLs)
 h10v05$Online.Access.URLs <- as.character(h10v05$Online.Access.URLs)
 
 # Download the files ####
-registerDoParallel(cores=10)
+registerDoParallel(cores=6)
+foreach(i = seq_along(h09v05[,1])) %dopar%{
+  download.file(h09v05[i,5], 
+                destfile = paste("output/",
+                                 tiles[1],
+                                 "/",
+                                 substr(x = h09v05[i,2],start = 9,stop = 16),
+                                 ".hdf",
+                                 sep=""),
+                quiet = TRUE, 
+                mode = "wb",
+                method = "wget",
+                extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
+}
 foreach(i = seq_along(h10v04[,1])) %dopar%{
   download.file(h10v04[i,5], 
                 destfile = paste("output/",
-                                 tiles[1],
+                                 tiles[2],
                                  "/",
                                  substr(x = h10v04[i,2],start = 9,stop = 16),
                                  ".hdf",
                                  sep=""),
                 quiet = TRUE, 
                 mode = "wb",
-                method = "wget")
+                method = "wget",
+                extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
 }
 foreach(i = seq_along(h10v05[,1])) %dopar%{
   download.file(h10v05[i,5], 
                 destfile = paste("output/",
-                                 tiles[2],
+                                 tiles[3],
                                  "/",
                                  substr(x = h10v05[i,2],start = 9,stop = 16),
                                  ".hdf",
                                  sep=""),
-                quiet = TRUE, 
+                quiet = FALSE, 
                 mode = "wb",
-                method = "wget")
+                method = "wget",
+                extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
 }
 
 ############### #### ### ## # - IMAGE PROCESSING - # ## ### #### ###############

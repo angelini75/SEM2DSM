@@ -76,7 +76,7 @@ bands <- data.frame(name = c(":MOD_Grid_BRDF:Nadir_Reflectance_Band2",
                     file.name = c("B2", "B5"))
 
 #define tiles
-tiles <- c("h10v04", "h10v05")
+tiles <- c("h10v04", "h10v05", "h09v05")
 #define years
 yrs <- as.character(2000:2015)
 #get periods
@@ -116,11 +116,13 @@ period <- gsub("ftp://ladsweb.nascom.nasa.gov/allData/5/MCD43A4/2005/","",
 
 # Files to be download ####
 # http://reverb.echo.nasa.gov/reverb/
-MODProd <- read.csv(file = "MCD43A4_save_results_csv.csv")
+MODProd <- read.csv(file = "MCD43A4_results_csv.csv")
 
 # two dataframes, one for each tile
+h09v05 <- MODProd[grep(pattern = "?h09v05",x = MODProd$Producer.Granule.ID),]
 h10v04 <- MODProd[grep(pattern = "?h10v04",x = MODProd$Producer.Granule.ID),]
 h10v05 <- MODProd[grep(pattern = "?h10v05",x = MODProd$Producer.Granule.ID),]
+h09v05$Online.Access.URLs <- as.character(h09v05$Online.Access.URLs)
 h10v04$Online.Access.URLs <- as.character(h10v04$Online.Access.URLs)
 h10v05$Online.Access.URLs <- as.character(h10v05$Online.Access.URLs)
 
@@ -136,7 +138,8 @@ foreach(i = seq_along(h10v04[,1])) %dopar%{
                                  sep=""),
                 quiet = TRUE, 
                 mode = "wb",
-                method = "wget")
+                method = "wget",
+                extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
 }
 foreach(i = seq_along(h10v05[,1])) %dopar%{
   download.file(h10v05[i,5], 
@@ -148,7 +151,21 @@ foreach(i = seq_along(h10v05[,1])) %dopar%{
                                  sep=""),
                 quiet = TRUE, 
                 mode = "wb",
-                method = "wget")
+                method = "wget",
+                extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
+}
+foreach(i = seq_along(h09v05[,1])) %dopar%{
+  download.file(h09v05[i,5], 
+                destfile = paste("output/",
+                                 tiles[3],
+                                 "/",
+                                 substr(x = h09v05[i,2],start = 9,stop = 16),
+                                 ".hdf",
+                                 sep=""),
+                quiet = F, 
+                mode = "wb",
+                method = "wget",
+                extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
 }
 # extracting and mosaicing bands
 # b      length      Rad  SNR
@@ -171,7 +188,7 @@ library(doParallel)
 library(maptools)
 ############ Create mosaic 
 # subset extension in MODIS coordinate system (could be calculated from a shape file)
-aoi <- readShapePoly("Platte_area.shp")
+aoi <- readShapePoly("Platte_area_extended.shp")
 
 # define projections
 wgs84 <- CRS("+init=epsg:4326")
