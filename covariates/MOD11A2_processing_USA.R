@@ -130,7 +130,7 @@ library(doParallel)
 library(maptools)
 ############ Create mosaic 
 # subset extension in MODIS coordinate system (could be calculated from a shape file)
-aoi <- readShapePoly("Platte_area.shp")
+aoi <- readShapePoly("Platte_area_extended.shp")
 
 # define projections
 wgs84 <- CRS("+init=epsg:4326")
