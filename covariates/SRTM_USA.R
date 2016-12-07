@@ -84,3 +84,9 @@ y <- do.call(mosaic, x)
 
 # write raster
 writeRaster(y, "mosaic_platte.tif",)
+
+dem <- raster("mosaic_platte.tif")
+library(RSAGA)
+
+
+
