@@ -76,11 +76,10 @@ h10v04$Online.Access.URLs <- as.character(h10v04$Online.Access.URLs)
 h10v05$Online.Access.URLs <- as.character(h10v05$Online.Access.URLs)
 
 # Download the files ####
-registerDoParallel(cores=6)
+registerDoParallel(cores=3)
 foreach(i = seq_along(h09v05[,1])) %dopar%{
   download.file(h09v05[i,5], 
-                destfile = paste("output/",
-                                 tiles[1],
+                destfile = paste(tiles[1],
                                  "/",
                                  substr(x = h09v05[i,2],start = 9,stop = 16),
                                  ".hdf",
@@ -126,7 +125,7 @@ library(doParallel)
 library(maptools)
 ############ Create mosaic 
 # subset extension in MODIS coordinate system (could be calculated from a shape file)
-aoi <- readShapePoly("Platte_area.shp")
+aoi <- readShapePoly("Platte_area_extended.shp")
 
 # define projections
 wgs84 <- CRS("+init=epsg:4326")
@@ -140,45 +139,45 @@ aoi <- spTransform(aoi, modis)
 
 
 
-f <-list.files("output/h10v04/", pattern = ".hdf$")
+f <-list.files("h10v04/", pattern = ".hdf$")
 # f04 <- list.files("output/h10v04/", pattern = ".hdf$")
 # f[which(f %in% f04 == F)]
 #pj <- projection(hdfImage[[1]])
 rasterOptions(tmpdir="~/big/USA/MODIS/output/temp/")
+bands[,1] <- as.character(bands[,1])
+bands[,2] <- as.character(bands[,2])
 
-registerDoParallel(cores=11)
+registerDoParallel(cores=10)
 foreach(i = seq_along(f)) %dopar%{
-  for(k in seq_along(bands[,1])){
-    hdfImage <- list()
-    for(j in seq_along(tiles)){
-      hdfImage[[j]] <- readGDAL(
-        paste0("HDF4_EOS:EOS_GRID:",
-               "output/",
-               tiles[j],
-               "/",
-               f[i],
-               bands[k,1]
-        )
-      )  
-    }
-    m <- mosaic(
-      raster(hdfImage[[1]]),
-      raster(hdfImage[[2]]),
-      fun = mean
-    )
-    m <- crop(m, aoi)
-    writeRaster(x = m, 
-                filename = paste0("output/bands/",
-                                  f[i],
-                                  ".",
-                                  bands[k,2],
-                                  ".tif"),
-                overwrite=TRUE)
-    rm(m)
-    rm(hdfImage)
+  hdfImage <- list()
+  for(j in seq_along(tiles)){
+    hdfImage[[j]] <- readGDAL(
+      paste0("HDF4_EOS:EOS_GRID:",
+             tiles[j],
+             "/",
+             f[i],
+             bands[,1]
+      )
+    )  
   }
+  m <- mosaic(
+    raster(hdfImage[[1]]),
+    raster(hdfImage[[2]]),
+    raster(hdfImage[[3]]),
+    fun = mean
+  )
+  m <- crop(m, aoi)
+  writeRaster(x = m, 
+              filename = paste0("output/bands/",
+                                f[i],
+                                ".",
+                                bands[,2],
+                                ".tif"),
+              overwrite=TRUE)
+  rm(m)
+  rm(hdfImage)
 }
-#removeTmpFiles(h=24)
+removeTmpFiles(h=24)
 showTmpFiles()
 
 ### Estimation of mean and sd by period

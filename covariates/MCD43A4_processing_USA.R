@@ -127,7 +127,7 @@ h10v04$Online.Access.URLs <- as.character(h10v04$Online.Access.URLs)
 h10v05$Online.Access.URLs <- as.character(h10v05$Online.Access.URLs)
 
 # Download the files ####
-registerDoParallel(cores=10)
+registerDoParallel(cores=6)
 foreach(i = seq_along(h10v04[,1])) %dopar%{
   download.file(h10v04[i,5], 
                 destfile = paste("output/",
@@ -142,14 +142,14 @@ foreach(i = seq_along(h10v04[,1])) %dopar%{
                 extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
 }
 foreach(i = seq_along(h10v05[,1])) %dopar%{
-  download.file(h10v05[i,5], 
+  download.file(h10v05[i,5],
                 destfile = paste("output/",
                                  tiles[2],
                                  "/",
                                  substr(x = h10v05[i,2],start = 9,stop = 16),
                                  ".hdf",
                                  sep=""),
-                quiet = TRUE, 
+                quiet = TRUE,
                 mode = "wb",
                 method = "wget",
                 extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
@@ -162,7 +162,7 @@ foreach(i = seq_along(h09v05[,1])) %dopar%{
                                  substr(x = h09v05[i,2],start = 9,stop = 16),
                                  ".hdf",
                                  sep=""),
-                quiet = F, 
+                quiet = TRUE, 
                 mode = "wb",
                 method = "wget",
                 extra = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --keep-session-cookies")
@@ -189,7 +189,7 @@ library(maptools)
 ############ Create mosaic 
 # subset extension in MODIS coordinate system (could be calculated from a shape file)
 aoi <- readShapePoly("Platte_area_extended.shp")
-
+plot(aoi)
 # define projections
 wgs84 <- CRS("+init=epsg:4326")
 modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
@@ -207,25 +207,25 @@ f <-list.files("output/h10v04/", pattern = ".hdf$")
 # f[which(f %in% f04 == F)]
 #pj <- projection(hdfImage[[1]])
 rasterOptions(tmpdir="~/big/USA/MODIS/output/temp/")
+removeTmpFiles(h=12)
+showTmpFiles()
 
-registerDoParallel(cores=11)
+registerDoParallel(cores=10)
 foreach(i = seq_along(f)) %dopar%{
   for(k in seq_along(bands[,1])){
     hdfImage <- list()
     for(j in seq_along(tiles)){
-      hdfImage[[j]] <- readGDAL(
-        paste0("HDF4_EOS:EOS_GRID:",
-               "output/",
-               tiles[j],
-               "/",
-               f[i],
-               bands[k,1]
-        )
-      )  
+      hdfImage[[j]] <- readGDAL(paste0("HDF4_EOS:EOS_GRID:",
+                                       "output/",
+                                       tiles[j],
+                                       "/",
+                                       f[i],
+                                       bands[k,1]))  
     }
     m <- mosaic(
       raster(hdfImage[[1]]),
       raster(hdfImage[[2]]),
+      raster(hdfImage[[3]]),
       fun = mean
     )
     m <- crop(m, aoi)
@@ -240,8 +240,8 @@ foreach(i = seq_along(f)) %dopar%{
     rm(hdfImage)
   }
 }
-#removeTmpFiles(h=24)
-showTmpFiles()
+
+
 ### Estimation NDWI
 foreach(i = seq_along(f)) %dopar%{
   hdfImage <- list()
@@ -267,14 +267,34 @@ list.per <- list()
 for(i in seq_along(period)){
   list.per[[i]] <- list.files(path = "output/bands/",
                               pattern= paste0(period[i],
-                                              ".hdf.ndwi.tif"
+                                              ".hdf.ndwi.tif$"
                               )
   )
 }
 
+# crate list of images from entire period
+NDWI <- list.files(path = "output/bands/",
+                   pattern= ".hdf.ndwi.tif$")
+s <- stack(paste0("output/bands/", NDWI))
+
+# remove images with more than 30000 NA's (10% of the image)
+a <- summary(s)
+a <- as.data.frame(t(a))
+a$name <- rownames(a)
+NDWI <- a$name[a$`NA's`<300000]
+
+#hist(a$`NA's`,20)
+#s <- s[[(which(!(names(s) %in% a$name[a$`NA's`>300000])))]]
+
+# rem
+for(i in seq_along(period)){
+ list.per[[i]] <- list.per[[i]][(which(list.per[[i]] %in% paste0(NDWI,".tif")))] 
+}
+
+
 # stack images from the same period (raster package)
 # I found this script here http://markmail.org/thread/lsjnczi5fppddrpr
-registerDoParallel(cores=11)
+registerDoParallel(cores=12)
 foreach(i = seq_along(period)) %dopar% {
   s <- stack(paste0("output/bands/",
                     list.per[[i]]))
