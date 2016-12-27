@@ -261,27 +261,40 @@ d2 <- merge(d2, dcast(data =
                       idp ~ hzn),
             by = "idp")
 names(d2)[5:7] <- c("cec.A", "cec.B", "cec.C")
+
+d2 <- merge(d2, dcast(data = 
+                        ddply(d, 
+                              .(idp,hzn),
+                              summarise,
+                              oc = weighted.mean(x = oc,
+                                                  w =  thick,
+                                                  na.rm = TRUE)),
+                      idp ~ hzn),
+            by = "idp")
+names(d2)[8:10] <- c("oc.A", "oc.B", "oc.C")
+
 d3 <- merge(unique(d[,c("idp", "X", "Y")]), d2, by = "idp")
 
 ############################################################
 D <- d3
 #############################################################
-setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA")
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/")
 library(raster)
 
+## Points over DEM and its derivates
 files <- list.files(pattern = ".dat$")
 header <- gsub(".sdat", "", files)
-header <-  c("chnbl", "EVI_M_JanFeb_250", "EVI_SD_JanFeb_250", "LS", "rsp",
-             "slope", "srtm250", "twi", "Valley Depth", "vdchn") 
+header <-  c("dem", "twi", "vdchn") 
 
-coordinates(profiles.e) <- ~X+Y
+coordinates(D) <- ~X+Y
 #define crs
 wgs84 <- CRS("+init=epsg:4326")
 UTM14N <- CRS("+init=epsg:32614")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # assign projection
-proj4string(profiles.e) <- wgs84
-profiles.e <- spTransform(profiles.e, UTM14N)
+proj4string(D) <- wgs84
+D <- spTransform(D, UTM14N)
 
 # profiles.e@data[,9+seq_along(files)] <- NA
 # names(profiles.r@data)[10:19] <- header
@@ -290,72 +303,31 @@ profiles.e <- spTransform(profiles.e, UTM14N)
 #   profiles.r@data[,9+i] <- extract(x = raster(files[i]), y = profiles.r) 
 # }
 
-profiles.e@data[,12+seq_along(files)] <- NA
-names(profiles.e@data)[13:22] <- header
+D@data[,10+seq_along(files)] <- NA
+names(D@data)[11:13] <- header
 
 for(i in seq_along(files)){
-  profiles.e@data[,12+i] <- extract(x = raster(files[i]), y = profiles.e) 
-}
-
-
-###################
-# list of sdat files (DEM)
-files <- 
-  list.files(
-    path = "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/",
-    pattern = ".dat$")
-header <- gsub(".sdat", "", files)
-header <-  c("dem", "twi", "vdchn") 
-
-modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
-
-# assign projection
-profiles.e <- spTransform(x = profiles.e, UTM14N)
-
-profiles.e@data[,22+seq_along(files)] <- NA
-names(profiles.e@data)[23:25] <- header
-
-# extract values from sdat files
-for(i in seq_along(files)){
-  profiles.e@data[,22+i] <-
-    extract(
-      x = raster(
-        paste0(
-          "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/",
-          files[i]
-        )
-      ),
-      y = profiles.e)
+  D@data[,10+i] <- extract(x = raster(files[i]), y = D) 
 }
 
 # list of tif files (modis)
-files <- 
-  list.files(
-    path = "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/",
-    pattern = ".tif$")
-header <- gsub(".sdat", "", files)
-header <-  c("evisd", "lstm", "ndwi.a", "ndwi.b") 
+files <- list.files(pattern = ".tif$")
+header <- gsub(".tif", "", files)
+header <-  c("evim", "evisd", "lstm", "lstsd", "ndwi.a", "ndwi.b") 
 
 # transform projection
-profiles.e <- spTransform(x = profiles.e, modis)
+D <- spTransform(x = D, modis)
 
-profiles.e@data[,25+seq_along(files)] <- NA
-names(profiles.e@data)[26:29] <- header
+D@data[,13+seq_along(files)] <- NA
+names(D@data)[14:19] <- header
 
 # extract values from tiff files
 for(i in seq_along(files)){
-  profiles.e@data[,25+i] <-
-    extract(
-      x = raster(
-        paste0(
-          "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/",
-          files[i]
-        )
-      ),
-      y = profiles.e)
+  D@data[,13+i] <- extract(x = raster(files[i])), y = D)
 }
 #########################
 # Argentinian data
+library(ggplot2)
 setwd("~/Documents/SEM2DSM1/Paper_2/data/")
 
 d <- read.csv("calib.data-5.0.csv")[,c(-1,-20)] #remove water variable 
@@ -384,43 +356,14 @@ names(e)[2:4] <- c("CEC","OC","Clay")
 library(ggplot2)
 library(reshape2)
 
-profiles.e <- as.data.frame(profiles.e)
-head(profiles.e,20)
+D <- as.data.frame(D)
+head(D,20)
 
-profiles.e$hzn_key <- NA
-profiles.e$hzn_nom <- as.character(profiles.e$hzn_nom)
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt")] <- "BtX"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Btk")] <- "Btk"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt$")] <- "Bt"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt1")] <- "Bt1"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt2")] <- "Bt2"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bt[3-9]")] <- "Bt9"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bw")] <- "Bw"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^B2.")] <- "Bw"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^Bk.")] <- "Bk"
-profiles.e$hzn_key[grep(profiles.e$hzn_nom,pattern = "^C")] <- "C"
-
-#profiles.e$oc <- log10(profiles.e$oc)
-
-# B <- profiles.e$hzn_nom[grep(profiles.e$hzn_nom,pattern = "^B")] 
-# B <- B[grep(B,pattern = "[^BC].")]
-# B <- B[grep(B,pattern = "[^Bt]..")]
-# B <- B[grep(B,pattern = "[^Bt]...")]
+meltp <- melt(D,id.vars = c("idp"))
 
 
-length(unique(profiles.e[,c(2)]))
-summary(unique(profiles.e[,c(2,20:26)]))
-name(profiles.e)
-meltp <- melt(unique(profiles.e[, c(2,8:12,32)]),id.vars = c("idp", "hzn_key"))
-
-
-ggplot(data = meltp[meltp$hzn_key == "Bt" |
-                      meltp$hzn_key == "Bt1" |
-                      meltp$hzn_key == "Bt2" |
-                      meltp$hzn_key == "Bt9" |
-                      meltp$hzn_key == "C" |
-                      meltp$hzn_key == "Btk" ,],
-       aes(x = value, fill = hzn_key)) + geom_density(alpha = 0.2) + 
+ggplot(data = meltp, aes(x = value)) + 
+  geom_density(alpha = 0.2) + 
   facet_wrap( ~ variable,scales = "free")
 
 
