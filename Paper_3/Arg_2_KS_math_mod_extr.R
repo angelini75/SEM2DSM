@@ -143,27 +143,25 @@ mod.e[mod.e$mi>3 & (mod.e$op == "~"|mod.e$op == "~~"),]
 
 
 setwd("~/Documents/SEM2DSM1/Paper_3/data/")
-d <- read.csv("calib-data.KS.0.1.csv")[,c(-1)] 
+d <- read.csv("KS.data-0.2.csv")[,c(-1)] 
 name(d)
-d <- d[,c(-11:-20)]
 names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
 # remove outlayers
-d <- d[d$idp!=26058,]
-d <- d[d$idp!=22961,]
-
-
-
-d <- cbind(d[1],d[,colnames(E)[2:10]],d[11:19])
+# d <- d[d$idp!=26058,]
+# d <- d[d$idp!=22961,]
+d <- cbind(d[1],
+           d[,colnames(E)[2:10]],
+           d[11:21])
 # Descriptive statistics and normality test. ####
-round(stat.desc(d[,-20],norm = TRUE),3)
+round(stat.desc(d,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
 # But some covariates need to be transformed. First, we store original mean and 
 # sd in ST
-ST <- t(stat.desc(d[,c(-20)],norm = TRUE)[c(9,13),])
+ST <- t(stat.desc(d,norm = TRUE)[c(9,13),])
 
 # Based on normtest.W the following covariates need to be transformed
-d$twi.1 <- log10(d$twi.1)
-d$vdchn.1 <- log10(d$vdchn.1+10)
+d$twi <- log10(d$twi)
+d$vdchn <- log10(d$vdchn+10)
 d$ndwi.a <- (d$ndwi.a+10)^.3
 # OC as log10 of OC
 # d$OC.A <- log10(d$OC.A)
@@ -171,8 +169,6 @@ d$ndwi.a <- (d$ndwi.a+10)^.3
 # d$OC.C <- log10(d$OC.C)
 
 # New statistics
-d <- d[,-20:-21]
-names(d)[12:13] <- c("twi", "vdchn")
 round(stat.desc(d,norm = TRUE),3)
 # New mean and sd
 STt <- t(stat.desc(d,norm = TRUE)[c(9,13),])
@@ -545,6 +541,47 @@ report.e$R2 <- 1 - (as.numeric(report.e$SS) / as.numeric(STte$SS[2:10]))
 report.e
 
 #### report2.e ####
+rsq<- NULL
+CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
+             as.matrix(Res[,c(4,13)]))
+colnames(CEC) <- c("CECo","CECp")
+rownames(CEC) <- 1:length(rownames(CEC))
+CEC <- as.data.frame(CEC)
+rsq[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
+                 sum((mean(CEC$CECo)-CEC$CECo)^2))
+lim = round(c(min(c(CEC[,1],CEC[,2])), max(c(CEC[,1],CEC[,2]))))
+plot(CEC[,2]~CEC[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "CEC residuals", col = "dark red")
+abline(0,1)
+abline(lm(CEC[,2]~CEC[,1]),col = "blue")
+
+OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
+            as.matrix(Res[,c(7,16)]))
+colnames(OC) <- c("OCo","OCp")
+rownames(OC) <- 1:length(rownames(OC))
+OC <- as.data.frame(OC)
+rsq[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
+                 sum((mean(OC$OCo)-OC$OCo)^2))
+lim = round(c(min(c(OC[,1],OC[,2])), max(c(OC[,1],OC[,2]))))
+plot(OC[,2]~OC[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "OC residuals", col = "dark red")
+abline(0,1)
+abline(lm(OC[,2]~OC[,1]),col = "blue")
+
+clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
+              as.matrix(Res[,c(10,19)]))
+
+colnames(clay) <- c("clayo","clayp")
+rownames(clay) <- 1:length(rownames(clay))
+clay <- as.data.frame(clay)
+rsq[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
+                 sum((mean(clay$clayo)-clay$clayo)^2))
+lim = round(c(min(c(clay[,1],clay[,2])), max(c(clay[,1],clay[,2]))))
+plot(clay[,2]~clay[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "Clay residuals", col = "dark red")
+abline(0,1)
+abline(lm(clay[,2]~clay[,1]),col = "blue")
+
 # create report by soil property
 report2.e <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, r2 = NA)
 z <- cbind(CEC, OC, clay)
