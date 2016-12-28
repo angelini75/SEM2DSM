@@ -204,8 +204,8 @@ rownames(sp) <- 1:length(sp[,1])
 # sp <- sp[which(sp$mukey %in% mu),]
 # sp <- sp[with(sp, order(musym, mukey, -comppct_r,hzdept_r)), ]
 
-write.csv(p, "p.csv")
-write.csv(sp, "sp.csv")
+#write.csv(p, "p.csv")
+#write.csv(sp, "sp.csv")
 p <- read.csv("p.csv")[,-1]
 sp <- read.csv("sp.csv")[,-1]
 
@@ -239,38 +239,31 @@ library(plyr)
 library(reshape2)
 
 d1 <- data.frame(idp = unique(d$idp))
-d2 <- merge(d1, dcast(data = 
-                        ddply(d, 
-                              .(idp,hzn),
-                              summarise,
-                              clay = weighted.mean(x = clay,
-                                                   w =  thick,
-                                                   na.rm = TRUE)),
-                      idp ~ hzn),
-            by = "idp")
-
+d2 <- merge(d1, dcast(data = ddply(d, 
+                                   .(idp,hzn),
+                                   summarise,
+                                   clay = weighted.mean(x = clay,
+                                                        w =  thick,
+                                                        na.rm = TRUE)),
+                      idp ~ hzn), by = "idp")
 names(d2)[2:4] <- paste0("clay.",names(d2)[2:4])
 
-d2 <- merge(d2, dcast(data = 
-                        ddply(d, 
-                              .(idp,hzn),
-                              summarise,
-                              cec = weighted.mean(x = cec,
-                                                   w =  thick,
-                                                   na.rm = TRUE)),
-                      idp ~ hzn),
-            by = "idp")
+d2 <- merge(d2, dcast(data = ddply(d, 
+                                   .(idp,hzn),
+                                   summarise,
+                                   cec = weighted.mean(x = cec,
+                                                       w =  thick,
+                                                       na.rm = TRUE)),
+                      idp ~ hzn), by = "idp")
 names(d2)[5:7] <- c("cec.A", "cec.B", "cec.C")
 
-d2 <- merge(d2, dcast(data = 
-                        ddply(d, 
-                              .(idp,hzn),
-                              summarise,
-                              oc = weighted.mean(x = oc,
-                                                  w =  thick,
-                                                  na.rm = TRUE)),
-                      idp ~ hzn),
-            by = "idp")
+d2 <- merge(d2, dcast(data = ddply(d, 
+                                   .(idp,hzn),
+                                   summarise,
+                                   oc = weighted.mean(x = oc,
+                                                      w =  thick,
+                                                      na.rm = TRUE)),
+                      idp ~ hzn), by = "idp")
 names(d2)[8:10] <- c("oc.A", "oc.B", "oc.C")
 
 d3 <- merge(unique(d[,c("idp", "X", "Y")]), d2, by = "idp")
@@ -286,15 +279,34 @@ files <- list.files(pattern = ".dat$")
 header <- gsub(".sdat", "", files)
 header <-  c("dem", "twi", "vdchn") 
 
-coordinates(D) <- ~X+Y
 #define crs
 wgs84 <- CRS("+init=epsg:4326")
-UTM14N <- CRS("+init=epsg:32614")
+#UTM14N <- CRS("+init=epsg:32614")
 modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+NAD83.KS.N <- CRS("+init=epsg:2796")
+
+
+#devtools::install_github("environmentalinformatics-marburg/mapview", ref = "develop")
+library(mapview)
+coordinates(D) <- ~X+Y
+proj4string(D) <- wgs84
+#mapview(s, burst = TRUE)
+mapview::viewExtent(D)
+map <- mapview(D, map = NULL,
+               map.types = mapviewGetOption("basemaps"), zcol = NULL, burst = TRUE,
+               color = c("#FF00FF", "#0489B1"), alpha = 0.6, alpha.regions = 0.2,
+               na.color = mapviewGetOption("na.color"), at = NULL, cex = 5, lwd = 2,
+               popup = popupTable(D), legend = mapviewGetOption("legend"),
+               legend.opacity = 1, layer.name = deparse(
+                 substitute(x, env = parent.frame())), 
+               verbose = mapviewGetOption("verbose"),
+               homebutton = TRUE)
+map + viewExtent(D) + raster(files[1])
+
 
 # assign projection
 proj4string(D) <- wgs84
-D <- spTransform(D, UTM14N)
+D <- spTransform(D, NAD83.KS.N)
 
 # profiles.e@data[,9+seq_along(files)] <- NA
 # names(profiles.r@data)[10:19] <- header
@@ -323,8 +335,13 @@ names(D@data)[14:19] <- header
 
 # extract values from tiff files
 for(i in seq_along(files)){
-  D@data[,13+i] <- extract(x = raster(files[i])), y = D)
+  D@data[,13+i] <- extract(x = raster(files[i]), y = D)
 }
+D <- spTransform(x = D, NAD83.KS.N)
+
+setwd("~/Documents/SEM2DSM1/Paper_3/")
+write.csv(as.data.frame(D),"KS.data-0.1.csv") 
+
 #########################
 # Argentinian data
 library(ggplot2)
@@ -494,69 +511,43 @@ ggplot(data = meltp[meltp$variable == "top" |
 #              X, data = C150)))#$r.squared
 # END NOT RUN 
 
-# explore spatial
-library(raster)
-library(sp)
-#devtools::install_github("environmentalinformatics-marburg/mapview", ref = "develop")
 library(mapview)
 
-profiles.e <- profiles.e[profiles.e$hzn_disc == "",]
-name(profiles.e)
 
-
-s <- profiles.e[profiles.e$hzn == "C",c(2,8:12,30,31)]
-
-profiles.e <- profiles.e[profiles.e$hzn_disc == "",]
-name(profiles.e)
-s <- profiles.e[profiles.e$hzn == "A" | 
-                  profiles.e$hzn == "B" |
-                  profiles.e$hzn == "C",
-                c(2,6,8:12,30,31)]
-s$hzn_c <- "a"
-s$hzn_c[s$hzn=="C"] <- "c"
-s[which(s$idp %in% unique(s$idp[s$hzn_c == "c"])),10] <- "c"
-name(s)
-s <- unique(s[,c(1,8:10)])
-
-
-coordinates(s) <- ~X+Y
-proj4string(s) <- modis
-mercator <- CRS("+init=epsg:3785")
-s <- spTransform(s, mercator)
-
-
+coordinates(D) <- ~X+Y
+proj4string(D) <- wgs84
+D <- spTransform(D, wgs84)
 #mapview(s, burst = TRUE)
-mapview::viewExtent(s)
-map <- mapview(s, map = NULL,
+mapview::viewExtent(D)
+map <- mapview(D, map = NULL,
         map.types = mapviewGetOption("basemaps"), zcol = NULL, burst = TRUE,
         color = c("#FF00FF", "#0489B1"), alpha = 0.6, alpha.regions = 0.2,
         na.color = mapviewGetOption("na.color"), at = NULL, cex = 5, lwd = 2,
-        popup = popupTable(s), legend = mapviewGetOption("legend"),
+        popup = popupTable(D), legend = mapviewGetOption("legend"),
         legend.opacity = 1, layer.name = deparse(
           substitute(x, env = parent.frame())), 
         verbose = mapviewGetOption("verbose"),
         homebutton = TRUE)
-map + viewExtent(s)
+map + viewExtent(D)
 mapview::mapshot(map,file = "actual.pdf")
-mapview::viewExtent(s)
+mapview::viewExtent(D)
 
 # Alternative
 # http://rgraphgallery.blogspot.nl/2013/04/rg68-get-google-map-and-plot-data-in-it.html
 library(ggmap)
-dhanmap5 = get_(location = c(lon = -95.5, lat = 38.5), zoom = 8, 
+dhanmap5 = get_googlemap(location = c(lon = -95.5, lat = 38.5), zoom = 8, 
                    maptype = 'roadmap', source = "osm")
 dhanmap5 = ggmap(dhanmap5)
 # data
-myd <- spTransform(s, wgs84)
+myd <- spTransform(D, wgs84)
 myd <-  as.data.frame(myd)
 myd
 # the bubble chart
 library(grid)
 dhanmap5 +   
   geom_point(
-    aes(x = X, y = Y, colour = hzn_c),
-    data = myd) +
-  scale_colour_discrete()
+    aes(x = X, y = Y, colour = oc.A),
+    data = myd) 
 
 
 s <- as.data.frame(s)
@@ -603,140 +594,3 @@ xyplot(top ~ value, groups=variable, data=a.long, subset=value > 0,
        cf=a.long$contributing_fraction
        )
 
-# # # # # ------------ ----- --- ---- ------------ ------------- --------- -----
-library(lattice)
-library(grid)
-
-# load sample data, upgrade to SoilProfileCollection
-data(sp1)
-depths(sp1) <- id ~ top + bottom
-
-# aggregate entire collection with two different segment sizes
-a <- slab(sp1, fm = ~ prop)
-b <- slab(sp1, fm = ~ prop, slab.structure=5)
-
-# check output
-str(a)
-
-# stack into long format
-ab <- make.groups(a, b)
-ab$which <- factor(ab$which, levels=c('a','b'), 
-                   labels=c('1-cm Interval', '5-cm Interval'))
-
-# plot median and IQR
-# custom plotting function for uncertainty viz.
-xyplot(top ~ p.q50 | which, data=ab, ylab='Depth',
-       xlab='median bounded by 25th and 75th percentiles',
-       lower=ab$p.q25, upper=ab$p.q75, ylim=c(250,-5),
-       panel=panel.depth_function, 
-       prepanel=prepanel.depth_function,
-       cf=ab$contributing_fraction,
-       layout=c(2,1), scales=list(x=list(alternating=1))
-)
-# # # # --------- --------- --------- -------- --------- --------- --------- ---
-
-D <- profiles.e[
-  which(
-    profiles.e$idp %in%
-      unique(
-        profiles.e$idp[
-          profiles.e$hzn == "C"
-          ]
-      )
-  ),
-  ]
-
-D <- D[
-  which(
-    D$idp %in%
-      unique(
-        D$idp[
-          D$hzn == "B"
-          ]
-      )
-  ),
-  ]
-
-D <- D[
-  which(
-    D$idp %in%
-      unique(
-        D$idp[
-          D$hzn == "A"
-          ]
-      )
-  ),
-  ]
-
-D <- D[D$hzn == "A" |
-         D$hzn == "B" |
-         D$hzn == "C",]
-
-D$hzn <- as.character(D$hzn)
-table(D[,c(2,6)])
-as.matrix(table(D[,c(2,6)]))==0
-
-name(D)
-covar <- unique(D[,c(2,13:31)])
-D <- D[,c(2,6,8:12)]
-name(D)
-D$thick <- D$bot - D$top
-D$thick[D$thick==0] <- 8
-D <- D[,c(1,2,5:8)]
-summary(D)
-#compute soil properties per id.hor
-library(dplyr)
-library(reshape2)
-
-D1 <- data.frame(idp = unique(D$idp))
-D2 <- 
-  merge(D1,
-        dcast(data = 
-                ddply(D,
-                      .(idp,hzn),
-                      summarise,
-                      clay = weighted.mean(x = clay,
-                                           w =  thick,
-                                           na.rm = TRUE)
-                ),
-              idp ~ hzn 
-        ),
-        by = "idp"
-        )
-names(D2)[2:4] <- paste0("clay.",names(D2)[2:4])
-
-D2 <- 
-  merge(D2,
-        dcast(data = 
-                ddply(D,
-                      .(idp,hzn),
-                      summarise, 
-                      weighted.mean(x = cec,
-                                           w =  thick,
-                                           na.rm = TRUE)
-                ),
-              idp ~ hzn 
-        ),
-        by = "idp"
-  )
-names(D2)[5:7] <- paste0("cec.",names(D2)[2:4])
-
-D2 <- 
-  merge(D2,
-        dcast(data = 
-                ddply(D,
-                      .(idp,hzn),
-                      summarise, 
-                      weighted.mean(x = oc,
-                                    w =  thick,
-                                    na.rm = TRUE)
-                ),
-              idp ~ hzn 
-        ),
-        by = "idp"
-  )
-names(D2)[8:10] <- paste0("oc.",names(D2)[2:4])
-
-data <- merge(D2, covar,by="idp")
-
-write.csv(data, "calib-data.KS.0.1.csv")
