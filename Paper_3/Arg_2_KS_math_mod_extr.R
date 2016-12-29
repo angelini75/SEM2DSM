@@ -607,5 +607,176 @@ report.e
 report2
 report2.e
 
+#------------------------------------------------------------------------------#
+# performance of MvLR
+mod.ceca <-  lm(CEC.A  ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+mod.cecb <-  lm(CEC.B  ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+mod.cecc <-  lm(CEC.C  ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+mod.oca <-   lm(OC.A   ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+mod.ocb <-   lm(OC.B   ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+mod.occ <-   lm(OC.C   ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+mod.claya <- lm(clay.A ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+mod.clayb <- lm(clay.B ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+mod.clayc <- lm(clay.C ~ dem + vdchn + evisd + lstm + ndwi.b + twi + ndwi.a, E)
+
+mod <- list(mod.ceca, mod.cecb, mod.cecc,
+            mod.oca, mod.ocb, mod.occ,
+            mod.claya, mod.clayb, mod.clayc)
+P <- cbind(D[1:10], D[2:10])
+names(P)[11:19] <- paste0(names(P)[11:19],".p")
+P[11:19] <- NA
+for(i in seq_along(mod)){
+  P[,10+i] <- predict.lm(mod[[i]],D)
+}
+
+Res <- P[2:10] - P[11:19]
+
+Res <- cbind(P[,1], unstd(P[,2:10], STt[2:10,]), unstd(P[,11:19], STt[2:10,]))
+
+# # back transform OC
+# [,8]<- 10^(pred[,8]+(Var[6]*M$sd[6]^2)*0.5)
+# Res[c(5:7)] <- 10^(Res[c(5:7)])
+# Res[c(14)] <- 10^(Res[14] + (Var[4] * STt[4 + 1, 2]^2) * 0.5)
+# Res[c(15)] <- 10^(Res[15] + (Var[5] * STt[5 + 1, 2]^2) * 0.5)
+# Res[c(16)] <- 10^(Res[16] + (Var[6] * STt[6 + 1, 2]^2) * 0.5)
+
+# plot residuals
+par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
+
+lim.cec <- c(min(cbind(Res[,2:4],Res[,11:13])), max(cbind(Res[,2:4],Res[,11:13])))
+lim.oc <- c(min(cbind(Res[,5:7],Res[,14:16])), max(cbind(Res[,5:7],Res[,14:16])))
+lim.clay <- c(min(cbind(Res[,8:10],Res[,17:19])), max(cbind(Res[,8:10],Res[,17:19])))
+
+lim <- data.frame(min=NA,max=NA)
+lim[1:3,1] <- lim.cec[1]
+lim[1:3,2] <- lim.cec[2]
+lim[4:6,1] <- lim.oc[1]
+lim[4:6,2] <- lim.oc[2]
+lim[7:9,1] <- lim.clay[1]
+lim[7:9,2] <- lim.clay[2]
+
+
+for (i in 2:10) {
+  limi = c(lim[i-1,1],lim[i-1,2])
+  plot(Res[,i+9] ~ Res[,i], main = paste(names(Res)[i]), xlab = "measured",
+       ylab = "predicted", col = "dark red", xlim = limi, ylim = limi)
+  abline(0,1)
+  abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
+}
+
+# create report
+report.m <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
+                     mean_theta = NA, median_th = NA)
+for (i in 2:10) {
+  # ME <- mean error 
+  ME  <-  mean(Res[,i] - Res[,i + 9])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((Res[,i] - Res[,i + 9]) ^ 2))
+  MSE <- mean((Res[,i] - Res[,i + 9]) ^ 2)
+  # SS (Sum of squares)
+  SS <- sum((Res[,i] - Res[,i + 9]) ^ 2)
+  # fill report table
+  report.m[i-1,1:4] <- c(names(Res)[i], ME, RMSE, SS)
+}
+
+for(i in 1:9){
+  report.m$mean_theta[i] <- mean(theta[,i])
+  report.m$median_th[i] <- median(theta[,i])
+}
+report.m
+#d.stat <- read.csv("summary.calibdata.csv")
+STt <- as.data.frame(STt)
+STt$SS <- NA 
+for(i in seq_along(names(d))){
+  STt$SS[i] <- sum(( d[i] - STt$mean[i])^2)
+}
+
+report.m$R2 <- 1 - (as.numeric(report.m$SS) / as.numeric(STt$SS[2:10]))
+report.m
+
+# ST <- as.data.frame(ST)
+# ST$SS <- NA 
+# for(i in seq_along(names(d))){
+#   ST$SS[i] <- sum(( d[i] - ST$mean[i])^2)
+# }
+
+par(mfrow = c(1, 3), pty="s",mai=rep(0.7,4))
+rsq<- NULL
+CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
+             as.matrix(Res[,c(4,13)]))
+colnames(CEC) <- c("CECo","CECp")
+rownames(CEC) <- 1:length(rownames(CEC))
+CEC <- as.data.frame(CEC)
+rsq[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
+                 sum((mean(CEC$CECo)-CEC$CECo)^2))
+lim = round(c(min(c(CEC[,1],CEC[,2])), max(c(CEC[,1],CEC[,2]))))
+plot(CEC[,2]~CEC[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "CEC residuals", col = "dark red")
+abline(0,1)
+abline(lm(CEC[,2]~CEC[,1]),col = "blue")
+
+OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
+            as.matrix(Res[,c(7,16)]))
+colnames(OC) <- c("OCo","OCp")
+rownames(OC) <- 1:length(rownames(OC))
+OC <- as.data.frame(OC)
+rsq[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
+                 sum((mean(OC$OCo)-OC$OCo)^2))
+lim = round(c(min(c(OC[,1],OC[,2])), max(c(OC[,1],OC[,2]))))
+plot(OC[,2]~OC[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "OC residuals", col = "dark red")
+abline(0,1)
+abline(lm(OC[,2]~OC[,1]),col = "blue")
+
+clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
+              as.matrix(Res[,c(10,19)]))
+
+colnames(clay) <- c("clayo","clayp")
+rownames(clay) <- 1:length(rownames(clay))
+clay <- as.data.frame(clay)
+rsq[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
+                 sum((mean(clay$clayo)-clay$clayo)^2))
+lim = round(c(min(c(clay[,1],clay[,2])), max(c(clay[,1],clay[,2]))))
+plot(clay[,2]~clay[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "Clay residuals", col = "dark red")
+abline(0,1)
+abline(lm(clay[,2]~clay[,1]),col = "blue")
+
+
+# create report by soil property
+report2.m <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, r2 = NA)
+z <- cbind(CEC, OC, clay)
+for (i in c(1,3,5)) {
+  # ME <- mean error 
+  ME  <-  mean(z[,i] - z[,i + 1])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((z[,i] - z[,i + 1]) ^ 2))
+  MSE <- mean((z[,i] - z[,i + 1]) ^ 2)
+  # fill report table
+  report2.m[i,1:3] <- c(names(z)[i], ME, RMSE)
+}
+
+report2.m$r2[1] <- rsq[1]
+report2.m$r2[3] <- rsq[2]
+report2.m$r2[5] <- rsq[3]
+
+report2.m <- report2.m[c(-4,-2),]
+
+report2
+report2.m
+
+report
+report.m
+
+
+
+
+
+
+
+
+
+
+
 
 
