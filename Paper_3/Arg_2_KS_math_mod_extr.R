@@ -73,15 +73,15 @@ clay.Ar =~ 1*clay.A
 clay.Br =~ 1*clay.B
 clay.Cr =~ 1*clay.C
 ## Measurement error #
-# CEC.A ~~ 0.1 * CEC.A
-# CEC.B ~~ 0.1 * CEC.B
-# CEC.C ~~ 0.05 * CEC.C
-# OC.A ~~ 0.2 * OC.A
-# OC.B ~~ 0.6 * OC.B
-# OC.C ~~ 0.6 * OC.C
-# clay.A ~~ 0.3 * clay.A
-# clay.B ~~ 0.14 * clay.B
-# clay.C ~~ 0.12 *clay.C
+CEC.A ~~ 0.1 * CEC.A
+CEC.B ~~ 0.1 * CEC.B
+CEC.C ~~ 0.1 * CEC.C
+OC.A ~~ 0.1 * OC.A
+OC.B ~~ 0.1 * OC.B
+OC.C ~~ 0.1 * OC.C
+clay.A ~~ 0.1 * clay.A
+clay.B ~~ 0.1 * clay.B
+clay.C ~~ 0.1 *clay.C
 
 #--------------------#
 
@@ -111,8 +111,17 @@ CEC.Cr ~~ CEC.Br
 
 # lavaan suggestions
 #------------------#
-# OC.Ar  ~     dem
-# clay.Br  ~     dem
+clay.Br  ~    lstm #1
+clay.Cr  ~    lstm #2
+OC.Br  ~   clay.Cr #3
+CEC.Cr  ~     dem  #4
+CEC.Br  ~  ndwi.a  #5
+OC.Cr ~~ clay.Cr   #6
+clay.A ~~  clay.B  #7
+clay.Ar ~~ clay.Cr #8
+
+# OC.Ar  ~    dem
+# clay.Br  ~    dem
 # clay.Br  ~    lstm
 # clay.Cr  ~    lstm
 # # # 
@@ -134,7 +143,7 @@ my.fit.lv.ML.e <- sem(model = my.model.lv.e,data = E, meanstructure = FALSE,
 # Model evaluation ####
 summary(my.fit.lv.ML.e, fit.measures=TRUE, rsquare = F)
 mod.e <- modindices(my.fit.lv.ML.e,sort. = T)
-mod.e[mod.e$mi>3 & (mod.e$op == "~"|mod.e$op == "~~"),] 
+mod.e[mod.e$mi>3 & (mod.e$op == "~~"|mod.e$op == "~"),] 
 
 
 #==============================================================================#
