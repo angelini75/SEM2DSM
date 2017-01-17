@@ -15,7 +15,7 @@ Soil dataset is organised by horizon. id.p is the profile number, id.p.h is the 
 
 ```{r load data, echo=FALSE,results='hide',message=FALSE}
 
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/2_Calibration")
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/2_Calibration")
 rm(list=ls())
 library(corrgram)
 library(dplyr)
