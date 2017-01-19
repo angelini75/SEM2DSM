@@ -1,6 +1,8 @@
 ---
 title: "autocorrelation"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -316,7 +318,10 @@ for (i in 2:10) {
   # SS (Sum of squares)
   SS <- sum((Res[,i] - Res[,i + 9]) ^ 2)
   # fill report table
-  report[i-1,1:4] <- c(names(Res)[i], ME, RMSE, SS)
+  report[i-1,1] <- c(names(Res)[i])
+  report[i-1,2] <- ME
+  report[i-1,3] <- RMSE
+  report[i-1,4] <- SS
 }
 
 for(i in 1:9){
@@ -334,17 +339,6 @@ for(i in seq_along(names(d))){
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt.ks$SS[2:10]))
 report
 
-# > report
-#   Soil_property                 ME              RMSE               SS mean_theta  median_th          R2
-# 1         CEC.A  -1.34191957183381  5.96747926364206 5626.50778439567  1.2358620 0.49772528 -0.03982376
-# 2         CEC.B  -3.12455178339896  7.19852058698208 8187.35438531036  1.4499497 0.56871387 -0.13391956
-# 3         CEC.C  -3.17991426471198  7.65434747281699 9257.06756706994  1.0286451 0.45802684 -0.06055332
-# 4          OC.A -0.249497925624309 0.770620989528276 93.8293601012431  1.6001875 0.60191998 -0.21480605
-# 5          OC.B  0.161131245639884 0.540332878165909 46.1296198378747  1.1583263 0.14104585 -0.11500986
-# 6          OC.C  0.172189050861731 0.986648941090494 153.809229006889  1.0414483 0.03009904 -0.03223725
-# 7        clay.A   1.27834695419596  8.63119289335688 11770.6035404488  0.9966927 0.28607540  0.05833345
-# 8        clay.B  -3.44645803628208  9.95957589670949  15672.518022686  1.2215032 0.40126265  0.12027689
-# 9        clay.C   5.01849584447639  11.3176134997709 20237.9633021711  1.2334849 0.20654433 -0.06307211
 
 # Analysis by Soil Property
 # plot mesured vs predicted combined ####par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
@@ -439,9 +433,8 @@ res$hor <- as.factor(res$hor)
 
 Results
 ```{r, echo=F }
-# Model 3
-report
-report2
+knitr::kable(report, caption = "Model 3", digits = 3)
+knitr::kable(report2, caption = "Model 3", digits = 3)
 ```
 
 Spatial autocorrelation analysis
@@ -464,10 +457,10 @@ modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +u
 NAD83.KS.N <- CRS("+init=epsg:2796")
 
 proj4string(R) <- NAD83.KS.N
-R <- spTransform(R, wgs84)
- mapview::viewExtent(R)
-library(mavie)
-mapview(R, burst = TRUE)
+#R <- spTransform(R, wgs84)
+# mapview::viewExtent(R)
+#library(mavie)
+#mapview(R, burst = TRUE)
 
 ###############################
 # Variograms
@@ -475,75 +468,147 @@ mapview(R, burst = TRUE)
 g <- list()
 vg <- list()
 vgm <- list()
-# CEC
-for(i in 2:4){
-  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), 
-                     formula = formula(paste0(names(R@data)[i],"~1")),
-            data = R)
-  vg[[i-1]] <-  variogram(g[[i-1]])
-  # vg = variogram(g, width = 20000, cutoff = 600000, cressie = T)
-  # vg = variogram(g, boundaries = c(1E4,2E4,4E4,7E4,1E5,2E5,4E5,7E5,1E6))
-  # print(plot(vg, plot.numbers = TRUE, main = names(R@data)[i]))
-  
-  # # choose initial variogram model and plot:
-  vgm[[i-1]] <- vgm(nugget = var(R@data[,i]),
-                    psill=var(R@data[,i])*2,
-                    range=100000,
-                    model = "Sph")
-  #plot(vg, vgm, main = names(R@data)[i])
-  # 
-  # # fit variogram model:
-  vgm[[i-1]] <-  fit.variogram(vg[[i-1]], vgm[[i-1]])
-  print(names(R@data)[i])
-  print(vgm[[i-1]])
-  print(attr(vgm[[i-1]], "SSErr"))
-}
-# OC
-for(i in 5:7){
-  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), 
-                     formula = formula(paste0(names(R@data)[i],"~1")),
-            data = R)
-  vg[[i-1]] <-  variogram(g[[i-1]])
-  # vg = variogram(g, width = 20000, cutoff = 600000)
-  # vg = variogram(g, boundaries = c(1E4,2E4,4E4,7E4,1E5,2E5,4E5,7E5,1E6))
-  # print(plot(vg, plot.numbers = TRUE, main = names(R@data)[i]))
-  
-  # # choose initial variogram model and plot:
-  vgm[[i-1]] <- vgm(nugget = var(R@data[,i]),
-                    psill= var(R@data[,i])*2,
-                    range=100000,
-                    model = "Sph")
-  #plot(vg, vgm, main = names(R@data)[i])
-  # 
-  # # fit variogram model:
-  vgm[[i-1]] <-  fit.variogram(vg[[i-1]], vgm[[i-1]])#, fit.method = 4)
-  print(names(R@data)[i])
-  print(vgm[[i-1]])
-  print(attr(vgm[[i-1]], "SSErr"))
-}
-# Clay
-for(i in 8:10){
-  g[[i-1]] <-  gstat(id = c(names(R@data)[i]), 
-                     formula = formula(paste0(names(R@data)[i],"~1")),
-                     data = R)
-  vg[[i-1]] <-  variogram(g[[i-1]])
-  # vg = variogram(g, width = 20000, cutoff = 600000)
-  # vg = variogram(g, boundaries = c(1E4,2E4,4E4,7E4,1E5,2E5,4E5,7E5,1E6))
-  # print(plot(vg, plot.numbers = TRUE, main = names(R@data)[i]))
-  
-  # # choose initial variogram model and plot:
-  vgm[[i-1]] <- vgm(nugget = var(R@data[,i]),
-                    psill=var(R@data[,i])*2,
-                    range=5E4,
-                    model = "Sph")
-  #plot(vg, vgm, main = names(R@data)[i])
-  # 
-  # # fit variogram model:
-  vgm[[i-1]] <-  fit.variogram(vg[[i-1]], vgm[[i-1]], fit.method = 2)
-  print(names(R@data)[i])
-  print(vgm[[i-1]])
-  print(attr(vgm[[i-1]], "SSErr"))
-}
+# CEC.A
+g[[1]] <-  gstat(formula = CEC.A ~ 1, data = R)
+vg[[1]] <- variogram(g[[1]], width = 7000, cutoff = 450000, cressie = TRUE)
+plot(vg[[1]], plot.numbers = TRUE)
+
+# # choose initial variogram model and plot:
+vgm[[1]] <- vgm(nugget = 5,
+                psill= 30,
+                range=100000,
+                model = "Exp")
+vgm[[1]] <- fit.variogram(vg[[1]], vgm[[1]], fit.method = 6)
+plot(vg[[1]], vgm[[1]], main = "CEC.A")
+attr(vgm[[1]], "SSErr")
+
+# CEC.B
+g[[2]] <-  gstat(formula = CEC.B ~ 1, data = R)
+vg[[2]] <- variogram(g[[2]], width = 7000, cutoff = 400000, cressie = TRUE)
+plot(vg[[2]], plot.numbers = TRUE)
+
+# # choose initial variogram model and plot:
+vgm[[2]] <- vgm(nugget = 5,
+                psill= 30,
+                range=100000,
+                model = "Exp")
+vgm[[2]] <- fit.variogram(vg[[2]], vgm[[2]], fit.method = 7)
+plot(vg[[2]], vgm[[2]], main = "CEC.B")
+attr(vgm[[2]], "SSErr")
+
+# CEC.C
+g[[3]] <-  gstat(formula = CEC.C ~ 1, data = R)
+vg[[3]] <- variogram(g[[3]], width = 7000, cutoff = 400000, cressie = TRUE)
+plot(vg[[3]], plot.numbers = TRUE)
+
+# # choose initial variogram model and plot:
+vgm[[3]] <- vgm(nugget = 5,
+                psill= 30,
+                range=50000,
+                model = "Exp")
+vgm[[3]] <- fit.variogram(vg[[3]], vgm[[3]], fit.method = 7)
+plot(vg[[3]], vgm[[3]], main = "CEC.C")
+attr(vgm[[3]], "SSErr")
+vgm[[3]]
+
+# OC.A
+g[[4]] <-  gstat(formula = OC.A ~ 1, data = R)
+vg[[4]] <- variogram(g[[4]], width = 15000, cutoff = 400000, cressie = TRUE)
+plot(vg[[4]], plot.numbers = TRUE)
+
+vgm[[4]] <- vgm(nugget = 0.05,
+                psill= 0.4,
+                range=50000,
+                model = "Exp")
+vgm[[4]] <- fit.variogram(vg[[4]], vgm[[4]], fit.method = 7)
+plot(vg[[4]], vgm[[4]], main = "OC.A")
+attr(vgm[[4]], "SSErr")
+vgm[[4]]
+
+# OC.B
+g[[5]] <-  gstat(formula = OC.B ~ 1, data = R)
+vg[[5]] <- variogram(g[[5]], width = 15000, cutoff = 400000, cressie = TRUE)
+plot(vg[[5]], plot.numbers = TRUE)
+
+vgm[[5]] <- vgm(nugget = 0,
+                psill= 0.8,
+                range=20000,
+                model = "Exp")
+vgm[[5]] <- fit.variogram(vg[[5]], vgm[[5]], fit.method = 7)
+plot(vg[[5]], vgm[[5]], main = "OC.B")
+attr(vgm[[5]], "SSErr")
+vgm[[5]]
+
+
+# OC.C
+g[[6]] <-  gstat(formula = OC.C ~ 1, data = R)
+vg[[6]] <- variogram(g[[6]], width = 10000, cutoff = 400000, cressie = TRUE)
+plot(vg[[6]], plot.numbers = TRUE)
+
+vgm[[6]] <- vgm(nugget = 0,
+                psill= 0.02,
+                range=30000,
+                model = "Exp")
+vgm[[6]] <- fit.variogram(vg[[6]], vgm[[6]], fit.method = 7)
+plot(vg[[6]], vgm[[6]], main = "OC.C")
+attr(vgm[[6]], "SSErr")
+vgm[[6]]
+
+
+# Clay.A
+g[[7]] <-  gstat(formula = clay.A ~ 1, data = R)
+vg[[7]] <- variogram(g[[7]], width = 7000, cutoff = 400000, cressie = TRUE)
+plot(vg[[7]], plot.numbers = TRUE)
+
+vgm[[7]] <- vgm(nugget = 20,
+                psill= 80,
+                range=100000,
+                model = "Exp")
+vgm[[7]] <- fit.variogram(vg[[7]], vgm[[7]], fit.method = 1)
+plot(vg[[7]], vgm[[7]], main = "Clay.A")
+attr(vgm[[7]], "SSErr")
+vgm[[7]]
+
+# Clay.B
+g[[8]] <-  gstat(formula = clay.B ~ 1, data = R)
+vg[[8]] <- variogram(g[[8]], width = 7000, cutoff = 400000, cressie = TRUE)
+plot(vg[[8]], plot.numbers = TRUE)
+
+vgm[[8]] <- vgm(nugget = 15,
+                psill= 120,
+                range=100000,
+                model = "Exp")
+vgm[[8]] <- fit.variogram(vg[[8]], vgm[[8]], fit.method = 1)
+plot(vg[[8]], vgm[[8]], main = "Clay.B")
+attr(vgm[[8]], "SSErr")
+vgm[[8]]
+
+# Clay.C
+g[[9]] <-  gstat(formula = clay.C ~ 1, data = R)
+vg[[9]] <- variogram(g[[9]], width = 15000, cutoff = 400000, cressie = TRUE)
+plot(vg[[9]], plot.numbers = TRUE)
+
+vgm[[9]] <- vgm(nugget = 15,
+                psill= 150,
+                range=200000,
+                model = "Exp")
+vgm[[9]] <- fit.variogram(vg[[9]], vgm[[9]], fit.method = 1)
+plot(vg[[9]], vgm[[9]], main = "Clay.C")
+attr(vgm[[9]], "SSErr")
+vgm[[9]]
+
+# Krige CV
+x <- krige.cv(clay.C~1, R, vgm[[9]], nmax = 2, verbose = interactive())
+x <- as.data.frame(x)
+x$zscore[x$zscore == Inf] <- NA
+x$zscore[x$zscore == -Inf] <- NA
+x[is.na(x$zscore),1:5] <- -99
+coordinates(x) <- ~X+Y
+proj4string(x) <- NAD83.KS.N
+library(mapview)
+mapview(x, burst = F, zcol = "residual", cex = "zscore", legend = T)
+bubble(x, "residual", main = "CEC.A residuals")
+
 
 # Three graphs (soil properties)
 par(mfrow = c(1, 3), pty = "s")
