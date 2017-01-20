@@ -1642,16 +1642,16 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 #------------------#
 # lavaan suggestions
 #------------------#
-# clay.Br  ~    lstm
-# OC.Ar  ~ clay.Br
-# 
-# CEC.Ar ~~   OC.Ar
-# OC.Ar ~~   OC.Br
-# OC.Br ~~   OC.Cr
-# 
-# CEC.Cr  ~  ndwi.a
-# CEC.Br  ~  ndwi.a
-# clay.Ar ~~ clay.Cr
+clay.Br  ~    lstm
+OC.Ar  ~ clay.Br
+
+CEC.Ar ~~   OC.Ar
+OC.Ar ~~   OC.Br
+OC.Br ~~   OC.Cr
+
+CEC.Cr  ~  ndwi.a
+CEC.Br  ~  ndwi.a
+clay.Ar ~~ clay.Cr
 #------------------#
 '
 
