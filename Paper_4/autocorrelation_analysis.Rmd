@@ -9,8 +9,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Model 3: SEM CM without respecifications 
-```{r Arg2Ks CMwoR, include=FALSE}
+## Model 4: SEM CM with Kansas respecifications 
+```{r Arg2Ks CMwRks, include=FALSE}
 # Purpose        : Fit a SEM model with Argentinian data and apply in KS data
 # Maintainer     : Marcos Angelini  (marcos.angelini@wur.nl); 
 
@@ -24,7 +24,7 @@ library(pastecs)
 library(utils)
 library(lattice)
 
-rm(list=ls())
+rm(list=ls()[ls()!="t"])
 name <- function(x) { as.data.frame(names(x))}
 # chose one
 
@@ -72,85 +72,6 @@ std <- function(x, st){
 Arg <- std(e,STt.arg)
 Arg[,1] <- e[,1] 
 
-# Model with latent variables ####
-## Model (re)specification
-my.model.lv <- '
-# Measurement model (lamda and epsilon)
-#--------------------#
-CEC.Ar =~ 1*CEC.A
-CEC.Br =~ 1*CEC.B
-CEC.Cr =~ 1*CEC.C
-OC.Ar =~ 1*OC.A
-OC.Br =~ 1*OC.B
-OC.Cr =~ 1*OC.C
-clay.Ar =~ 1*clay.A
-clay.Br =~ 1*clay.B
-clay.Cr =~ 1*clay.C
-## Measurement error #
-CEC.A ~~ 0.1 * CEC.A
-CEC.B ~~ 0.1 * CEC.B
-CEC.C ~~ 0.05 * CEC.C
-OC.A ~~ 0.2 * OC.A
-OC.B ~~ 0.6 * OC.B
-OC.C ~~ 0.6 * OC.C
-clay.A ~~ 0.3 * clay.A
-clay.B ~~ 0.14 * clay.B
-clay.C ~~ 0.12 *clay.C
-
-#--------------------#
-# Structural model (gamma and betta matrices)
-#--------------------#
-clay.Cr ~ dem + vdchn                                      + X + 0*Y #+ river 
-clay.Ar ~ clay.Cr + evisd + lstm + ndwi.b 
-clay.Br ~ clay.Ar + clay.Cr + vdchn + twi + ndwi.b         + 0*Y #+ river
-
-OC.Ar ~ clay.Ar + evisd + lstm + ndwi.b  
-OC.Br ~ OC.Ar + clay.Br + evisd + lstm + ndwi.a + vdchn
-OC.Cr ~ OC.Br 
-
-CEC.Ar ~ OC.Ar + clay.Ar 
-CEC.Br ~ clay.Br
-CEC.Cr ~ clay.Cr
-
-#------------------#
-# Model error covariance (Psi)
-#------------------#
-CEC.Ar ~~ CEC.Br + CEC.Cr
-CEC.Cr ~~ CEC.Br
-OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
-
-#------------------#
-# lavaan suggestions
-#------------------#
-#                       OC.Ar  ~       Y
-#                       clay.Ar  ~       X
-# OC.Ar  ~     dem
-#                       clay.Br  ~       X
-# clay.Br  ~     dem
-# clay.Br  ~    lstm
-#                       OC.Br  ~       X
-#                       #OC.Ar  ~   river
-# # # 
-#                       #CEC.Cr  ~   river
-# CEC.Br  ~  ndwi.a
-#                       CEC.Cr  ~       X
-# clay.Cr  ~  ndwi.a
-# clay.Cr  ~   evisd
-# # # 
-# CEC.Ar ~~ clay.Br
-# CEC.Ar ~~ clay.Cr
-# OC.Cr ~~ clay.Cr
-# CEC.Cr ~~ clay.Ar
-#------------------#
-'
-
-
-
-#==============================================================================#
-                 #### This code come from SEM_KS2.0.R ####
-#==============================================================================#
-
-
 setwd("~/Documents/SEM2DSM1/Paper_3/data/")
 d <- read.csv("KS.data-0.2.csv")[,c(-1)] 
 name(d)
@@ -195,6 +116,70 @@ ks <- std(d,STt.ks)
 ks[,1] <- d[,1] 
 #######################################
 
+# Model with latent variables ####
+## Model (re)specification
+my.model.lv <- '
+# Measurement model (lamda and epsilon)
+#--------------------#
+CEC.Ar =~ 1*CEC.A
+CEC.Br =~ 1*CEC.B
+CEC.Cr =~ 1*CEC.C
+OC.Ar =~ 1*OC.A
+OC.Br =~ 1*OC.B
+OC.Cr =~ 1*OC.C
+clay.Ar =~ 1*clay.A
+clay.Br =~ 1*clay.B
+clay.Cr =~ 1*clay.C
+## Measurement error #
+CEC.A ~~ 0.05 * CEC.A
+CEC.B ~~ 0.05 * CEC.B
+CEC.C ~~ 0.05 * CEC.C
+OC.A ~~ 0.05 * OC.A
+OC.B ~~ 0.05 * OC.B
+OC.C ~~ 0.05 * OC.C
+clay.A ~~ 0.05 * clay.A
+clay.B ~~ 0.05 * clay.B
+clay.C ~~ 0.05 *clay.C
+
+#--------------------#
+# Structural model (gamma and betta matrices)
+#--------------------#
+clay.Cr ~ dem + vdchn + X + lstm 
+clay.Ar ~ clay.Cr + evisd + lstm + ndwi.b + Y 
+clay.Br ~ clay.Ar + clay.Cr + vdchn + twi + ndwi.b + Y 
+
+OC.Ar ~ clay.Ar + evisd + lstm + ndwi.b  
+OC.Br ~ OC.Ar + clay.Br + evisd + lstm + ndwi.a + vdchn
+OC.Cr ~ OC.Br 
+
+CEC.Ar ~ OC.Ar + clay.Ar 
+CEC.Br ~ clay.Br + OC.Br
+CEC.Cr ~ clay.Cr + OC.Cr
+
+#------------------#
+# Model error covariance (Psi)
+#------------------#
+CEC.Ar ~~ CEC.Br + CEC.Cr
+CEC.Cr ~~ CEC.Br
+OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
+
+#------------------#
+# lavaan suggestions
+#------------------#
+clay.Br  ~    lstm
+OC.Ar  ~ clay.Br
+
+CEC.Ar ~~   OC.Ar
+OC.Ar ~~   OC.Br
+OC.Br ~~   OC.Cr
+
+CEC.Cr  ~  ndwi.a
+CEC.Br  ~  ndwi.a
+clay.Ar ~~ clay.Cr
+#------------------#
+'
+
+
 # Model calibration ####
 my.fit.lv.ML <- sem(model = my.model.lv,data = ks, meanstructure = FALSE, 
                     fixed.x = T)
@@ -202,7 +187,7 @@ my.fit.lv.ML <- sem(model = my.model.lv,data = ks, meanstructure = FALSE,
 # Model evaluation ####
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
 mod.ks <- modindices(my.fit.lv.ML,sort. = T)
-mod.ks[mod.ks$mi>3 & (mod.ks$op == "~~"|mod.ks$op == "~"),] 
+mod.ks[mod.ks$mi>5 & (mod.ks$op == "~"|mod.ks$op == "~~"),] 
 
 
 # Model validation ####
@@ -259,6 +244,7 @@ for(i in seq_along(ks[,1])){
 }
 
 # Model variance
+
 summary(Var)
 Var <- apply(Var, MARGIN = 2, FUN = mean)
 
@@ -339,6 +325,17 @@ for(i in seq_along(names(d))){
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt.ks$SS[2:10]))
 report
 
+# > report
+#   Soil_property                 ME              RMSE               SS mean_theta  median_th          R2
+# 1         CEC.A  -1.34191957183381  5.96747926364206 5626.50778439567  1.2358620 0.49772528 -0.03982376
+# 2         CEC.B  -3.12455178339896  7.19852058698208 8187.35438531036  1.4499497 0.56871387 -0.13391956
+# 3         CEC.C  -3.17991426471198  7.65434747281699 9257.06756706994  1.0286451 0.45802684 -0.06055332
+# 4          OC.A -0.249497925624309 0.770620989528276 93.8293601012431  1.6001875 0.60191998 -0.21480605
+# 5          OC.B  0.161131245639884 0.540332878165909 46.1296198378747  1.1583263 0.14104585 -0.11500986
+# 6          OC.C  0.172189050861731 0.986648941090494 153.809229006889  1.0414483 0.03009904 -0.03223725
+# 7        clay.A   1.27834695419596  8.63119289335688 11770.6035404488  0.9966927 0.28607540  0.05833345
+# 8        clay.B  -3.44645803628208  9.95957589670949  15672.518022686  1.2215032 0.40126265  0.12027689
+# 9        clay.C   5.01849584447639  11.3176134997709 20237.9633021711  1.2334849 0.20654433 -0.06307211
 
 # Analysis by Soil Property
 # plot mesured vs predicted combined ####par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
@@ -446,17 +443,27 @@ Res <- Res[,1:10]
 names(Res)[1] <- "id.p"
 
 R <- merge(Res, unique(d[,c(1,20,21)]), by.x = "id.p", by.y = "idp", all.x=T)
+
+
 library(sp)
 library(gstat)
+
 # R as geo
 coordinates(R) <- ~X+Y
+
 #define crs
 wgs84 <- CRS("+init=epsg:4326")
-#UTM14N <- CRS("+init=epsg:32614")
+UTM14N <- CRS("+init=epsg:32614")
 modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 NAD83.KS.N <- CRS("+init=epsg:2796")
 
+# Assign projection
 proj4string(R) <- NAD83.KS.N
+
+# check zero distance between profiles
+zerodist(R, zero=0.0)
+R <- remove.duplicates(R, zero = 0.0, remove.second = TRUE)
+
 #R <- spTransform(R, wgs84)
 # mapview::viewExtent(R)
 #library(mavie)
@@ -505,7 +512,7 @@ plot(vg[[3]], plot.numbers = TRUE)
 vgm[[3]] <- vgm(nugget = 5,
                 psill= 30,
                 range=50000,
-                model = "Exp")
+                model = "Sph")
 vgm[[3]] <- fit.variogram(vg[[3]], vgm[[3]], fit.method = 7)
 plot(vg[[3]], vgm[[3]], main = "CEC.C")
 attr(vgm[[3]], "SSErr")
@@ -545,11 +552,11 @@ g[[6]] <-  gstat(formula = OC.C ~ 1, data = R)
 vg[[6]] <- variogram(g[[6]], width = 10000, cutoff = 400000, cressie = TRUE)
 plot(vg[[6]], plot.numbers = TRUE)
 
-vgm[[6]] <- vgm(nugget = 0,
+vgm[[6]] <- vgm(nugget = 0.005,
                 psill= 0.02,
-                range=30000,
-                model = "Exp")
-vgm[[6]] <- fit.variogram(vg[[6]], vgm[[6]], fit.method = 7)
+                range=20000,
+                model = "Gau")
+vgm[[6]] <- fit.variogram(vg[[6]], vgm[[6]], fit.method = 2)
 plot(vg[[6]], vgm[[6]], main = "OC.C")
 attr(vgm[[6]], "SSErr")
 vgm[[6]]
@@ -577,7 +584,7 @@ plot(vg[[8]], plot.numbers = TRUE)
 vgm[[8]] <- vgm(nugget = 15,
                 psill= 120,
                 range=100000,
-                model = "Exp")
+                model = "Sph")
 vgm[[8]] <- fit.variogram(vg[[8]], vgm[[8]], fit.method = 1)
 plot(vg[[8]], vgm[[8]], main = "Clay.B")
 attr(vgm[[8]], "SSErr")
@@ -588,21 +595,62 @@ g[[9]] <-  gstat(formula = clay.C ~ 1, data = R)
 vg[[9]] <- variogram(g[[9]], width = 15000, cutoff = 400000, cressie = TRUE)
 plot(vg[[9]], plot.numbers = TRUE)
 
-vgm[[9]] <- vgm(nugget = 15,
-                psill= 150,
-                range=200000,
-                model = "Exp")
-vgm[[9]] <- fit.variogram(vg[[9]], vgm[[9]], fit.method = 1)
+vgm[[9]] <- vgm(nugget = 20,
+                psill= 100,
+                range=100000,
+                model = "Gau")
+vgm[[9]] <- fit.variogram(vg[[9]], vgm[[9]], fit.method = 2)
 plot(vg[[9]], vgm[[9]], main = "Clay.C")
 attr(vgm[[9]], "SSErr")
 vgm[[9]]
 
+#############################################################################
+# Three graphs (soil properties)
+library(lattice)
+par(mfrow = c(1, 3), pty = "s")
+### CEC
+## A
+plot(variogramLine(vgm[[1]], maxdist=4E5), 
+     type="l", lwd=2,col="#AA0000", main="CEC",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,70)) +
+  points(gamma ~ dist, vg[[1]], col="#770000") +
+  # B
+  lines(variogramLine(vgm[[2]], maxdist=4E5), lwd=2, col="#00AA00") +
+  points(gamma ~ dist, vg[[2]], col="#007700", pch = 0) +
+  # C
+  lines(variogramLine(vgm[[3]], maxdist=4E5), lwd=2, col="#0000AA") +
+  points(gamma ~ dist, vg[[3]], col="#000077", pch = 2)
+
+### OC
+## A
+plot(variogramLine(vgm[[4]], maxdist=4E5), type="l", lwd=2,col="#AA0000", 
+     main="OC",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,0.5)) +
+  points(gamma ~ dist, vg[[4]], col="#770000") +
+  # B
+  lines(variogramLine(vgm[[5]], maxdist=4E5), lwd=2, col="#00AA00") + 
+  points(gamma ~ dist, vg[[5]], col="#007700", pch = 0) + 
+  ## C
+  lines(variogramLine(vgm[[6]], maxdist=4E5), lwd=2, col="#0000AA") + 
+  points(gamma ~ dist, vg[[6]], col="#000077", pch = 2) 
+
+### Clay
+## A
+plot(variogramLine(vgm[[7]], maxdist=4E5), type="l", lwd=2,col="#AA0000", 
+     main="Clay",
+     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,140)) +
+points(gamma ~ dist, vg[[7]], col="#770000") +
+## B
+lines(variogramLine(vgm[[8]], maxdist=4E5), lwd=2, col="#00AA00") +
+points(gamma ~ dist, vg[[8]], col="#007700", pch = 0) +
+## C
+lines(variogramLine(vgm[[9]], maxdist=4E5), lwd=2, col="#0000AA") +
+points(gamma ~ dist, vg[[9]], col="#000077", pch = 2) 
+
+#############################################################################
 # Krige CV
-x <- krige.cv(clay.C~1, R, vgm[[9]], nmax = 2, verbose = interactive())
+x <- krige.cv(CEC.A~1, R, vgm[[9]], nmax = 2, debug.level=-1)
 x <- as.data.frame(x)
-x$zscore[x$zscore == Inf] <- NA
-x$zscore[x$zscore == -Inf] <- NA
-x[is.na(x$zscore),1:5] <- -99
 coordinates(x) <- ~X+Y
 proj4string(x) <- NAD83.KS.N
 library(mapview)
@@ -610,64 +658,7 @@ mapview(x, burst = F, zcol = "residual", cex = "zscore", legend = T)
 bubble(x, "residual", main = "CEC.A residuals")
 
 
-# Three graphs (soil properties)
-par(mfrow = c(1, 3), pty = "s")
-### CEC
-## A
-plot(variogramLine(vgm[[1]], maxdist=2E5), 
-     type="l", lwd=2,col="#AA0000", main="CEC",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,50))
-points(gamma ~ dist, vg[[1]], col="#770000")
-#legend(x= "topleft",legend = "SSErr", bty = "n")
-#legend(x= 12,legend = round(attr(vgm[[1]], "SSErr"),3), text.col ="#AA0000", 
-#        bty = "n")
-## B
-lines(variogramLine(vgm[[2]], maxdist=2E5), lwd=2, col="#00AA00")
-points(gamma ~ dist, vg[[2]], col="#007700")
-## C
-lines(variogramLine(vgm[[3]], maxdist=2E5), lwd=2, col="#0000AA")
-points(gamma ~ dist, vg[[3]], col="#000077")
-
-### OC
-## A
-plot(variogramLine(vgm[[4]], maxdist=2E5), type="l", lwd=2,col="#AA0000", 
-     main="OC",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,0.5)) 
-points(gamma ~ dist, vg[[4]], col="#770000")
-## B
-lines(variogramLine(vgm[[5]], maxdist=2E5), lwd=2, col="#00AA00")
-points(gamma ~ dist, vg[[5]], col="#007700")
-## C
-lines(variogramLine(vgm[[6]], maxdist=2E5), lwd=2, col="#0000AA")
-points(gamma ~ dist, vg[[6]], col="#000077")
-
-### Clay
-## A
-plot(variogramLine(vgm[[7]], maxdist=2E5), type="l", lwd=2,col="#AA0000", 
-     main="Clay",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,140)) 
-points(gamma ~ dist, vg[[7]], col="#770000")
-## B
-lines(variogramLine(vgm[[8]], maxdist=2E5), lwd=2, col="#00AA00")
-points(gamma ~ dist, vg[[8]], col="#007700")
-## C
-lines(variogramLine(vgm[[9]], maxdist=2E5), lwd=2, col="#0000AA")
-points(gamma ~ dist, vg[[9]], col="#000077")
-#############################################################################
-par(mfrow = c(1, 1))
-
-title("Semivariograms of residuals",
-  sub="red: A horizon, green: B horizon, blue: C horizon")
 
 
-# vgm[[4]] <- vgm(nugget = 0.1,
-#                   psill=0.1,
-#                   range=5E4,
-#                   model = "Wav")
-# plot(vg[[4]], vgm[[4]],ylim=c(0,0.5))
-# vgm[[4]] <-  fit.variogram(vg[[4]], vgm[[4]], fit.method = 2)
-# plot(vg[[4]], vgm[[4]],ylim=c(0,0.5))
-# attr(vgm[[4]], "SSErr")
-# vgm[[4]]
 ```
 ***********************************
