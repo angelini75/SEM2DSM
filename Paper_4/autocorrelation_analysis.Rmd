@@ -1,5 +1,5 @@
 ---
-title: "autocorrelation"
+title: "Spatial Autocorrelation Analysis"
 output:
   html_document: default
   pdf_document: default
@@ -412,10 +412,77 @@ res$hor <- as.factor(res$hor)
 #levels(res$hor) <- c("C", "B", "A")
 ```
 
-Results
-```{r, echo=F }
-knitr::kable(report, caption = "Model 3", digits = 3)
-knitr::kable(report2, caption = "Model 3", digits = 3)
+```{r}
+my.model.lv <- '
+# Measurement model (lamda and epsilon)
+#--------------------#
+CEC.Ar =~ 1*CEC.A
+CEC.Br =~ 1*CEC.B
+CEC.Cr =~ 1*CEC.C
+OC.Ar =~ 1*OC.A
+OC.Br =~ 1*OC.B
+OC.Cr =~ 1*OC.C
+clay.Ar =~ 1*clay.A
+clay.Br =~ 1*clay.B
+clay.Cr =~ 1*clay.C
+## Measurement error #
+CEC.A ~~ 0.05 * CEC.A
+CEC.B ~~ 0.05 * CEC.B
+CEC.C ~~ 0.05 * CEC.C
+OC.A ~~ 0.05 * OC.A
+OC.B ~~ 0.05 * OC.B
+OC.C ~~ 0.05 * OC.C
+clay.A ~~ 0.05 * clay.A
+clay.B ~~ 0.05 * clay.B
+clay.C ~~ 0.05 *clay.C
+
+#--------------------#
+# Structural model (gamma and betta matrices)
+#--------------------#
+clay.Cr ~ dem + vdchn + X + lstm 
+clay.Ar ~ clay.Cr + evisd + lstm + ndwi.b + Y 
+clay.Br ~ clay.Ar + clay.Cr + vdchn + twi + ndwi.b + Y 
+
+OC.Ar ~ clay.Ar + evisd + lstm + ndwi.b  
+OC.Br ~ OC.Ar + clay.Br + evisd + lstm + ndwi.a + vdchn
+OC.Cr ~ OC.Br 
+
+CEC.Ar ~ OC.Ar + clay.Ar 
+CEC.Br ~ clay.Br + OC.Br
+CEC.Cr ~ clay.Cr + OC.Cr
+
+#------------------#
+# Model error covariance (Psi)
+#------------------#
+CEC.Ar ~~ CEC.Br + CEC.Cr
+CEC.Cr ~~ CEC.Br
+OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
+
+#------------------#
+# lavaan suggestions
+#------------------#
+clay.Br  ~    lstm
+OC.Ar  ~ clay.Br
+
+CEC.Ar ~~   OC.Ar
+OC.Ar ~~   OC.Br
+OC.Br ~~   OC.Cr
+
+CEC.Cr  ~  ndwi.a
+CEC.Br  ~  ndwi.a
+clay.Ar ~~ clay.Cr
+#------------------#
+'
+
+
+# Model calibration ####
+my.fit.lv.ML <- sem(model = my.model.lv,data = ks, meanstructure = FALSE, 
+                    fixed.x = T)
+
+# Model evaluation ####
+summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
+mod.ks <- modindices(my.fit.lv.ML,sort. = T)
+mod.ks[mod.ks$mi>5 & (mod.ks$op == "~"|mod.ks$op == "~~"),] 
 ```
 
 ##Spatial autocorrelation analysis
@@ -441,7 +508,9 @@ wgs84 <- CRS("+init=epsg:4326")
 UTM14N <- CRS("+init=epsg:32614")
 modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 NAD83.KS.N <- CRS("+init=epsg:2796")
+```
 
+```{r, echo=TRUE}
 # Assign projection
 proj4string(R) <- NAD83.KS.N
 
@@ -636,7 +705,7 @@ plot(variogramLine(vgm[[7]], maxdist=4E5), type="l", lwd=2,col="#AA0000",
   points(gamma ~ dist, vg[[9]], col="#000077", pch = 2) 
 ```
 ### Kriging + predicted
-```{r}
+```{r, include=FALSE}
 # Krige CV
 res <- backup
 names(res)[1] <- "id.p"
@@ -651,7 +720,7 @@ res[,11:19] <- res[,11:19] + res[,20:28]
 
 Res <- res[1:19]
 ```
-### New accuracy statistics
+### Accuracy measures
 ```{r, include= FALSE}
 # plot residuals
 par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
@@ -775,5 +844,17 @@ report2.k$r2[5] <- rsq[3]
 
 report2.k <- report2.k[c(-4,-2),]
 report2.k
+```
+
+Results
+```{r, echo=F }
+knitr::kable(report, caption = "Model 4 | hor + sp", digits = 3)
+knitr::kable(report2, caption = "Model 4 | sp", digits = 3)
+knitr::kable(report.k, caption = "Model 4 + kriging | hor + sp", digits = 3)
+knitr::kable(report2.k, caption = "Model 4 + kriging | sp", digits = 3)
+knitr::kable(cbind(report[,c(1,7)], report.k[,c(7)]), 
+             caption = "Model 4 vs Model 4 + K", digits = 3)
+knitr::kable(cbind(report2[,c(1,4)], report2.k[,c(4)]), 
+             caption = "Model 4 vs Model 4 + K (by SP)", digits = 3)
 ```
 ***********************************
