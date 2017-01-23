@@ -325,18 +325,6 @@ for(i in seq_along(names(d))){
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt.ks$SS[2:10]))
 report
 
-# > report
-#   Soil_property                 ME              RMSE               SS mean_theta  median_th          R2
-# 1         CEC.A  -1.34191957183381  5.96747926364206 5626.50778439567  1.2358620 0.49772528 -0.03982376
-# 2         CEC.B  -3.12455178339896  7.19852058698208 8187.35438531036  1.4499497 0.56871387 -0.13391956
-# 3         CEC.C  -3.17991426471198  7.65434747281699 9257.06756706994  1.0286451 0.45802684 -0.06055332
-# 4          OC.A -0.249497925624309 0.770620989528276 93.8293601012431  1.6001875 0.60191998 -0.21480605
-# 5          OC.B  0.161131245639884 0.540332878165909 46.1296198378747  1.1583263 0.14104585 -0.11500986
-# 6          OC.C  0.172189050861731 0.986648941090494 153.809229006889  1.0414483 0.03009904 -0.03223725
-# 7        clay.A   1.27834695419596  8.63119289335688 11770.6035404488  0.9966927 0.28607540  0.05833345
-# 8        clay.B  -3.44645803628208  9.95957589670949  15672.518022686  1.2215032 0.40126265  0.12027689
-# 9        clay.C   5.01849584447639  11.3176134997709 20237.9633021711  1.2334849 0.20654433 -0.06307211
-
 # Analysis by Soil Property
 # plot mesured vs predicted combined ####par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
 par(mfrow = c(1, 3), pty="s",mai=rep(0.7,4))
@@ -403,10 +391,6 @@ report2$r2[5] <- rsq[3]
 report2 <- report2[c(-4,-2),]
 report2
 
-#   Soil_property          ME      RMSE          r2
-# 1          CECo -2.54879521  6.976593 0.009534237
-# 3           OCo  0.02794079  0.787251 0.310940080
-# 5         clayo  0.95012825 10.029606 0.147645073
 
 ################################################################################
 library(lattice)
@@ -434,8 +418,9 @@ knitr::kable(report, caption = "Model 3", digits = 3)
 knitr::kable(report2, caption = "Model 3", digits = 3)
 ```
 
-Spatial autocorrelation analysis
-```{r, echo=TRUE}
+##Spatial autocorrelation analysis
+### Fitting models
+```{r, include=FALSE}
 ### Autocorrelation in SEM residuals ####
 backup <- Res
 Res[2:10] <- Res[,2:10]-Res[,11:19]
@@ -603,7 +588,10 @@ vgm[[9]] <- fit.variogram(vg[[9]], vgm[[9]], fit.method = 2)
 plot(vg[[9]], vgm[[9]], main = "Clay.C")
 attr(vgm[[9]], "SSErr")
 vgm[[9]]
+```
 
+###Plots
+```{r, echo= FALSE}
 #############################################################################
 # Three graphs (soil properties)
 library(lattice)
@@ -639,26 +627,153 @@ plot(variogramLine(vgm[[4]], maxdist=4E5), type="l", lwd=2,col="#AA0000",
 plot(variogramLine(vgm[[7]], maxdist=4E5), type="l", lwd=2,col="#AA0000", 
      main="Clay",
      xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,140)) +
-points(gamma ~ dist, vg[[7]], col="#770000") +
-## B
-lines(variogramLine(vgm[[8]], maxdist=4E5), lwd=2, col="#00AA00") +
-points(gamma ~ dist, vg[[8]], col="#007700", pch = 0) +
-## C
-lines(variogramLine(vgm[[9]], maxdist=4E5), lwd=2, col="#0000AA") +
-points(gamma ~ dist, vg[[9]], col="#000077", pch = 2) 
-
-#############################################################################
+  points(gamma ~ dist, vg[[7]], col="#770000") +
+  ## B
+  lines(variogramLine(vgm[[8]], maxdist=4E5), lwd=2, col="#00AA00") +
+  points(gamma ~ dist, vg[[8]], col="#007700", pch = 0) +
+  ## C
+  lines(variogramLine(vgm[[9]], maxdist=4E5), lwd=2, col="#0000AA") +
+  points(gamma ~ dist, vg[[9]], col="#000077", pch = 2) 
+```
+### Kriging + predicted
+```{r}
 # Krige CV
-x <- krige.cv(CEC.A~1, R, vgm[[9]], nmax = 2, debug.level=-1)
-x <- as.data.frame(x)
-coordinates(x) <- ~X+Y
-proj4string(x) <- NAD83.KS.N
-library(mapview)
-mapview(x, burst = F, zcol = "residual", cex = "zscore", legend = T)
-bubble(x, "residual", main = "CEC.A residuals")
+res <- backup
+names(res)[1] <- "id.p"
+r <- as.data.frame(R)
+for(i in 1:9){
+  x <- krige.cv(as.formula(paste0(names(R)[i+1], "~1")),
+                R, vgm[[i]])#, debug.level=-1)
+  r[,1+i] <- as.data.frame(x)[,1]
+}
+res <- merge(x = res, y = r, by= "id.p", all.y = T)
+res[,11:19] <- res[,11:19] + res[,20:28]
+
+Res <- res[1:19]
+```
+### New accuracy statistics
+```{r, include= FALSE}
+# plot residuals
+par(mfrow = c(3, 3), pty="s",mai=rep(0.7,4))
+
+lim.cec <- c(min(cbind(Res[,2:4],Res[,11:13])), max(cbind(Res[,2:4],Res[,11:13])))
+lim.oc <- c(min(cbind(Res[,5:7],Res[,14:16])), max(cbind(Res[,5:7],Res[,14:16])))
+lim.clay <- c(min(cbind(Res[,8:10],Res[,17:19])), max(cbind(Res[,8:10],Res[,17:19])))
+
+lim <- data.frame(min=NA,max=NA)
+lim[1:3,1] <- lim.cec[1]
+lim[1:3,2] <- lim.cec[2]
+lim[4:6,1] <- lim.oc[1]
+lim[4:6,2] <- lim.oc[2]
+lim[7:9,1] <- lim.clay[1]
+lim[7:9,2] <- lim.clay[2]
 
 
+for (i in 2:10) {
+  limi = c(lim[i-1,1],lim[i-1,2])
+  plot(Res[,i+9] ~ Res[,i], main = paste(names(Res)[i]), xlab = "measured",
+       ylab = "predicted", col = "dark red", xlim = limi, ylim = limi) +
+    abline(0,1) +
+    abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
+}
+
+# create report
+report.k <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
+                     mean_theta = NA, median_th = NA)
+for (i in 2:10) {
+  # ME <- mean error 
+  ME  <-  mean(Res[,i] - Res[,i + 9])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((Res[,i] - Res[,i + 9]) ^ 2))
+  MSE <- mean((Res[,i] - Res[,i + 9]) ^ 2)
+  # SS (Sum of squares)
+  SS <- sum((Res[,i] - Res[,i + 9]) ^ 2)
+  # fill report table
+  report.k[i-1,1] <- c(names(Res)[i])
+  report.k[i-1,2] <- ME
+  report.k[i-1,3] <- RMSE
+  report.k[i-1,4] <- SS
+}
+
+for(i in 1:9){
+  report.k$mean_theta[i] <- mean(theta[,i])
+  report.k$median_th[i] <- median(theta[,i])
+}
+report.k
+#d.stat <- read.csv("summary.calibdata.csv")
+STt.ks <- as.data.frame(STt.ks)
+STt.ks$SS <- NA 
+for(i in seq_along(names(d))){
+  STt.ks$SS[i] <- sum(( d[i] - STt.ks$mean[i])^2)
+}
+
+report.k$R2 <- 1 - (as.numeric(report.k$SS) / as.numeric(STt.ks$SS[2:10]))
+report.k
+
+# Analysis by Soil Property
+# plot mesured vs predicted combined ####par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
+par(mfrow = c(1, 3), pty="s",mai=rep(0.7,4))
+rsq<- NULL
+CEC <- rbind(as.matrix(Res[,c(2,11)]), as.matrix(Res[,c(3,12)]),
+             as.matrix(Res[,c(4,13)]))
+colnames(CEC) <- c("CECo","CECp")
+
+CEC <- as.data.frame(CEC)
+rsq[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
+                 sum((mean(CEC$CECo)-CEC$CECo)^2))
+lim = round(c(min(c(CEC[,1],CEC[,2])), max(c(CEC[,1],CEC[,2]))))
+plot(CEC[,2]~CEC[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "CEC residuals", col = "dark red") +
+  abline(0,1) +
+  abline(lm(CEC[,2]~CEC[,1]),col = "blue")
+
+OC <- rbind(as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
+            as.matrix(Res[,c(7,16)])) 
+colnames(OC) <- c("OCo","OCp") 
+
+OC <- as.data.frame(OC)
+rsq[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
+                 sum((mean(OC$OCo)-OC$OCo)^2))
+lim = round(c(min(c(OC[,1],OC[,2])), max(c(OC[,1],OC[,2]))))
+plot(OC[,2]~OC[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "OC residuals", col = "dark red") +
+  abline(0,1) +
+  abline(lm(OC[,2]~OC[,1]),col = "blue")
+
+clay <- rbind(as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
+              as.matrix(Res[,c(10,19)]))
+
+colnames(clay) <- c("clayo","clayp")
+
+clay <- as.data.frame(clay)
+rsq[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
+                 sum((mean(clay$clayo)-clay$clayo)^2))
+lim = round(c(min(c(clay[,1],clay[,2])), max(c(clay[,1],clay[,2]))))
+plot(clay[,2]~clay[,1], xlim = lim, ylim= lim, xlab = "measured",
+     ylab = "predicted", main = "Clay residuals", col = "dark red") +
+  abline(0,1) +
+  abline(lm(clay[,2]~clay[,1]),col = "blue")
 
 
+# create report by soil property
+report2.k <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, r2 = NA)
+z <- cbind(CEC, OC, clay)
+for (i in c(1,3,5)) {
+  # ME <- mean error 
+  ME  <-  mean(z[,i] - z[,i + 1])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((z[,i] - z[,i + 1]) ^ 2))
+  MSE <- mean((z[,i] - z[,i + 1]) ^ 2)
+  # fill report table
+  report2.k[i,1] <- c(names(z)[i])
+  report2.k[i,2:3] <- c(ME, RMSE)
+}
+
+report2.k$r2[1] <- rsq[1]
+report2.k$r2[3] <- rsq[2]
+report2.k$r2[5] <- rsq[3]
+
+report2.k <- report2.k[c(-4,-2),]
+report2.k
 ```
 ***********************************
