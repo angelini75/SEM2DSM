@@ -3,7 +3,6 @@ title: "Model extrapolation"
 output:
   html_document:
     theme: journal
-  pdf_document: default
 date: 'null'
 ---
 
