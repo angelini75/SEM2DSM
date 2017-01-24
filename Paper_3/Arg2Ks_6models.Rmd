@@ -444,8 +444,9 @@ Results
 knitr::kable(report, caption = "Model 1", digits = 3)
 knitr::kable(report2, caption = "Model 1", digits = 3)
 ```
+
 Observed vs. predicted by soil property and horizon
-```{r, echo=F}
+```{r, include=F, echo=F}
 # plot predicted vs observed | horizon and soil property
 plot(xyplot(predicted ~ observed| hor, res[res$sp=="CEC",], 
             aspect= 1 , layout = c(1,3), main="CEC", 
@@ -477,7 +478,7 @@ plot(xyplot(predicted ~ observed| hor, res[res$sp=="clay",], cex = 0.5,
 ```
 
 Observed vs. predicted by soil property
-```{r, echo=F}
+```{r, echo=F, include=T}
 # plot predicted vs observed | soil property
 plot(xyplot(predicted ~ observed| sp, res[res$sp=="CEC",], groups = hor, pch = ".", cex = 2.5,
             aspect= 1 , layout = c(1,1), 
@@ -933,12 +934,13 @@ res$hor <- as.factor(res$hor)
 ```
 
 Results
-```{r, echo=F }
+```{r, echo=F}
 knitr::kable(report, caption = "Model 2", digits = 3)
 knitr::kable(report2, caption = "Model 2", digits = 3)
 ```
+
 Observed vs. predicted by soil property and horizon
-```{r, echo=F}
+```{r, echo=F, include=F}
 # plot predicted vs observed | horizon and soil property
 plot(xyplot(predicted ~ observed| hor, res[res$sp=="CEC",], 
             aspect= 1 , layout = c(1,3), main="CEC", 
@@ -970,7 +972,7 @@ plot(xyplot(predicted ~ observed| hor, res[res$sp=="clay",], cex = 0.5,
 ```
 
 Observed vs. predicted by soil property
-```{r, echo=F}
+```{r, echo=F, include=T}
 # plot predicted vs observed | soil property
 plot(xyplot(predicted ~ observed| sp, res[res$sp=="CEC",], groups = hor, pch = ".", cex = 2.5,
             aspect= 1 , layout = c(1,1), 
@@ -1429,8 +1431,9 @@ Results
 knitr::kable(report, caption = "Model 3", digits = 3)
 knitr::kable(report2, caption = "Model 3", digits = 3)
 ```
+
 Observed vs. predicted by soil property and horizon
-```{r, echo=F}
+```{r, echo=F, include=F}
 # plot predicted vs observed | horizon and soil property
 plot(xyplot(predicted ~ observed| hor, res[res$sp=="CEC",], 
             aspect= 1 , layout = c(1,3), main="CEC", 
@@ -1910,7 +1913,7 @@ knitr::kable(report2, caption = "Model 4", digits = 3)
 ```
 
 Observed vs. predicted by soil property and horizon
-```{r, echo=F}
+```{r, echo=F, include=F}
 # plot predicted vs observed | horizon and soil property
 plot(xyplot(predicted ~ observed| hor, res[res$sp=="CEC",], 
             aspect= 1 , layout = c(1,3), main="CEC", 
@@ -2239,7 +2242,7 @@ knitr::kable(report2.MLR, caption = "Model 5", digits = 3)
 ```
 
 Observed vs. predicted by soil property and horizon
-```{r, echo=F}
+```{r, echo=F, include=F}
 # plot predicted vs observed | horizon and soil property
 plot(xyplot(predicted ~ observed| hor, res[res$sp=="CEC",], 
             aspect= 1 , layout = c(1,3), main="CEC", 
@@ -2558,7 +2561,7 @@ knitr::kable(report2.MLR, caption = "Model 6", digits = 3)
 ```
 
 Observed vs. predicted by soil property and horizon
-```{r, echo=F}
+```{r, echo=F, include=F}
 # plot predicted vs observed | horizon and soil property
 plot(xyplot(predicted ~ observed| hor, res[res$sp=="CEC",], 
             aspect= 1 , layout = c(1,3), main="CEC", 
@@ -2891,8 +2894,9 @@ Results
 knitr::kable(report, caption = "Model 7 (Arg mean model)", digits = 3)
 knitr::kable(report2, caption = "Model 7 (Arg mean model)", digits = 3)
 ```
+
 Observed vs. predicted by soil property and horizon
-```{r, echo=F}
+```{r, echo=F, include=F}
 # plot predicted vs observed | horizon and soil property
 plot(xyplot(predicted ~ observed| hor, res[res$sp=="CEC",], 
             aspect= 1 , layout = c(1,3), main="CEC", 
@@ -3229,7 +3233,7 @@ knitr::kable(report, caption = "Model 8 (Ks mean model)", digits = 3)
 knitr::kable(report2, caption = "Model 7 (Ks mean model)", digits = 3)
 ```
 Observed vs. predicted by soil property and horizon
-```{r, echo=F}
+```{r, echo=F, include=F}
 # plot predicted vs observed | horizon and soil property
 plot(xyplot(predicted ~ observed| hor, res[res$sp=="CEC",], 
             aspect= 1 , layout = c(1,3), main="CEC", 
