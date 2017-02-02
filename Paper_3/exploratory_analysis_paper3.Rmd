@@ -60,7 +60,17 @@ ggplot(data = meltp[which(meltp$variable %in% sp[c(10:12,14,15,17:20)]),],
        aes(x = value, fill = country)) + geom_density(alpha = 0.4) +
   facet_wrap( ~ variable,scales = "free")
 #############
+# another approach from: http://ggobi.github.io/ggally/#ggallyggnostic
+# Load required packages
+require(GGally)
 
-
+# hist and correlation for soil properties
+ggscatmat(data, color = "country", columns = c(names(data)[c(2:10)]), alpha = 0.10) + 
+  theme(axis.text.x = element_text(size = 8,angle = 90, vjust = 0.5),
+        axis.text.y = element_text(size = 8,angle =  0, vjust = 0.5))
+# hist and scaterplots for covariates
+ggscatmat(data, color = "country", columns = c(names(data)[c(11:12,14,15,17:21)]), alpha = 0.10) + 
+  theme(axis.text.x = element_text(size = 8,angle = 90, vjust = 0.5),
+        axis.text.y = element_text(size = 8,angle =  0, vjust = 0.5))
 ```
 
