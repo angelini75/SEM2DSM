@@ -1,0 +1,66 @@
+---
+title: "Model extrapolation"
+output:
+  html_document:
+    theme: journal
+date: 'null'
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE,
+                results = ('markup'))
+```
+
+
+## Exploratory analysis of US data and Argentinian data
+```{r exploratory analysis, echo=FALSE}
+# Purpose        : Fit a SEM model with Argentinian data and apply in KS data
+# Maintainer     : Marcos Angelini  (angelini75@gmail.com); 
+
+
+rm(list=ls()[ls()!="t"])
+name <- function(x) { as.data.frame(names(x))}
+
+Arg <- read.csv("~/Documents/SEM2DSM1/Paper_2/data/calib.data-5.0.csv")[,c(-1,-20)]
+
+d <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/KS.data-0.2.csv")[,c(-1)] 
+name(d)
+names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
+# remove outlayers
+# d <- d[d$idp!=26058,]
+# d <- d[d$idp!=22961,]
+d <- cbind(d[1],
+           d[,colnames(Arg)[2:10]],
+           d[11:21])
+d <- d[c(-156,-157),]
+ks <- d
+name(ks)
+name(Arg)
+names(ks)[1] <- "id.p"
+ks$evim <- ks$evim/10000
+ks$evisd <- ks$evisd/10000
+Arg <- Arg[,names(ks)]
+
+ks$country <- "US"
+Arg$country <- "Arg"
+data <- rbind(ks, Arg)
+
+library(reshape)
+library(ggplot2)
+meltp <- unique(melt(data,id.vars = c("id.p", "country")))
+name(meltp)
+sp <- levels(meltp$variable)
+# plot soil properties
+ggplot(data = meltp[which(meltp$variable %in% sp[1:9]),],
+       aes(x = value, fill = country)) + geom_density(alpha = 0.4) +
+  facet_wrap( ~ variable,scales = "free")
+# plot covariates
+ggplot(data = meltp[which(meltp$variable %in% sp[c(10:12,14,15,17:20)]),],
+       aes(x = value, fill = country)) + geom_density(alpha = 0.4) +
+  facet_wrap( ~ variable,scales = "free")
+#############
+
+
+```
+
