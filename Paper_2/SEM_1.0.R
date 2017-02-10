@@ -296,8 +296,12 @@ my.fit.lv.ML <- sem(model = my.model.lv,data = D, meanstructure = FALSE,
 
 # Model evaluation ####
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
-# model Rsquare
 
+# model parameters
+free <- inspect(my.fit.lv.ML, "free")
+paste0("number of free parameters = ",max(free$psi))
+
+# model Rsquare
 # r2 <- rbind(r2,round(inspect(my.fit.lv.ML, "rsquare")[1:9] * 
 #               inspect(my.fit.lv.ML, "rsquare")[10:18],3))
 # r2
