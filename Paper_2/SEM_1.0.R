@@ -405,7 +405,7 @@ for (i in 2:10) {
   plot(Res[,i+9] ~ Res[,i], main = paste(names(Res)[i]), xlab = "measured",
        ylab = "predicted", col = "dark red", xlim = limi, ylim = limi)
   abline(0,1)
-  abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
+  #abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
 }
 
 # create report
