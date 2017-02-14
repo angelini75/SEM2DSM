@@ -808,14 +808,25 @@ plot(D$CEC.B~D$CEC.C)
 plot(predict.lm(mod.cecb)~predict.lm(mod.cecc))
 
 # SRMR ####
+# run lines to get Sigma.hat.lm
+attach(inspect(my.fit.lv.ML, "est"))
+IB.inv <- solve(diag( nrow(beta) ) - beta)
+Sigma.hat <- lambda %*% IB.inv %*% psi %*% t(IB.inv) %*% t(lambda) + 
+  inspect(my.fit.lv.ML, "est")$theta
+
+# sample cov (divided by N, instead of N-1)
+S <- cov(D[,lavNames(my.fit.lv.ML)]) * (nobs(my.fit.lv.ML) - 1) /
+  nobs(my.fit.lv.ML)
+
 
 S <- S[1:9,1:9] # sample var-covar
 Sigma.hat <- Sigma.hat[1:9,1:9] # SEM model var-covar
 Sigma.hat.lm <- Sigma.hat.lm[1:9,1:9] # MLR model var-covar
 
-sd(d$CEC.A)
-sqrt((2*sum((S - Sigma.hat)^2))/(9*(9+1)))
-sqrt((2*sum((S - Sigma.hat.lm)^2))/(9*(9+1)))
+p = 9
+
+sqrt((2*sum((S -    Sigma.hat)^2))/(p*(p+1)))
+sqrt((2*sum((S - Sigma.hat.lm)^2))/(p*(p+1)))
 
 ### CROSS-VALIDATION Multivariate LR ####
 # comparison with multivariate 
