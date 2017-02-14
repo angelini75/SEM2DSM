@@ -682,7 +682,7 @@ vgm[[4]]
 # How to estimate Sigma.hat and residual matrix by Yves Rosseel
 # Two things: you need the full matrices, including the
 # x's (not just the first three rows/cols), and S is divided by N (not N-1):
-
+library(lattice)
 attach(inspect(my.fit.lv.ML, "est"))
 IB.inv <- solve(diag( nrow(beta) ) - beta)
 Sigma.hat <- lambda %*% IB.inv %*% psi %*% t(IB.inv) %*% t(lambda) + 
@@ -774,7 +774,6 @@ rownames(Sigma.hat.lm) <- colnames(Sigma.hat)
 colnames(Sigma.hat.lm) <- colnames(Sigma.hat)
 Sigma.hat.lm[lower.tri(Sigma.hat.lm)] <- NA
 
-library(lattice)
 sigmah.lm <- levelplot(Sigma.hat.lm[1:9,9:1],
                        col.regions=colors,
                        at=seq(0,1.1,0.1),
