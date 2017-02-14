@@ -818,15 +818,26 @@ Sigma.hat <- lambda %*% IB.inv %*% psi %*% t(IB.inv) %*% t(lambda) +
 S <- cov(D[,lavNames(my.fit.lv.ML)]) * (nobs(my.fit.lv.ML) - 1) /
   nobs(my.fit.lv.ML)
 
+Sigma.hat <- Sigma.hat$matrix
+#S <- S[1:9,1:9] # sample var-covar
+Sigma.hat <- Sigma.hat[1:19,1:19] # SEM model var-covar
+#Sigma.hat.lm <- Sigma.hat.lm[1:9,1:9] # MLR model var-covar
 
-S <- S[1:9,1:9] # sample var-covar
-Sigma.hat <- Sigma.hat[1:9,1:9] # SEM model var-covar
-Sigma.hat.lm <- Sigma.hat.lm[1:9,1:9] # MLR model var-covar
+p = 19
 
-p = 9
+Sigma.hat.tr <- Sigma.hat
+Sigma.hat.tr[lower.tri(Sigma.hat.tr)] <- 0
 
-sqrt((2*sum((S -    Sigma.hat)^2))/(p*(p+1)))
-sqrt((2*sum((S - Sigma.hat.lm)^2))/(p*(p+1)))
+S.tr <- S
+S.tr[lower.tri(S.tr)] <- 0
+
+Sigma.hat.lm.tr <- Sigma.hat.lm
+Sigma.hat.lm.tr[lower.tri(Sigma.hat.lm.tr)] <- 0
+
+(SRMR.SEM <- sqrt((2*sum((S.tr -    Sigma.hat.tr)^2))/(p*(p+1))))
+(SRMR.MLR <- sqrt((2*sum((S.tr -    Sigma.hat.lm.tr)^2))/(p*(p+1))))
+
+#sqrt((sum((S -    Sigma.hat)^2))/(p^2)) # for every element of matrix once
 
 ### CROSS-VALIDATION Multivariate LR ####
 # comparison with multivariate 
