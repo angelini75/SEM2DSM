@@ -807,9 +807,15 @@ plot(pre$CEC.B.p~pre$CEC.C.p)
 plot(D$CEC.B~D$CEC.C)
 plot(predict.lm(mod.cecb)~predict.lm(mod.cecc))
 
-# SRMR
+# SRMR ####
 
-sum(sum(()))^.5
+S <- S[1:9,1:9] # sample var-covar
+Sigma.hat <- Sigma.hat[1:9,1:9] # SEM model var-covar
+Sigma.hat.lm <- Sigma.hat.lm[1:9,1:9] # MLR model var-covar
+
+sd(d$CEC.A)
+sqrt((2*sum((S - Sigma.hat)^2))/(9*(9+1)))
+sqrt((2*sum((S - Sigma.hat.lm)^2))/(9*(9+1)))
 
 ### CROSS-VALIDATION Multivariate LR ####
 # comparison with multivariate 
