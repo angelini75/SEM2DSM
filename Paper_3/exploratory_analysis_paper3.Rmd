@@ -111,7 +111,7 @@ CEC.AVE <- ggplot(a[a$variable=="AVE",], aes(x = model, y = value, fill = value)
   facet_grid(hor ~ variable, ) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_fill_gradient2(low="#4885ed", mid = "#888888",  high="#db3236" ) + 
-  scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.2,1))
+  scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.3,1))
 
 a <- b
 a <- a[a$sp=="OC",]
@@ -134,7 +134,7 @@ OC.AVE <- ggplot(a[a$variable=="AVE",], aes(x = model, y = value, fill = value))
   facet_grid(hor ~ variable, ) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_fill_gradient2(low="#4885ed", mid = "#888888",  high="#db3236" ) + 
-  scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.2,1))
+  scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.3,1))
 
 a <- b
 a <- a[a$sp=="Clay",]
@@ -157,7 +157,7 @@ clay.AVE <- ggplot(a[a$variable=="AVE",], aes(x = model, y = value, fill = value
   facet_grid(hor ~ variable, ) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   scale_fill_gradient2(low="#4885ed", mid = "#888888",  high="#db3236" ) + 
-  scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.2,1))
+  scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.3,1))
 
 grid.arrange(CEC.ME, CEC.RMSE, CEC.AVE,
              OC.ME, OC.RMSE, OC.AVE,
