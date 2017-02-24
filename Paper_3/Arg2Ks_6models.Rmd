@@ -333,6 +333,9 @@ for(i in seq_along(names(d))){
   STt.ks$SS[i] <- sum(( d[i] - STt.ks$mean[i])^2)
 }
 
+(RMSE.l <- sqrt(158/qchisq(1-0.025,158))*report$RMSE)
+(RMSE.u <- sqrt(158/qchisq(  0.025,158))*report$RMSE)
+
 report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STt.ks$SS[2:10]))
 report
 
