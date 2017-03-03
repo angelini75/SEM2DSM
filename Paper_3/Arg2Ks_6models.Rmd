@@ -1667,7 +1667,7 @@ my.fit.lv.ML <- sem(model = my.model.lv,data = ks, meanstructure = FALSE,
                     fixed.x = T)
 inspect(my.fit.lv.ML,"cov.lv")
 # Model evaluation ####
-summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
+summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = T)
 mod.ks <- modindices(my.fit.lv.ML,sort. = T)
 mod.ks[mod.ks$mi>7 & (mod.ks$op == "~"|mod.ks$op == "~~"),]# & mod.ks$lhs == "clay.Cr",] 
 
