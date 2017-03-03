@@ -444,8 +444,8 @@ res$hor <- as.factor(res$hor)
 
 Results
 ```{r, echo=F }
-knitr::kable(report, caption = "Model 1", digits = 3)
-knitr::kable(report2, caption = "Model 1", digits = 3)
+knitr::kable(report, caption = "Model 1", digits = 2)
+knitr::kable(report2, caption = "Model 1", digits = 2)
 ```
 
 Observed vs. predicted by soil property and horizon
@@ -1612,12 +1612,12 @@ clay.Ar =~ 1*clay.A
 clay.Br =~ 1*clay.B
 clay.Cr =~ 1*clay.C
 ## Measurement error #
-CEC.A ~~ 0.05 * CEC.A
-CEC.B ~~ 0.05 * CEC.B
-CEC.C ~~ 0.05 * CEC.C
-OC.A ~~ 0.05 * OC.A
-OC.B ~~ 0.05 * OC.B
-OC.C ~~ 0.05 * OC.C
+# CEC.A ~~ 0.12 * CEC.A
+# CEC.B ~~ 0.25 * CEC.B
+# CEC.C ~~ 0.3 * CEC.C
+OC.A ~~ 0.1 * OC.A
+OC.B ~~ 0.1 * OC.B
+OC.C ~~ 0.1 * OC.C
 clay.A ~~ 0.05 * clay.A
 clay.B ~~ 0.05 * clay.B
 clay.C ~~ 0.05 *clay.C
@@ -1626,37 +1626,38 @@ clay.C ~~ 0.05 *clay.C
 # Structural model (gamma and betta matrices)
 #--------------------#
 clay.Cr ~ dem + vdchn + X + lstm 
-clay.Ar ~ clay.Cr + evisd + lstm + ndwi.b + Y 
-clay.Br ~ clay.Ar + clay.Cr + vdchn + twi + ndwi.b + Y 
+clay.Ar ~ clay.Cr + evisd + lstm + ndwi.b #+ Y 
+clay.Br ~ clay.Ar + clay.Cr + vdchn + twi + ndwi.b + Y
 
-OC.Ar ~ clay.Ar + evisd + lstm + ndwi.b  
+OC.Ar ~ clay.Ar + evisd + lstm + ndwi.b 
 OC.Br ~ OC.Ar + clay.Br + evisd + lstm + ndwi.a + vdchn
 OC.Cr ~ OC.Br 
 
 CEC.Ar ~ OC.Ar + clay.Ar 
-CEC.Br ~ clay.Br + OC.Br
-CEC.Cr ~ clay.Cr + OC.Cr
+CEC.Br ~ clay.Br + 0.01*OC.Br
+CEC.Cr ~ clay.Cr + 0*OC.Cr
 
 #------------------#
 # Model error covariance (Psi)
 #------------------#
 CEC.Ar ~~ CEC.Br + CEC.Cr
 CEC.Cr ~~ CEC.Br
-OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
+#OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar 
 
 #------------------#
 # lavaan suggestions
 #------------------#
 clay.Br  ~    lstm
-OC.Ar  ~ clay.Br
+clay.Ar ~ twi
 
-CEC.Ar ~~   OC.Ar
-OC.Ar ~~   OC.Br
-OC.Br ~~   OC.Cr
+CEC.Ar ~~ clay.Br
+OC.Ar ~   clay.Br
+OC.Br ~   dem
+OC.Cr ~~   clay.Br
 
 CEC.Cr  ~  ndwi.a
-CEC.Br  ~  ndwi.a
-clay.Ar ~~ clay.Cr
+CEC.Br  ~  ndwi.a + dem
+CEC.Ar  ~    dem
 #------------------#
 '
 
@@ -1664,11 +1665,11 @@ clay.Ar ~~ clay.Cr
 # Model calibration ####
 my.fit.lv.ML <- sem(model = my.model.lv,data = ks, meanstructure = FALSE, 
                     fixed.x = T)
-
+inspect(my.fit.lv.ML,"cov.lv")
 # Model evaluation ####
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = F)
 mod.ks <- modindices(my.fit.lv.ML,sort. = T)
-mod.ks[mod.ks$mi>5 & (mod.ks$op == "~"|mod.ks$op == "~~"),] 
+mod.ks[mod.ks$mi>7 & (mod.ks$op == "~"|mod.ks$op == "~~"),]# & mod.ks$lhs == "clay.Cr",] 
 
 
 # Model validation ####
@@ -1911,8 +1912,8 @@ res$hor <- as.factor(res$hor)
 
 Results
 ```{r, echo=F }
-knitr::kable(report, caption = "Model 4", digits = 3)
-knitr::kable(report2, caption = "Model 4", digits = 3)
+knitr::kable(report, caption = "Model 4", digits = 2)
+knitr::kable(report2, caption = "Model 4", digits = 2)
 ```
 
 Observed vs. predicted by soil property and horizon
