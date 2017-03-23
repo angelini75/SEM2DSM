@@ -1,3 +1,9 @@
+rm(list=ls())
+name <- function(x) { as.data.frame(names(x))}
+# chose one
+#setwd("~/big/SEM2DSM1/Paper_2/data/")
+setwd("~/Documents/SEM2DSM1/Paper_2/data/")
+
 d <- read.csv("calib.data-sp.csv")
 p <- unique(d)
 p$top[p$id.p.h=="350_B1"]  <- 25
@@ -10,27 +16,32 @@ p$name <- as.factor(p$hor)
 #p <- d[d$id.p== c(619, 350),1:15]
 
 library(aqp)
+library(lattice)
 aqp::depths(p)<- id.p ~ top + bottom 
+
 name(p)
 p[3,]
 horizons(p)
 
-a <- slab(p, fm = ~ silt20)
-b <- slab(p, fm = ~ clay )
+a <- slab(p, fm = ~ CEC)
+b <- slab(p, fm = ~ OC )
+c <- slab(p, fm = ~ clay )
 # stack into long format
-ab <- make.groups(a, b)
-ab$which <- factor(ab$which, levels=c('a','b'), 
-                   labels=c('1-cm Interval', '5-cm Interval'))
-xyplot(top ~ p.q50 | which, data=ab, ylab='Depth',
-       xlab='median bounded by 25th and 75th percentiles',
-       lower=ab$p.q25, upper=ab$p.q75, ylim=c(250,-5),
+abc <- lattice::make.groups(a, b, c)
+abc$which <- factor(abc$which, levels=c('a','b', "c"), 
+                   labels=c('CEC', 'OC', "Clay"))
+
+setwd("~/Dropbox/PhD Marcos/Paper 2/Figures/")
+
+tiff(filename = "outfile.tif", width = 1600, height = 1200, res =  300)
+lattice::xyplot(top ~ p.q50 | which, data=abc, ylab='Depth (cm)',
+       xlab='Median bounded by 25th and 75th percentiles',
+       lower=abc$p.q25, upper=abc$p.q75, ylim=c(250,-5),
        panel=panel.depth_function, 
        prepanel=prepanel.depth_function,
-       cf=ab$contributing_fraction,
-       layout=c(2,1), scales=list(x=list(alternating=1))
-)
-
-
+       cf=abc$contributing_fraction,
+       layout=c(3,1), scales=list(x=list(alternating=1, relation="free")))
+dev.off() 
 # select a profile to use as the basis for simulation
 s <- p[3, ]
 
