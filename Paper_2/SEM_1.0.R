@@ -131,7 +131,14 @@ library(ggplot2)
 # GGally::ggpairs(d[,2:10])  
 # GGally::ggpairs(corr)  
 # scatmat()
-ggscatmat(d[,2:10], columns = 1:9,  alpha=0.15)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+di <- d
+names(di)[8:10] <- c("Clay.A", "Clay.B", "Clay.C")
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig3.tif",
+     width = 2000, height = 2000, res =  300)
+ggscatmat(di[,2:10], columns = 1:9,  alpha=0.15)+ 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        text = element_text(size = 13))
+dev.off()
 # ggpairs(d[, 2:4], #axisLabels= "none", 
 #   upper = list(continuous = wrap("cor", size = 4, alignPercent = 1), combo = "box", discrete = "facetbar" ),
 #   diag = list(continuous = "densityDiag", discrete ="barDiag"),
@@ -1272,7 +1279,7 @@ report2.v
 
 
 # extract covariates values ####
-setwd("/media/marcos/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
 # libraries
 library(raster)
 library(maptools)
@@ -1398,9 +1405,48 @@ names(s) <- names(rp[[2:8]])
 raster::NAvalue(rp)<--99999
 writeRaster(x = rp[[2:10]],filename ="paper2.tif", overwrite=T,bylayer=TRUE,suffix=names(rp)[2:10])
 
+#### PLOT SP #####
+files_m <- list.files(pattern=".tif$", "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
+files_m <- files_m[8:16]
+CEC <- stack(files_m[1:3])
+Clay <- stack(files_m[4:6])
+OC <- stack(files_m[7:9])
+library(rasterVis)
+library(lattice)
+#color <- rev(brewer.pal(n = 10, 'RdBu'))
+color <- c('#f0f0f0','#bbbbbb','#222222')
+# from http://colorbrewer2.org/#type=sequential&scheme=OrRd&n=4
 
+#CEC
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig8.CEC.tif",
+     width = 2000, height = 700, res =  200)
+levelplot(x = CEC,
+          ylab = "", xlab = "",
+          names.attr= c("CEC of horizon A", "CEC of horizon B", "CEC of horizon C"),
+          scales=list(draw=FALSE),
+          col.regions = colorRampPalette(color),
+          par.settings=list(grid.pars=list(fontfamily="serif")))
+dev.off()
 
+#Clay
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig8.clay.tif",
+     width = 2000, height = 700, res =  200)
+levelplot(x = Clay,
+          ylab = "", xlab = "",
+          names.attr= c("Clay of horizon A", "Clay of horizon B", "Clay of horizon C"),
+          scales=list(draw=FALSE),
+          col.regions = colorRampPalette(color),
+          par.settings=list(grid.pars=list(fontfamily="serif")))
+dev.off()
 
-
-
+#OC
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig8.OC.tif",
+     width = 2000, height = 700, res =  200)
+levelplot(x = OC,
+          ylab = "", xlab = "",
+          names.attr= c("OC of horizon A", "OC of horizon B", "OC of horizon C"),
+          scales=list(draw=FALSE),
+          col.regions = colorRampPalette(color),
+          par.settings=list(grid.pars=list(fontfamily="serif")))
+dev.off()
 
