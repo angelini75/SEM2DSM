@@ -672,12 +672,17 @@ for(i in 8:10){
 }
 
 # Three graphs (soil properties)
-par(mfrow = c(1, 3), pty = "s")
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig12.tif", 
+     width = 2500, height = 1000, res =  350)
+par(mfrow = c(1, 3), pty = "s", mar=c(5,2,2,2), family="serif")
 ### CEC
 ## A
 plot(variogramLine(vgm[[1]], maxdist=50000), 
-     type="l", lwd=2,col="#AA0000", main="CEC",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(5,35))
+     type="l", lwd=2,col="#AA0000",
+     main= expression("CEC"~~("cmol"[c]~~"kg"^{-1})), 
+     xlab = "Distance (m)", 
+     ylab = expression("Semivariance"~~("cmol"[c]~~"kg"^{-1})^{2}),
+     cex.lab = 1.3, ylim=c(5,35))
 points(gamma ~ dist, vg[[1]], col="#770000")
 #legend(x= "topleft",legend = "SSErr", bty = "n")
 #legend(x= 12,legend = round(attr(vgm[[1]], "SSErr"),3), text.col ="#AA0000", 
@@ -692,8 +697,9 @@ points(gamma ~ dist, vg[[3]], col="#000077")
 ### OC
 ## A
 plot(variogramLine(vgm[[4]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
-     main="OC",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,0.5)) 
+     main= "OC (%)",
+     xlab = "Distance (m)", 
+     ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,0.5)) 
 points(gamma ~ dist, vg[[4]], col="#770000")
 ## B
 lines(variogramLine(vgm[[5]], maxdist=50000), lwd=2, col="#00AA00")
@@ -705,7 +711,7 @@ points(gamma ~ dist, vg[[6]], col="#000077")
 ### Clay
 ## A
 plot(variogramLine(vgm[[7]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
-     main="Clay",
+     main="Clay (%)",
      xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(10,50)) 
 points(gamma ~ dist, vg[[7]], col="#770000")
 ## B
@@ -714,6 +720,8 @@ points(gamma ~ dist, vg[[8]], col="#007700")
 ## C
 lines(variogramLine(vgm[[9]], maxdist=50000), lwd=2, col="#0000AA")
 points(gamma ~ dist, vg[[9]], col="#000077")
+
+dev.off()
 #############################################################################
 par(mfrow = c(1, 1))
 
