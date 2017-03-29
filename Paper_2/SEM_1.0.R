@@ -414,6 +414,54 @@ for (i in 2:10) {
   abline(0,1)
   #abline(lm(Res[,i+9] ~ Res[,i]), col = "blue")
 }
+# Plot with lattice ####
+head(Res)
+
+residuales <- rbind(data.frame(sp="CEC", hor="Joint h.", Obs=Res[,2], Pred=Res[,11]),
+                    data.frame(sp="CEC", hor="Joint h.", Obs=Res[,3], Pred=Res[,12]),
+                    data.frame(sp="CEC", hor="Joint h.", Obs=Res[,4], Pred=Res[,13]),
+                    data.frame(sp="OC", hor="Joint h.", Obs=Res[,5], Pred=Res[,14]),
+                    data.frame(sp="OC", hor="Joint h.", Obs=Res[,6], Pred=Res[,15]),
+                    data.frame(sp="OC", hor="Joint h.", Obs=Res[,7], Pred=Res[,16]),
+                    data.frame(sp="Clay", hor="Joint h.", Obs=Res[,8], Pred=Res[,17]),
+                    data.frame(sp="Clay", hor="Joint h.", Obs=Res[,9], Pred=Res[,18]),
+                    data.frame(sp="Clay", hor="Joint h.", Obs=Res[,10], Pred=Res[,19]),
+                    data.frame(sp="CEC", hor="C", Obs=Res[,4], Pred=Res[,13]),
+                    data.frame(sp="CEC", hor="B", Obs=Res[,3], Pred=Res[,12]),
+                    data.frame(sp="CEC", hor="A", Obs=Res[,2], Pred=Res[,11]),
+                    data.frame(sp="OC", hor="C", Obs=Res[,7], Pred=Res[,16]),
+                    data.frame(sp="OC", hor="B", Obs=Res[,6], Pred=Res[,15]),
+                    data.frame(sp="OC", hor="A", Obs=Res[,5], Pred=Res[,14]),
+                    data.frame(sp="Clay", hor="C", Obs=Res[,10], Pred=Res[,19]),
+                    data.frame(sp="Clay", hor="B", Obs=Res[,9], Pred=Res[,18]),
+                    data.frame(sp="Clay", hor="A", Obs=Res[,8], Pred=Res[,17]))
+
+library(lattice)
+library(latticeExtra)
+library("hexbin")
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig9.tif", 
+     width = 2000, height = 2000, res =  300)
+plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, 
+               type=c('p', "g"),asp = 0.9,.aspect.ratio = 1, 
+               default.scales = list(tick.number=3, tck = 1, minlength = 3),
+               scales = list(alternating= FALSE,
+                             y=list(relation='free'), x=list(relation='free'),
+                             limits=rep(list(c(10,60), c(0,3), c(0,60)), 4)),
+               par.settings=list(grid.pars=list(fontfamily="serif")),
+               pch = ".", cex = 3, alpha = 0.3, col = "black",
+               xlab = "Observed", ylab = "Predicted"
+               )
+               #panel = panel.hexbinplot())
+
+useOuterStrips(combineLimits(x = plot,
+              margin.x = c(2), margin.y = c(),
+              extend = T, adjust.labels = T),
+              strip = strip.custom(
+                factor.levels = c(expression("CEC"~~("cmol"[c]~~"kg"^{-1})),
+                                  "OC (%)",
+                                  "Clay (%)")))
+dev.off()
+
 
 # create report
 report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
