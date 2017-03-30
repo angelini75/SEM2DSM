@@ -1525,6 +1525,7 @@ writeRaster(x = rp[[2:10]],filename ="paper2.tif", overwrite=T,bylayer=TRUE,suff
 #### PLOT SP #####
 files_m <- list.files(pattern=".tif$", "/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
 files_m <- files_m[8:16]
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/modelling/")
 CEC <- stack(files_m[1:3])
 Clay <- stack(files_m[4:6])
 OC <- stack(files_m[7:9])
