@@ -767,7 +767,7 @@ Sigma.hat[lower.tri(Sigma.hat)] <- NA
 
 dif <- levelplot(abs(DIF[1:9,9:1]),
                  col.regions=colors,
-                 at=seq(0,0.4,0.05),
+                 at=seq(0,0.6,0.05),
                  xlab = NULL, ylab = NULL,                                                                                                                                                                                                                
                  scales=list(x=list(rot=90)),
                  names.attr="SEM",
@@ -853,7 +853,7 @@ DIF.lm[lower.tri(DIF.lm)] <- NA
 
 dif.lm <- levelplot(DIF.lm[1:9,9:1],
                     col.regions=colors,
-                    at=seq(0,0.4,0.05),
+                    at=seq(0,0.6,0.05),
                      xlab = NULL, ylab = NULL,                                                                                                                                                                                                                
                     scales=list(x=list(rot=90)),
                     par.settings=list(grid.pars=list(fontfamily="serif")))
@@ -880,17 +880,6 @@ update(c(dif, dif.lm),
            factor.levels = c(expression("SEM"-"Observed"), 
                              expression("MLR"-"Observed"))))
 dev.off()
-#panel = panel.hexbinplot())
-
-useOuterStrips(combineLimits(x = plot,
-                             margin.x = c(2), margin.y = c(),
-                             extend = T, adjust.labels = T),
-               strip = strip.custom(
-                 factor.levels = c(expression("CEC"~~("cmol"[c]~~"kg"^{-1})),
-                                   "OC (%)",
-                                   "Clay (%)")))
-dev.off()
-
 # print(s, split = c(1,1,3,1))
 # print(sigmah, split=c(2,1,3,1), newpage=FALSE)
 # print(sigmah.lm, split=c(3,1,3,1), newpage=FALSE)
