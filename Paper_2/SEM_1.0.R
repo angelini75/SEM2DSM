@@ -681,7 +681,7 @@ par(mfrow = c(1, 3), pty = "s", mar=c(4,5,2,2), family="serif")
 ## A
 plot(variogramLine(vgm[[1]], maxdist=50000), 
      type="l", lwd=2,col="#AA0000",
-     main= expression("CEC"~~("cmol"[c]~~"kg"^{-1})), 
+     main= expression(bold("CEC"~~("cmol"[c]~~"kg"^{-1}))), 
      xlab = "Distance (m)", 
      ylab = "Semivariance",
      cex.lab = 1.3, ylim=c(5,35))
