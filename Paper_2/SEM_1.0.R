@@ -717,9 +717,9 @@ par(mfrow = c(1, 3), pty = "s", mar=c(4,5,2,2), family="serif")
 ## A
 plot(variogramLine(vgm[[1]], maxdist=50000), 
      type="l", lwd=2,col="#AA0000",
-     main= expression(bold("CEC"~~("cmol"[c]~~"kg"^{-1}))), 
-     xlab = "Distance (m)", 
-     ylab = "Semivariance",
+     main= "CEC", 
+     xlab = "Distance / m", 
+     ylab = expression("Semivariance"~~"/"~("cmol"[c]~~"kg"^{-1})^{2}),
      cex.lab = 1.3, ylim=c(5,35))
 points(gamma ~ dist, vg[[1]], col="#770000")
 #legend(x= "topleft",legend = "SSErr", bty = "n")
@@ -735,9 +735,10 @@ points(gamma ~ dist, vg[[3]], col="#000077")
 ### OC
 ## A
 plot(variogramLine(vgm[[4]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
-     main= "OC (%)",
-     xlab = "Distance (m)", 
-     ylab = "Semivariance", cex.lab = 1.3, ylim=c(0,0.5)) 
+     main= "OC",
+     xlab = "Distance / m", 
+     ylab = expression("Semivariance"~~"/ %"^{2}),
+     cex.lab = 1.3, ylim=c(0,0.5)) 
 points(gamma ~ dist, vg[[4]], col="#770000")
 ## B
 lines(variogramLine(vgm[[5]], maxdist=50000), lwd=2, col="#00AA00")
@@ -749,8 +750,10 @@ points(gamma ~ dist, vg[[6]], col="#000077")
 ### Clay
 ## A
 plot(variogramLine(vgm[[7]], maxdist=50000), type="l", lwd=2,col="#AA0000", 
-     main="Clay (%)",
-     xlab = "Distance", ylab = "Semivariance", cex.lab = 1.3, ylim=c(10,50)) 
+     main="Clay",
+     xlab = "Distance / m", 
+     ylab = expression("Semivariance"~~"/ %"^{2}),
+     cex.lab = 1.3, ylim=c(10,50)) 
 points(gamma ~ dist, vg[[7]], col="#770000")
 ## B
 lines(variogramLine(vgm[[8]], maxdist=50000), lwd=2, col="#00AA00")
