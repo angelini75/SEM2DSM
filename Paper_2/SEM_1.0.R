@@ -476,7 +476,7 @@ residuales <- rbind(data.frame(sp="CEC", hor="Joint h.", Obs=Res[,2], Pred=Res[,
 
 library(lattice)
 library(latticeExtra)
-library("hexbin")
+library(hexbin)
 tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig9.tif", 
      width = 2000, height = 2000, res =  300)
 plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, 
@@ -495,9 +495,9 @@ useOuterStrips(combineLimits(x = plot,
               margin.x = c(2), margin.y = c(),
               extend = T, adjust.labels = T),
               strip = strip.custom(
-                factor.levels = c(expression("CEC"~~("cmol"[c]~~"kg"^{-1})),
-                                  "OC (%)",
-                                  "Clay (%)")))
+                factor.levels = c(expression("CEC"~~"/ cmol"[c]~~"kg"^{-1}),
+                                  "OC / %",
+                                  "Clay / %")))
 dev.off()
 
 
