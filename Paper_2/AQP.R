@@ -111,16 +111,21 @@ abc$which <- factor(abc$which, levels=c('a','b', "c"),
 
 setwd("~/Dropbox/PhD Marcos/Paper 2/Figures/")
 
-tiff(filename = "outfile.tif", width = 1500, height = 1300, res =  300)
-xyplot(top ~ p.q50 | which, data=abc, ylab = "", xlab = "",  #ylab='Depth (cm)',
+
+sp <- xyplot(top ~ p.q50 | which, data=abc, ylab = "", xlab = "",  #ylab='Depth (cm)',
        #xlab='Median bounded by 25th and 75th percentiles',
        lower=abc$p.q25, upper=abc$p.q75, ylim=c(250,-5), type=c('l', "g"),
        panel=panel.depth_function_MA,
        prepanel=prepanel.depth_function,
        cf=abc$contributing_fraction,
        layout=c(3,1), scales=list(x=list(alternating=1, relation="free")),
-       par.settings=list(grid.pars=list(fontfamily="serif")))
-dev.off() 
+       strip = strip.custom(
+         factor.levels = c(expression("CEC"~~"/ cmol"[c]~~"kg"^{-1}),
+                           "OC / %",
+                           "Clay / %")),
+       par.settings=list(grid.pars=list(fontfamily="serif")),
+       sub = expression("Median bounded by 25"^{th}~"and 75"^{th}~"percentiles"))
+
 
 a <- slab(p, ~ name, class_prob_mode=2)
 s <- p[3, ]
@@ -131,8 +136,7 @@ a.long <- melt(a, id.vars=c('top','bottom'), measure.vars=levels(p$name))
 # plot horizon probabilities derived from simulated data
 # dashed lines are the original horizon boundaries
 library(lattice)
-tiff(filename = "outfile3.tif", width = 1000, height = 1300, res =  300)
-xyplot(top ~ value, groups=variable, data=a.long, subset=value > 0,
+hor <- xyplot(top ~ value, groups=variable, data=a.long, subset=value > 0,
        ylim=c(250, -5), type=c('l', "g"), asp=1.5,
        ylab='', xlab='',draw.key = TRUE,
        #panel=panel.depth_function,
@@ -141,15 +145,32 @@ xyplot(top ~ value, groups=variable, data=a.long, subset=value > 0,
        strip = strip.custom(which.given = 3,
                             strip.names = TRUE,
                             var.name = "Horizons"),
-       par.settings=list(grid.pars=list(fontfamily="serif")))#,
-       #auto.key=list(columns=3, lines=TRUE, points=FALSE))
+       par.settings=list(grid.pars=list(fontfamily="serif")),
+       auto.key=list(columns=3, lines=TRUE,
+                     points = FALSE, space = "bottom"))
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/sp.tif",
+     width = 1500, height = 1300, res =  250)
+sp
+dev.off()
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/hor.tif",
+     width = 1500, height = 1300, res =  250)
+hor
 dev.off()
 
+library(latticeExtra)
 
-
-
-
-
+tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig2.tif",
+     width = 2500, height = 1300, res =  250)
+update(c(sp,hor),
+       xlab = NULL, ylab = "Depth / cm", x.same = FALSE, 
+       y.same = TRUE, layout = c(4, 1), 
+         scales = list(alternating= FALSE),
+         strip = strip.custom(
+           factor.levels = c(expression("CEC"~~"/ cmol"[c]~~"kg"^{-1}),
+                             "OC / %",
+                             "Clay / %",
+                             "Horizons / freq.")))
+dev.off()
 # select a profile to use as the basis for simulation
 s <- p[3, ]
 
