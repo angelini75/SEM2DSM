@@ -676,14 +676,14 @@ for(i in 8:10){
 # Three graphs (soil properties)
 tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig12.tif", 
      width = 2500, height = 1000, res =  350)
-par(mfrow = c(1, 3), pty = "s", mar=c(5,2,2,2), family="serif")
+par(mfrow = c(1, 3), pty = "s", mar=c(4,5,2,2), family="serif")
 ### CEC
 ## A
 plot(variogramLine(vgm[[1]], maxdist=50000), 
      type="l", lwd=2,col="#AA0000",
      main= expression("CEC"~~("cmol"[c]~~"kg"^{-1})), 
      xlab = "Distance (m)", 
-     ylab = expression("Semivariance"~~("cmol"[c]~~"kg"^{-1})^{2}),
+     ylab = "Semivariance",
      cex.lab = 1.3, ylim=c(5,35))
 points(gamma ~ dist, vg[[1]], col="#770000")
 #legend(x= "topleft",legend = "SSErr", bty = "n")
