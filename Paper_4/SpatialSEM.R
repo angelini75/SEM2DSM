@@ -82,15 +82,8 @@ b.x <- par.list$beta[which(par.list$beta != 0)]
 p.x <- as.vector(par.list$psi)[as.vector(par.list$psi)!=0]
 
 x2MLIST <- function(x, MLIST) {
-  beta.x <- x[b.x] # lambda: link between observed and latent variables
-  #lambda.x <- x[0] # lambda: link between observed and latent variables
-  #theta.x <- x[] # theta: variance of observed variables
-  psi.x <- x[b.x] # var-covar matriz of latent var.
-  
-  #MLIST$lambda[ c(2,  3, 14, 15, 26, 27) ]            <- lambda.x
-  #MLIST$theta[ c(1, 11, 21, 31, 41, 51, 61, 71, 81) ] <- theta.x
-  MLIST$psi[which(as.vector(par.list$psi)!=0) ]           <- psi.x
-  MLIST$beta[which(as.vector(par.list$beta)!=0)]          <- beta.x
+  MLIST$psi[which(as.vector(par.list$psi)!=0) ]           <- x[p.x]
+  MLIST$beta[which(as.vector(par.list$beta)!=0)]          <- x[b.x]
   MLIST
 }
 # how to compute SigmaHat
@@ -180,6 +173,8 @@ objective_ML <- function(x, MLIST) {
   objective
 }
 
+
+
 # get starting values
 start.x <- parTable(fit)$start[ parTable(fit)$free > 0 ]
 
@@ -192,17 +187,34 @@ start.x <- parTable(fit)$start[ parTable(fit)$free > 0 ]
 # 77.72896
 
 # estimate parameters ML
-out.ML  <- nlminb(start = start.x, objective = objective_ML,
-                  MLIST = MLIST)
+#out.ML  <- nlminb(start = start.x, objective = objective_ML,
+#                  MLIST = MLIST)
 
-out.ML$par
+#out.ML$par
+
+# do in parallel
+library(DEoptim)
+library(parallel)
+library(snow)
+library(doSNOW)
+NumCore <- detectCores()
+cl <- makeSOCKcluster(NumCore)
+clusterEvalQ(cl, library(lavaan)) # load any necessary libraries
+clusterExport(cl, list('MLIST', "computeSigmaHat.LISREL", 
+                       "get.IB.inv", "x2MLIST", "b.x", "p.x", "par.list")) # copy any necessary objects
+registerDoSNOW(cl)
 
 library(DEoptim)
 results <- DEoptim(fn = objective_ML, lower = start.x-1, upper = start.x+1, 
-        control = list(reltol=10E-10, steptol=50, itermax = 5000, 
-                       NP = 1000), MLIST = MLIST)
+        control = list(reltol=10E-15, steptol=50, itermax = 5000, trace = T, 
+                       CR = 0.5, NP = 1000, F=0.8, strategy =2,
+                       parallelType = 1,
+                       packages = 'lavaan', 
+                       parVar = c('MLIST', "computeSigmaHat.LISREL", 
+                                  "get.IB.inv", "x2MLIST", "b.x", 
+                                  "p.x", "par.list")), MLIST = MLIST)
 # trace = T, CR = 0.5, F = 0.8, NP = length(start.x)*10,
-as.vector(results$optim$bestmem) - start.x
+x <- as.vector(results$optim$bestmem) 
 
 par1          par2          par3          par4          par5          par6          par7          par8 
 0.8137945249  0.2275433953 -0.5394368627 -0.9855358009 -0.4572854421  0.1146149697  0.8188679047  0.6980586881 
