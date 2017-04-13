@@ -147,15 +147,19 @@ start.x <- parTable(fit)$start[ parTable(fit)$free > 0 ]
 # estimate parameters ML
 out.ML  <- nlminb(start = start.x, objective = objective_ML, 
                   MLIST = MLIST, control = list(eval.max = 5000, trace = 1))
-out.ML$objective * 156
 
 # chi-square
-out.ML$objective * 301
+out.ML$objective * 156
 # 85.30551 
 library(DEoptim)
 results <- DEoptim(fn = objective_ML, lower = start.x-1, upper = start.x+1, 
-                   control = list(reltol=10E-15, steptol=50, itermax = 100, trace = T, 
+                   control = list(reltol=10E-15, steptol=50, itermax = 5000, trace = T, 
                                   CR = 0.5, NP = 1000, F=0.8, strategy =2), MLIST = MLIST)
-results$optim$bestmem
+# chi-square
+results$optim$bestval * 156
 
-out.ML$par - results$optim$bestmem
+summary(out.ML$par - results$optim$bestmem)
+
+# > summary(out.ML$par - results$optim$bestmem)
+# Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
+# -0.0175500 -0.0011810  0.0007089  0.0173700  0.0026310  0.4331000 
