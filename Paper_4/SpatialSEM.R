@@ -63,7 +63,9 @@ Arg[,1] <- e[,1]
 setwd("~/Documents/SEM2DSM1/Paper_3/data/")
 d <- read.csv("KS.data-0.2.csv")[,c(-1)] 
 name(d)
-names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
+names(d)[2:10] <- c("Clay.A", "Clay.B", "Clay.C",
+                    "CEC.A","CEC.B","CEC.C",
+                    "OC.A","OC.B","OC.C")
 # remove outlayers
 # d <- d[d$idp!=26058,]
 # d <- d[d$idp!=22961,]
@@ -91,6 +93,7 @@ d$ndwi.a <- (d$ndwi.a+10)^.3
 round(stat.desc(d,norm = TRUE),3)
 # New mean and sd
 STt.ks <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+#write.csv(STt.ks, "/home/marcos/Documents/SEM2DSM1/Paper_4/data/STt.ks.csv")
 
 # standardised data set ####
 std <- function(x, st){
@@ -125,6 +128,7 @@ sum(X[1,])
 sum(X[2,])
 # 106 is the most similar to median
 ks <- ks[c(-102),]
+#write.csv(ks,"/home/marcos/Documents/SEM2DSM1/Paper_4/data/ks.csv")
 ### END ###
 #######################################
 
@@ -165,7 +169,7 @@ OC.Br ~ OC.Ar + clay.Br + evisd + lstm + ndwi.a + vdchn
 OC.Cr ~ OC.Br 
 
 CEC.Ar ~ OC.Ar + clay.Ar 
-CEC.Br ~ clay.Br + 0.01*OC.Br
+CEC.Br ~ clay.Br + 0*OC.Br
 CEC.Cr ~ clay.Cr + 0*OC.Cr
 
 #------------------#
@@ -258,17 +262,17 @@ for(i in seq_along(ks[,1])){
 
 # Model variance
 
-summary(Var)
-Var <- apply(Var, MARGIN = 2, FUN = mean)
-
-# function to unstandardise the data
-unstd<- function(x, st){
-  y <- x
-  for(i in seq_along(names(x))){
-    y[,i] <- (x[,i] * st[i,2]) + st[i,1]
-  }
-  y
-}
+# summary(Var)
+# Var <- apply(Var, MARGIN = 2, FUN = mean)
+# 
+# # function to unstandardise the data
+# unstd<- function(x, st){
+#   y <- x
+#   for(i in seq_along(names(x))){
+#     y[,i] <- (x[,i] * st[i,2]) + st[i,1]
+#   }
+#   y
+# }
 
 # Accuracy measures ####
 # Unstandardized residuals #
@@ -301,9 +305,9 @@ library(gstat)
 coordinates(R) <- ~X+Y
 
 #define crs
-wgs84 <- CRS("+init=epsg:4326")
-UTM14N <- CRS("+init=epsg:32614")
-modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+# wgs84 <- CRS("+init=epsg:4326")
+# UTM14N <- CRS("+init=epsg:32614")
+# modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 NAD83.KS.N <- CRS("+init=epsg:2796")
 
 # Assign projection
@@ -314,6 +318,7 @@ zerodist(R, zero=0.0)
 #should be zero
 # R <- remove.duplicates(R, zero = 0.0, remove.second = TRUE)
 
+#reduce ####
 # g <- list()
 # vg <- list()
 # vgm <- list()
@@ -509,18 +514,18 @@ g <- list()
 vg <- list()
 vgm <- list()
 
-# CEC.A
-g[[10]] <-  gstat(id = c("CEC.A", "CEC.B", "CEC.C"), data = R)
-vg[[1]] <- variogram(g[[1]], width = 7000, cutoff = 450000, cressie = TRUE)
-plot(vg[[1]], plot.numbers = TRUE)
-
-# # choose initial variogram model and plot:
-vgm[[1]] <- vgm(nugget = 20,
-                psill= 1,
-                range=100000,
-                model = "Exp")
-vgm[[1]] <- fit.variogram(vg[[1]], vgm[[1]], fit.method = 6)
-plot(vg[[1]], vgm[[1]], main = "CEC.A")
+# # CEC.A
+# g[[10]] <-  gstat(id = c("CEC.A", "CEC.B", "CEC.C"), data = R)
+# vg[[1]] <- variogram(g[[1]], width = 7000, cutoff = 450000, cressie = TRUE)
+# plot(vg[[1]], plot.numbers = TRUE)
+# 
+# # # choose initial variogram model and plot:
+# vgm[[1]] <- vgm(nugget = 20,
+#                 psill= 1,
+#                 range=100000,
+#                 model = "Exp")
+# vgm[[1]] <- fit.variogram(vg[[1]], vgm[[1]], fit.method = 6)
+# plot(vg[[1]], vgm[[1]], main = "CEC.A")
 
 names(R)[8:10] <- c("Clay.A", "Clay.B", "Clay.C") 
 rm(cv)
@@ -535,79 +540,93 @@ cv <- gstat(cv, id = "Clay.B", formula = Clay.B ~ 1, data = R, nmax = 10)
 cv <- gstat(cv, id = "Clay.C", formula = Clay.C ~ 1, data = R, nmax = 10)
 cv <- gstat(cv, 
             model = vgm(nugget = 0.20,
-                        psill= 1,
+                        psill= 1.1,
                         range=100000,
                         model = "Exp"), 
             fill.all = T)
 cv
 cv.var<- variogram(object = cv, cutoff = 450000) 
 
-plot(cv.var)
-names(meuse.g)
-cv.fit<-fit.lmc(v = cv.var,g =  cv) 
+cv.fit<-fit.lmc(v = cv.var,g =  cv, fit.lmc = F, fit.ranges = F) 
 
-png(filename = "~/Dropbox/PhD Marcos/Paper 4/Figures/Fig2.png", 
-     width = 3000, height = 3000, res =  250)
+# png(filename = "~/Dropbox/PhD Marcos/Paper 4/Figures/Fig2.png", 
+     # width = 3000, height = 3000, res =  250)
 plot(cv.var, model=cv.fit, 
      main="Variograms and cross-variograms of standardized residuals",
      xlab = "Distance / m", 
      ylab = "Semivariance",
      scales=list(x = list(alternating = 1), y = list(alternating = 1)),
      par.settings=list(grid.pars=list(fontfamily="serif")))
-dev.off()
+# dev.off()
 
-#### fit.lmc function ####
-# function (v, g, model, fit.ranges = FALSE, fit.lmc = !fit.ranges, 
-#           correct.diagonal = 1, ...) 
-# {
+Rdist <- spDists(R)
+Rdist[1:8,1:8]
+f <- names(cv$model)
+p <- lower.tri(matrix(data = NA, nrow = 9, ncol = 9), diag = TRUE)
+up <- upper.tri(matrix(data = NA, nrow = 9, ncol = 9), diag = FALSE)
+p[p==FALSE] <- NA
+place <- which(p)
+C <- p
+C0 <- p
+a <- p
+alpha <- p
 
-v = cv.var; g =  cv
-  posdef = function(X) {
-    q = eigen(X)
-    d = q$values
-    d[d < 0] = 0
-    q$vectors %*% diag(d, nrow = length(d)) %*% t(q$vectors)
-  }
-  n = names(g$data)
-  for (i in 1:length(n)) {
-    for (j in i:length(n)) {
-      name = ifelse(i == j, n[i], cross.name(n[i], n[j]))
-      x = v[v$id == name, ]
-      
-      m = g$model[[name]]
-      }
-  }
-#  if (fit.lmc) {
-    m = g$model[[n[1]]]
-    for (k in 1:nrow(m)) {
-      psill = matrix(NA, nrow = length(n), ncol = length(n))
-      for (i in 1:length(n)) {
-        for (j in i:length(n)) {
-          name = ifelse(i == j, n[i], cross.name(n[i], 
-                                                 n[j]))
-          psill[i, j] = psill[j, i] = cv.var$model[[name]][2, 
-                                                      "psill"]
-        }
-      }
-      psill = posdef(psill)
-      diag(psill) = diag(psill) #* correct.diagonal
-      for (i in 1:length(n)) {
-        for (j in i:length(n)) {
-          name = ifelse(i == j, n[i], cross.name(n[i], 
-                                                 n[j]))
-          g$model[[name]][k, "psill"] = psill[i, j]
-        }
-      }
-    }
-  }
-  g
+cv$model[[1]]
+for(i in seq_along(f)){
+  a[place[i]] <- cv$model[[f[i]]][2,"range"]
+  C[place[i]] <- cv$model[[f[i]]][2,"psill"] - cv$model[[f[i]]][1,"psill"]
+  C0[place[i]] <- cv$model[[f[i]]][1,"psill"]
+  alpha[place[i]] <- C[place[i]]/(C0[place[i]] + C[place[i]])
 }
+# this is Sigma fitted with lavaan
+IB%*%V%*%t(IB)+Th # Th is the diag matr. of measurement errors
 
-cv.fit$model$CEC.A.CEC.B
+# The starting values of Sigma zero (Sigma0) depart from
+# Matrix of Beta coefficients
+(B <- lavTech(my.fit.lv.ML, "start")$beta[1:9,1:9])
+# Identity matrix
+I <- diag(nrow = 9, ncol = 9)
+# Matrix of Gamma coefficients
+A <- lavTech(my.fit.lv.ML, "start")$beta[1:9,10:18]
+# Matrix of Psi coefficients (model error variance-covariance)
+(Psi <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9])
+# Matrix of measurement error (Epsylon)
+Th <- lavTech(my.fit.lv.ML, "start")$theta[1:9,1:9]
+(IB <- solve(I - B))
+
+# Sigma0
+(Sigma0 <- IB%*%V%*%t(IB)+Th)
+# Make Sigma0 np x np
+Sigma0.e <- kronecker(Y = Sigma0, X = matrix(1,nrow = 153,ncol = 153),FUN = "*")
+round(Sigma0.e[1:12,1:12],2)
+library(lattice)
+levelplot(Sigma0.e[1:90,1:90])
+
+# Create exp(-h/a)
+a[which(up)] <- t(a)[upper.tri(a, F)]
+exp <- exp(kronecker(X = -Rdist, Y = a,FUN = "/"))
+levelplot(exp[1:90,1:90])
+
+# Make alpha np x np
+alpha[which(up)] <- t(alpha)[upper.tri(alpha, F)]
+alpha.e <- kronecker(X = alpha, Y = matrix(1,nrow = 153,ncol = 153),FUN = "*")
+levelplot(alpha.e[1:90,1:90]) # it is constant because we choose une single value for all cross variograms
+
+# Let us call Rho = alpha * exp[-h/a]
+Rho <- exp
+for(i in seq_along(Rdist)) {
+  if(exp[i] == 1){
+    Rho[i] <- 1
+  } else {
+    Rho[i] <- alpha.e[i] * exp[i]
+  }
+}
+levelplot(Rho[1:90,1:90])
+
+Sigma <- Rho * Sigma0.e
+levelplot(Sigma[1:90,1:90])
 
 
-
-
-
-
-
+# png(filename = "/home/marcos/Desktop/Sigma.png", width = 3200, height = 3000, res = 500)
+# levelplot(Sigma)
+# dev.off()
