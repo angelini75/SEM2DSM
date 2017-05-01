@@ -40,12 +40,22 @@ proj4string(R) <- NAD83.KS.N
 h <- spDists(R) # in reality this will vary 
 
 # Get RHO ####
-RHO <- matrix(rep(NA,n^2), nrow = n)
-for(i in seq_along(RHO)) {
-  RHO[i] <- alpha * exp(-h[i]/a)
+get.RHO <- function(range = a, 
+                    samples = n, 
+                    dist = h, 
+                    ratio = alpha ) {
+  a <- range
+  n <- samples
+  h <- dist
+  alpha <- ratio
+  RHO <- matrix(rep(NA,n^2), nrow = n)
+  for(i in seq_along(RHO)) {
+    RHO[i] <- alpha * exp(-h[i]/a)
+  }
+  diag(RHO) <- 1
+  RHO
 }
-diag(RHO) <- 1
-RHO
+RHO <- get.RHO()
 
 # Get SIGMA0 ####
 #from model 4
@@ -112,7 +122,7 @@ new.par.list <- list(A = par.list$beta[1:9,10:18],
                      alpha = 52,
                      a = 53)
 
-MLIST <- list(A = A, B = B, PSI = PSI, TH = TH, alpha = alpha, a = a)
+MLIST <- list(A = A, B = B, PSI = PSI, TH = TH, alpha = alpha, a = a, h = h)
 
 x2MLIST <- function(x, MLIST) {
   A.x <- x[as.vector(new.par.list$A)[as.vector(new.par.list$A)!=0]]
@@ -128,7 +138,7 @@ x2MLIST <- function(x, MLIST) {
   MLIST$a[which(as.vector(new.par.list$a)!=0)]          <- a.x
   MLIST
 }
-# function
+# functions ####
 # get residuals
 get.res <- function (MLIST = NULL, y = y, x = x){
   A <- MLIST$A
@@ -143,7 +153,8 @@ get.res <- function (MLIST = NULL, y = y, x = x){
   res
 }
 head(get.res(MLIST = MLIST, y = s, x = p)) 
-# 
+
+# IB inv 
 get.IB.inv <- function (MLIST = NULL) {
   BETA <- MLIST$B
   nr <- nrow(MLIST$PSI)
@@ -152,41 +163,43 @@ get.IB.inv <- function (MLIST = NULL) {
   IB.inv <- solve(tmp)
 }
 
-
-computeSigmaHat.LISREL <- function (MLIST = NULL) 
+# 
+get.IB.PSI.IBinv <- function (MLIST = NULL) 
 {
-  LAMBDA <- MLIST$lambda
-  nvar <- nrow(LAMBDA)
-  PSI <- MLIST$psi
-  THETA <- MLIST$theta
-  BETA <- MLIST$beta
-  library(lavaan)
-  if (is.null(BETA)) {
-    LAMBDA..IB.inv <- LAMBDA
-  }
-  else {
-    lavaan:::.internal_get_IB.inv(MLIST = MLIST)
-    IB.inv <- get.IB.inv(MLIST = MLIST)
-    LAMBDA..IB.inv <- LAMBDA %*% IB.inv
-  }
-  VYx <- tcrossprod(LAMBDA..IB.inv %*% PSI, LAMBDA..IB.inv) + # faster than t(x) %*% y
+  PSI <- MLIST$PSI
+  THETA <- MLIST$TH
+  #BETA <- MLIST$B
+  IB.inv <- get.IB.inv(MLIST = MLIST)
+  IB.PSI.IBinv <- tcrossprod(IB.inv %*% PSI, IB.inv) + # faster than t(x) %*% y
     THETA
-  if (delta && !is.null(MLIST$delta)) {
-    DELTA <- diag(MLIST$delta[, 1L], nrow = nvar, ncol = nvar)
-    VYx <- DELTA %*% VYx %*% DELTA
-  }
-  VYx
+  IB.PSI.IBinv
 }
+
+# get RHO
+get.RHO <- function(MLIST = NULL, 
+                    samples = n) {
+  a <- MLIST$a
+  n <- nrow(MLIST$h)
+  h <- MLIST$h
+  alpha <- MLIST$alpha
+  RHO <- matrix(rep(NA,n^2), nrow = n)
+  for(i in seq_along(RHO)) {
+    RHO[i] <- alpha * exp(-h[i]/a)
+  }
+  diag(RHO) <- 1
+  RHO
+}
+get.RHO(MLIST = MLIST)
 
 # objective function 'ML'
 
-# Sigma <- matrix(data = c(0.59156973, 0.46014155, 0.65501854, 0.05000000, 0.05664468, 0.04620913, 0.05000000, 0.06125368, 0.04272028, 0.46014155, 0.35791257, 0.50949402, 0.03889157, 0.04406002, 0.03594292, 0.03889157, 0.04764504, 0.03322918, 0.65501854, 0.50949402, 0.72527254, 0.05536275, 0.06272011, 0.05116529, 0.05536275, 0.06782344, 0.04730225, 0.05000000, 0.03889157, 0.05536275, 1.19017633, 0.57889891, 0.47224938, 0.05000000, 0.06125368, 0.04272028, 0.05664468, 0.04406002, 0.06272011, 0.57889891, 1.34672282, 0.53500831, 0.05664468, 0.06939390, 0.04839754, 0.04620913, 0.03594292, 0.05116529, 0.47224938, 0.53500831, 1.07387710, 0.04620913, 0.05660959, 0.03948134, 0.05000000, 0.03889157, 0.05536275, 0.05000000, 0.05664468, 0.04620913, 1.18283419, 0.62172721, 0.43361254, 0.06125368, 0.04764504, 0.06782344, 0.06125368, 0.06939390, 0.05660959, 0.62172721, 1.59155446, 0.53120726, 0.04272028, 0.03322918, 0.04730225, 0.04272028, 0.04839754, 0.03948134, 0.43361254, 0.53120726, 0.96866021),
-#                 nrow = 9, ncol = 9)
 objective_ML <- function(x, MLIST) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
-  Sigma <- computeSigmaHat.LISREL(MLIST = MLIST)
-  if (all(eigen(Sigma)$values >0)) {
+  SIGMA0 <- get.IB.PSI.IBinv(MLIST = MLIST)
+  RHO <- get.RHO(MLIST = MLIST)
+  SIGMA <- kronecker(RHO, SIGMA0)
+  if (all(eigen(SIGMA)$values >0)) {
     nvar <- NROW(Sigma)
     cS <- chol(Sigma)
     Sigma.inv <- chol2inv(cS)
