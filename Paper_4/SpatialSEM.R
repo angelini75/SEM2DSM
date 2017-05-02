@@ -143,9 +143,9 @@ CEC.Cr =~ 1*CEC.C
 OC.Ar =~ 1*OC.A
 OC.Br =~ 1*OC.B
 OC.Cr =~ 1*OC.C
-clay.Ar =~ 1*clay.A
-clay.Br =~ 1*clay.B
-clay.Cr =~ 1*clay.C
+Clay.Ar =~ 1*Clay.A
+Clay.Br =~ 1*Clay.B
+Clay.Cr =~ 1*Clay.C
 ## Measurement error #
 # CEC.A ~~ 0.12 * CEC.A
 # CEC.B ~~ 0.25 * CEC.B
@@ -153,24 +153,24 @@ clay.Cr =~ 1*clay.C
 OC.A ~~ 0.1 * OC.A
 OC.B ~~ 0.1 * OC.B
 OC.C ~~ 0.1 * OC.C
-clay.A ~~ 0.05 * clay.A
-clay.B ~~ 0.05 * clay.B
-clay.C ~~ 0.05 *clay.C
+Clay.A ~~ 0.05 * Clay.A
+Clay.B ~~ 0.05 * Clay.B
+Clay.C ~~ 0.05 *Clay.C
 
 #--------------------#
 # Structural model (gamma and betta matrices)
 #--------------------#
-clay.Cr ~ dem + vdchn + X + lstm 
-clay.Ar ~ clay.Cr + evisd + lstm + ndwi.b #+ Y 
-clay.Br ~ clay.Ar + clay.Cr + vdchn + twi + ndwi.b + Y
+Clay.Cr ~ dem + vdchn + X + lstm 
+Clay.Ar ~ Clay.Cr + evisd + lstm + ndwi.b #+ Y 
+Clay.Br ~ Clay.Ar + Clay.Cr + vdchn + twi + ndwi.b + Y
 
-OC.Ar ~ clay.Ar + evisd + lstm + ndwi.b 
-OC.Br ~ OC.Ar + clay.Br + evisd + lstm + ndwi.a + vdchn
+OC.Ar ~ Clay.Ar + evisd + lstm + ndwi.b 
+OC.Br ~ OC.Ar + Clay.Br + evisd + lstm + ndwi.a + vdchn
 OC.Cr ~ OC.Br 
 
-CEC.Ar ~ OC.Ar + clay.Ar 
-CEC.Br ~ clay.Br + 0*OC.Br
-CEC.Cr ~ clay.Cr + 0*OC.Cr
+CEC.Ar ~ OC.Ar + Clay.Ar 
+CEC.Br ~ Clay.Br + 0*OC.Br
+CEC.Cr ~ Clay.Cr + 0*OC.Cr
 
 #------------------#
 # Model error covariance (Psi)
@@ -182,13 +182,13 @@ CEC.Cr ~~ CEC.Br
 #------------------#
 # lavaan suggestions
 #------------------#
-clay.Br  ~    lstm
-clay.Ar ~ twi
+Clay.Br  ~    lstm
+Clay.Ar ~ twi
 
-CEC.Ar ~~ clay.Br
-OC.Ar ~   clay.Br
+CEC.Ar ~~ Clay.Br
+OC.Ar ~   Clay.Br
 OC.Br ~   dem
-OC.Cr ~~   clay.Br
+OC.Cr ~~   Clay.Br
 
 CEC.Cr  ~  ndwi.a
 CEC.Br  ~  ndwi.a + dem
