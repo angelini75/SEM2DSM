@@ -11,7 +11,7 @@ n=153
 # alpha = C/(C0 + C) = 0.8/(0.2 + 0.8) 
 alpha <- 0.8 
 # Set range ####
-a <- 1e+05
+a <- 1 #e+05
 
 # Get distances (h) from locations ####
 # Load locations 
@@ -27,14 +27,14 @@ unstd<- function(x, st){
   y
 }
 # unstandardize coordinates X and Y
-R <- unstd(x = ks[,c(20,21)],st = STt.ks[c(20,21),])
-
+#R <- unstd(x = ks[,c(20,21)],st = STt.ks[c(20,21),])
+R <- ks
 library(sp)
 library(gstat)
 coordinates(R) <- ~X+Y
 #define crs
-NAD83.KS.N <- CRS("+init=epsg:2796")
-proj4string(R) <- NAD83.KS.N
+#NAD83.KS.N <- CRS("+init=epsg:2796")
+#proj4string(R) <- NAD83.KS.N
 
 # h = n x n matrix of distances between samples 
 h <- spDists(R) # in reality this will vary 
@@ -100,7 +100,7 @@ for(i in seq_along(p[,1])){
 
 
 # SIGMA0
-SIGMA0 <- IB%*%Psi%*%t(IB)+Th
+SIGMA0 <- IB%*%PSI%*%t(IB)+TH
 
 # Get SIGMA ####
 SIGMA <- kronecker(RHO, SIGMA0)
@@ -110,9 +110,9 @@ plotMat <- function(matrix=matrix){
   library(lattice)
   print(levelplot(plotMat, ylab="row", xlab="column"))
 }
-plotMat(RHO)
-plotMat(SIGMA0)
-plotMat(SIGMA[1:120,1:120])
+# plotMat(RHO)
+# plotMat(SIGMA0)
+# plotMat(SIGMA[1:120,1:120])
 
 # Optimization ####
 # function to replace free parameters
@@ -122,20 +122,20 @@ new.par.list <- list(A = par.list$beta[1:9,10:18],
                      alpha = 52,
                      a = 53)
 
-MLIST <- list(A = A, B = B, PSI = PSI, TH = TH, alpha = alpha, a = a, h = h)
+MLIST <- list(A = A, B = B, PSI = PSI, alpha = alpha, a = a, TH = TH, h = h)
 
 x2MLIST <- function(x, MLIST) {
-  A.x <- x[as.vector(new.par.list$A)[as.vector(new.par.list$A)!=0]]
-  B.x <- x[as.vector(new.par.list$B)[as.vector(new.par.list$B)!=0]]
-  PSI.x <- x[as.vector(new.par.list$PSI)[as.vector(new.par.list$PSI)!=0]]
-  alpha <- x[52]
-  a <- x[53]
-  
-  MLIST$A[which(as.vector(new.par.list$A)!=0)]          <- A.x
-  MLIST$B[which(as.vector(new.par.list$B)!=0)]          <- B.x
-  MLIST$PSI[which(as.vector(new.par.list$PSI)!=0)]      <- PSI.x
-  MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)]  <- alpha.x
-  MLIST$a[which(as.vector(new.par.list$a)!=0)]          <- a.x
+  par <- list(A = x[1:25],
+            B = x[26:37],
+            PSI = x[38:51],
+            alpha = x[52],
+            a = x[53])
+  MLIST$A[which(as.vector(new.par.list$A)!=0)]          <- par$A
+  MLIST$B[which(as.vector(new.par.list$B)!=0)]          <- par$B
+  MLIST$PSI[which(as.vector(new.par.list$PSI)!=0)]      <- 
+    par$PSI[c(1,2,3,4, 2 ,5,6, 3 , 6 ,7,8,9,10,11,12, 4 , 11 ,13,14)]
+  MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)]  <- par$alpha
+  MLIST$a[which(as.vector(new.par.list$a)!=0)]          <- par$a
   MLIST
 }
 # functions ####
@@ -149,8 +149,8 @@ get.res <- function (MLIST = NULL, y = y, x = x){
   for(i in seq_along(p[,1])){
     res[i,] <- t(s[i,] - IB %*% A %*% p[i,])
   }
-  colnames(res) <- colnames(y)
-  res
+  #colnames(res) <- colnames(y)
+  as.vector(res)
 }
 head(get.res(MLIST = MLIST, y = s, x = p)) 
 
@@ -193,19 +193,22 @@ get.RHO(MLIST = MLIST)
 
 # objective function 'ML'
 
+
+
 objective_ML <- function(x, MLIST) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
+  res <- get.res(MLIST = MLIST)
   SIGMA0 <- get.IB.PSI.IBinv(MLIST = MLIST)
   RHO <- get.RHO(MLIST = MLIST)
   SIGMA <- kronecker(RHO, SIGMA0)
-  if (all(eigen(SIGMA)$values >0)) {
-    nvar <- NROW(Sigma)
-    cS <- chol(Sigma)
+  if (all(abs(eigen(SIGMA, only.values = T)$values)>1e-08)) {
+    nvar <- NROW(SIGMA)
+    cS <- chol(SIGMA)
     Sigma.inv <- chol2inv(cS)
     diag.cS <- diag(cS)
     logdet <- sum(log(diag.cS * diag.cS))
-    objective <- logdet + sum(diag(S %*% Sigma.inv)) - S.logdet - nvar
+    objective <- logdet + t(res) %*% Sigma.inv %*% res
     cat("objective = ", objective, "\n")
     objective
   } else {
@@ -214,7 +217,17 @@ objective_ML <- function(x, MLIST) {
   }
 }
 # get starting values
-start.x <- parTable(fit)$start[ parTable(fit)$free > 0 ]
+
+start.x <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:18][
+  which(as.vector(new.par.list$A)!=0)]
+start.x <- append(start.x, inspect(my.fit.lv.ML, "est")$beta[1:9,1:9][
+  which(as.vector(new.par.list$B)!=0)])
+starting.psi <- partable(my.fit.lv.ML)$est[
+  unique(as.vector(lavTech(my.fit.lv.ML,"partable")$psi[1:9,1:9]))
+]
+start.x <- append(start.x, starting.psi)
+start.x <- append(start.x, MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)])
+start.x <- append(start.x, MLIST$a[which(as.vector(new.par.list$a)!=0)] )
 
 # estimate parameters ML
 out.ML  <- nlminb(start = start.x, objective = objective_ML, 
