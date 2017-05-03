@@ -5,8 +5,13 @@ library(gstat)
 
 
 rm(list=ls()[ls()!="my.fit.lv.ML"])
+# utils
 name <- function(x) { as.data.frame(names(x))}
-
+plotMat <- function(matrix=matrix){
+  plotMat <- t(apply(matrix,2,rev)) # rotate 90 degrees clockwise
+  library(lattice)
+  print(levelplot(plotMat, ylab="row", xlab="column"))
+}
 ################################################################################
 ################ HOW LAVAAN ESTIMATES THE COEFICIENTS? #########################
 ################################################################################
@@ -125,44 +130,88 @@ lavMLIST <- x2lavMLIST(lav.out$par, lavMLIST)
 ########## HOW TO ESTIMATES THE COEFICIENTS WITH SPATIAL PROCESS? ##############
 ################################################################################
 
+# Load data with locations in the same order that is defined in lavaan
+sp <- rownames(inspect(my.fit.lv.ML, "est")$lambda)[1:9] #names of soil properties
+covar <- rownames(inspect(my.fit.lv.ML, "est")$lambda)[10:18] # names of covariates
+ks <- read.csv("ks.csv")[,-1] # standardized data
+s <- as.matrix(ks[,sp]) # soil properties
+p <- as.matrix(ks[,covar]) #covariates
 
 
-
-
-
-
-
-
-
-
-
-
-
-# Set alpha ####
+# Define the parameters alpha and range, and estimate distance matrix:
+# Sill to nugget ratio (alpha) ####
 # alpha = C/(C0 + C) = 0.8/(0.2 + 0.8) 
 alpha <- 0 
-# Set range ####
+# Range (a) ####
 a <- 1 #e+05
 
-# Get distances (h) from locations ####
-# Load data with locations 
-ks <- read.csv("ks.csv")[,-1] # standardized data
-
+# Distance (h) ####
 # make ks spatial objetc
 coordinates(ks) <- ~X+Y
-
 # h = n x n matrix of distances between samples 
 h <- spDists(ks) # in reality this will vary 
 
-# Get RHO ####
-get.RHO <- function(range = a, 
-                    samples = n, 
-                    dist = h, 
-                    ratio = alpha ) {
-  a <- range
-  n <- samples
-  h <- dist
-  alpha <- ratio
+# GAMMA, BETA, PSI and THETA matrices ####
+# We use lavaan estimates ("est") as starting values 
+# Matrix of BETA coefficients
+B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9] # s x s
+# Identity matrix
+I <- diag(nrow = 9, ncol = 9)
+# Matrix of GAMMA coefficients
+A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:18] # s x p
+# Matrix of Psi coefficients (model error variance-covariance)
+PSI <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9] # s x s
+# Matrix of measurement error (Epsylon)
+TH <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9] # s x s
+# (I - B)^{inverse}
+get.IB.inv <- function (m = NULL) {
+  BETA <- m$B
+  nr <- nrow(m$PSI)
+  if (!is.null(BETA)) {
+    tmp <- -BETA
+    tmp[lav_matrix_diag_idx(nr)] <- 1
+    IB.inv <- solve(tmp)
+  }
+  else {
+    IB.inv <- diag(nr)
+  }
+  IB.inv
+}
+
+tmp <- -B
+tmp[lavaan:::lav_matrix_diag_idx(nrow(PSI))] <- 1
+IB.inv <- solve(tmp)
+
+# Now, we create matrices with free and fixed parameters
+# MLIST ####
+MLIST <- list(A = A, B = B, PSI = PSI, alpha = alpha, a = a, TH = TH,
+              sp = s, covar = p, h = h)
+
+
+#### FUNTIONS ####
+# To estimate the parameters we need four matrices:
+# SIGMA0, that is the s x s var-covar matrix at h=0
+# RHO, based on the variogram model
+# Residuals (res), an sn vector of observed - predicted
+# SIGMA, that is the sn x sn var-covar matrix at h=h
+
+# Get SIGMA0
+# 
+get.SIGMA0 <- function (m = NULL) {
+  PSI <- m$PSI
+  THETA <- m$TH
+  IB.inv <- get.IB.inv(m = MLIST)
+  IB.PSI.IBinv <- tcrossprod(IB.inv %*% PSI, IB.inv) + THETA
+  IB.PSI.IBinv
+}
+plotMat(get.SIGMA0(m = MLIST))
+
+# Get RHO 
+get.RHO <- function(m = NULL) {
+  a <- m$a
+  n <- nrow(m$h)
+  h <- m$h
+  alpha <- m$alpha
   RHO <- matrix(rep(NA,n^2), nrow = n)
   for(i in seq_along(RHO)) {
     RHO[i] <- alpha * exp(-h[i]/a)
@@ -170,158 +219,58 @@ get.RHO <- function(range = a,
   diag(RHO) <- 1
   RHO
 }
-RHO <- get.RHO()
+plotMat(get.RHO(m = MLIST)[1:27,1:27])
 
-# Get SIGMA0 ####
-#from model 4
-# initial list of model matrices
-    # MLIST <- lavTech(my.fit.lv.ML, "start")
-    # # sample covariance matrix
-    # #S     <- fit@SampleStats@cov[[1]]
-    # 
-    # # inverse and logdet of S
-    # cS <- chol(S)
-    # S.inv <- chol2inv(cS)
-    # diag.cS <- diag(cS)
-    # S.logdet <- sum(log(diag.cS * diag.cS))
-
-# x is the parameter vector: fill in new values in the model matrices
-par.list <- inspect(my.fit.lv.ML)
-
-# The starting values of Sigma zero (SIGMA0) 
-# Matrix of Beta coefficients
-B <- inspect(my.fit.lv.ML, "est")$beta[1:9,1:9]
-# Identity matrix
-I <- diag(nrow = 9, ncol = 9)
-# Matrix of Gamma coefficients
-#A <- lavTech(my.fit.lv.ML, "start")$beta[1:9,10:18]
-A <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:18] # 9 soil properties x 9 covariates
-# Matrix of Psi coefficients (model error variance-covariance)
-PSI <- inspect(my.fit.lv.ML, "est")$psi[1:9,1:9]
-# Matrix of measurement error (Epsylon)
-TH <- inspect(my.fit.lv.ML, "est")$theta[1:9,1:9]
-
-IB <- solve(I - B)
-
-# Get residuals ####
-p <- as.matrix(ks[,colnames(A)]) #covariates
-s <- as.matrix(ks[,names(ks[2:10])])
-res <- matrix(data = NA, nrow = 153, ncol = 9)
-colnames(res) <- colnames(s)
-for(i in seq_along(p[,1])){
-  res[i,] <- t(s[i,] - IB %*% A %*% p[i,])
+# Get residuals 
+get.res <- function (m = NULL){
+  A <- m$A
+  B <- m$B
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- get.IB.inv(m = m)
+  s <- m$sp
+  p <- m$covar
+  res <- matrix(data = NA, nrow = 153, ncol = 9)
+  for(i in seq_along(p[,1])){
+    res[i,] <- t(s[i,] - (IB.inv %*% A %*% p[i,]))
+  }
+  colnames(res) <- colnames(m$sp)
+  res
 }
+head(get.res(m = MLIST)) # Warning: it returns a data frame
 
+# Get SIGMA 
+# SIGMA is just the kronecker product of RHO and SIGMA0
+plotMat(kronecker(get.RHO(MLIST),
+                  get.SIGMA0(MLIST))[1:60,1:60])
 
-
-# SIGMA0
-SIGMA0 <- IB%*%PSI%*%t(IB)+TH
-
-# Get SIGMA ####
-SIGMA <- kronecker(RHO, SIGMA0)
-
-plotMat <- function(matrix=matrix){
-  plotMat <- t(apply(matrix,2,rev)) # rotate 90 degrees clockwise
-  library(lattice)
-  print(levelplot(plotMat, ylab="row", xlab="column"))
-}
- plotMat(RHO)
- plotMat(SIGMA0)
-plotMat(SIGMA[1:120,1:120])
-
-# Optimization ####
-# function to replace free parameters
+# Now, a function to fill in MLIST with new values
 new.par.list <- list(A = par.list$beta[1:9,10:18], 
                      B = par.list$beta[1:9,1:9],
                      PSI = par.list$psi[1:9,1:9],
                      alpha = 52,
                      a = 53)
-
-MLIST <- list(A = A, B = B, PSI = PSI, alpha = alpha, a = a, TH = TH, 
-              sp = s, covar = p, h = h)
-
 x2MLIST <- function(x, MLIST) {
   par <- list(A = x[1:25],
             B = x[26:37],
-            PSI = x[38:51],
-            alpha = x[52],
-            a = x[53])
+            PSI = x[38:51])#,
+#            alpha = x[52],
+#            a = x[53])
   MLIST$A[which(as.vector(new.par.list$A)!=0)]          <- par$A
   MLIST$B[which(as.vector(new.par.list$B)!=0)]          <- par$B
   MLIST$PSI[which(as.vector(new.par.list$PSI)!=0)]      <- 
     par$PSI[c(1,2,3,4, 2 ,5,6, 3 , 6 ,7,8,9,10,11,12, 4 , 11 ,13,14)]
-  MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)]  <- par$alpha
-  MLIST$a[which(as.vector(new.par.list$a)!=0)]          <- par$a
+  # MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)]  <- par$alpha
+  # MLIST$a[which(as.vector(new.par.list$a)!=0)]          <- par$a
   MLIST
 }
-
-MLIST2 <- x2MLIST(x = start.x, MLIST)
-
-MLIST2$A - inspect(my.fit.lv.ML, "est")$beta[1:9,10:18]
-MLIST2$B - inspect(my.fit.lv.ML, "est")$beta[1:9,1:9]
-MLIST2$PSI - inspect(my.fit.lv.ML, "est")$psi[1:9,1:9]
-
-
-
-# functions ####
-# get residuals
-get.res <- function (MLIST = NULL){
-  A <- MLIST$A
-  B <- MLIST$B
-  I <- diag(nrow = 9, ncol = 9)
-  IB <- solve(I - B)
-  p <- MLIST$covar
-  s <- MLIST$sp
-  res <- matrix(data = NA, nrow = 153, ncol = 9)
-  for(i in seq_along(p[,1])){
-    res[i,] <- t(s[i,] - (IB %*% A %*% p[i,]))
-  }
-  colnames(res) <- colnames(MLIST$sp)
-  res
-}
-head(get.res(MLIST = MLIST)) 
-
-# IB inv 
-get.IB.inv <- function (MLIST = NULL) {
-  BETA <- MLIST$B
-  nr <- nrow(MLIST$PSI)
-  tmp <- -BETA
-  tmp[lav_matrix_diag_idx(nr)] <- 1
-  IB.inv <- solve(tmp)
-}
-
-# 
-get.IB.PSI.IBinv <- function (MLIST = NULL) 
-{
-  PSI <- MLIST$PSI
-  THETA <- MLIST$TH
-  #BETA <- MLIST$B
-  IB.inv <- get.IB.inv(MLIST = MLIST)
-  IB.PSI.IBinv <- tcrossprod(IB.inv %*% PSI, IB.inv) + # faster than t(x) %*% y
-    THETA
-  IB.PSI.IBinv
-}
-
-# get RHO
-get.RHO <- function(MLIST = NULL, 
-                    samples = n) {
-  a <- MLIST$a
-  n <- nrow(MLIST$h)
-  h <- MLIST$h
-  alpha <- MLIST$alpha
-  RHO <- matrix(rep(NA,n^2), nrow = n)
-  for(i in seq_along(RHO)) {
-    RHO[i] <- alpha * exp(-h[i]/a)
-  }
-  diag(RHO) <- 1
-  RHO
-}
-get.RHO(MLIST = MLIST)
+# check how it works
+MLIST2 <- x2MLIST(x = 1:51, MLIST)
+MLIST2[1:3]
+# MLIST2$A - inspect(my.fit.lv.ML, "est")$beta[1:9,10:18]
+# MLIST2$B - inspect(my.fit.lv.ML, "est")$beta[1:9,1:9]
+# MLIST2$PSI - inspect(my.fit.lv.ML, "est")$psi[1:9,1:9]
 
 # objective function 'ML'
-
-x=start.x
-
 objective_ML <- function(x, MLIST) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
@@ -344,7 +293,6 @@ objective_ML <- function(x, MLIST) {
   }
 }
 # get starting values
-
 start.x <- inspect(my.fit.lv.ML, "est")$beta[1:9,10:18][
   which(as.vector(new.par.list$A)!=0)]
 start.x <- append(start.x, inspect(my.fit.lv.ML, "est")$beta[1:9,1:9][
@@ -353,8 +301,8 @@ starting.psi <- partable(my.fit.lv.ML)$est[
   unique(as.vector(lavTech(my.fit.lv.ML,"partable")$psi[1:9,1:9]))
 ]
 start.x <- append(start.x, starting.psi)
-start.x <- append(start.x, MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)])
-start.x <- append(start.x, MLIST$a[which(as.vector(new.par.list$a)!=0)] )
+#start.x <- append(start.x, MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)])
+#start.x <- append(start.x, MLIST$a[which(as.vector(new.par.list$a)!=0)] )
 
 # estimate parameters ML
 out.ML  <- nlminb(start = start.x, objective = objective_ML, 
