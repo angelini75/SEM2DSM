@@ -305,11 +305,30 @@ start.x <- append(start.x, starting.psi)
 #start.x <- append(start.x, MLIST$a[which(as.vector(new.par.list$a)!=0)] )
 
 # estimate parameters ML
-out.ML  <- nlminb(start = start.x, objective = objective_ML, 
-                  MLIST = MLIST, control = list(eval.max = 5000, trace = 1))
+out1  <- nlminb(start = start.x, objective = objective_ML, 
+                MLIST = MLIST, control = list(iter.max = 150, trace = 1))
 
-x2MLIST(out.ML$par, MLIST)
+# compare estimates from lavaan and from current method
+MLIST.out1 <- x2MLIST(out1$par, MLIST)
+MLIST2 <- x2MLIST(x = start.x, MLIST = MLIST)
 
+# get residuals with both methods
+res.out1 <- get.res(MLIST = MLIST.out1)
+res.lavaan <- get.res(MLIST = MLIST2)
 
-det(SIGMA)
+# function to estimate RMSE
+rmse <- function(x){
+  x = x^2
+  y = sapply(as.data.frame(x), mean)
+  z = sapply(y, sqrt)
+  z
+}
+
+# Estimate RMSE for each method
+E <- data.frame(out1 = NA, lavaan = NA)
+
+E[1:9,1] <- sapply(as.data.frame(res.out1), FUN = rmse)
+E[1:9,2] <- sapply(as.data.frame(res.lavaan), FUN = rmse)
+rownames(E) <- colnames(MLIST$B)
+E
 
