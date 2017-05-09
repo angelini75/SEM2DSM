@@ -1,3 +1,9 @@
+rm(list=ls()[])
+
+# load lavaan model 
+setwd("~/Documents/SEM2DSM1/Paper_4/data")
+load("env.for.gerard.RData")
+
 set.seed(12345)
 N <- 153  # number of observation locations
 p <- 9   # number of variables
