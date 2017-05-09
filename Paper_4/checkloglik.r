@@ -3,12 +3,14 @@ rm(list=ls()[])
 # load lavaan model 
 setwd("~/Documents/SEM2DSM1/Paper_4/data")
 load("env.for.gerard.RData")
+# lavaan model
+fit <- my.fit.lv.ML
+# estimated parameters with lavaan
+MLIST <- lavTech(fit, "est")
 
-set.seed(12345)
-N <- 153  # number of observation locations
-p <- 9   # number of variables
-SIGMA <- SIGMA0  # to adjust with Bollen notation
-plotMat(SIGMA)
+# compute SIGMA0 (18x18)
+SIGMA0 <- computeSigmaHat.LISREL(MLIST)
+plotMat(SIGMA0)
 
 # initialise matrix with standardised observations
 # rows are locations, columns variables
