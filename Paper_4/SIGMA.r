@@ -16,7 +16,7 @@ plotMat <- function(matrix=matrix){
 ################ HOW LAVAAN ESTIMATES THE COEFICIENTS? #########################
 ################################################################################
 # load lavaan model 
-setwd("~/big/SEM2DSM1/Paper_4/data")
+setwd("~/Documents/SEM2DSM1/Paper_4/data")
 load("lavaan.model.RData")
 
 # adapted from https://groups.google.com/forum/#!searchin/lavaan/lavaan$20function$20github%7Csort:relevance/lavaan/0Hitqi3k_do/pYfyoocABwAJ
@@ -249,19 +249,19 @@ new.par.list <- list(A = par.list$beta[1:9,10:18],
                      PSI = par.list$psi[1:9,1:9],
                      alpha = 52,
                      a = 53)
-x2MLIST <- function(x, m) {
+x2MLIST <- function(x, MLIST) {
   par <- list(A = x[1:25],
             B = x[26:37],
             PSI = x[38:51])#,
 #            alpha = x[52],
 #            a = x[53])
-  m$A[which(as.vector(new.par.list$A)!=0)]          <- par$A
-  m$B[which(as.vector(new.par.list$B)!=0)]          <- par$B
-  m$PSI[which(as.vector(new.par.list$PSI)!=0)]      <- 
+  MLIST$A[which(as.vector(new.par.list$A)!=0)]          <- par$A
+  MLIST$B[which(as.vector(new.par.list$B)!=0)]          <- par$B
+  MLIST$PSI[which(as.vector(new.par.list$PSI)!=0)]      <- 
     par$PSI[c(1,2,3,4, 2 ,5,6, 3 , 6 ,7,8,9,10,11,12, 4 , 11 ,13,14)]
   # MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)]  <- par$alpha
   # MLIST$a[which(as.vector(new.par.list$a)!=0)]          <- par$a
-  m
+  MLIST
 }
 # check how it works
 MLIST2 <- x2MLIST(x = 1:51, MLIST)
@@ -271,12 +271,12 @@ MLIST2[1:3]
 # MLIST2$PSI - inspect(my.fit.lv.ML, "est")$psi[1:9,1:9]
 
 # objective function 'ML'
-objective_ML <- function(x, m) {
-  m <- x2MLIST(x = x, m = m)
+objective_ML <- function(x, MLIST) {
+  MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
-  res <- as.vector(get.res(m = m))
-  SIGMA0 <- get.SIGMA0(m = m)
-  RHO <- get.RHO(m = m)
+  res <- get.res(MLIST = MLIST)
+  SIGMA0 <- get.IB.PSI.IBinv(MLIST = MLIST)
+  RHO <- get.RHO(MLIST = MLIST)
   SIGMA <- kronecker(RHO, SIGMA0)
   if (all(eigen(SIGMA0, only.values = T)$values > 0)) {
     nvar <- NROW(SIGMA)
@@ -306,15 +306,15 @@ start.x <- append(start.x, starting.psi)
 
 # estimate parameters ML
 out1  <- nlminb(start = start.x, objective = objective_ML, 
-                m = MLIST, control = list(iter.max = 150, trace = 1))
+                MLIST = MLIST, control = list(iter.max = 150, trace = 1))
 
 # compare estimates from lavaan and from current method
 MLIST.out1 <- x2MLIST(out1$par, MLIST)
 MLIST2 <- x2MLIST(x = start.x, MLIST = MLIST)
 
 # get residuals with both methods
-res.out1 <- get.res(m = MLIST.out1)
-res.lavaan <- get.res(m = MLIST2)
+res.out1 <- get.res(MLIST = MLIST.out1)
+res.lavaan <- get.res(MLIST = MLIST2)
 
 # function to estimate RMSE
 rmse <- function(x){
