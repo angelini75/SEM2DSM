@@ -99,7 +99,7 @@ MLIST$a <- a
 z.all <- as.vector(t(z))  # compile to one big vector
 RHO <- get.RHO(MLIST,h)
 SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
-plotMat(SIGMA.all[1:72,1:72])
+plotMat(SIGMA.all[1:90,1:90])
 
 L.all = chol(SIGMA.all)
 logdetSIGMA.all = 2*sum(log(diag(L.all)))
@@ -108,3 +108,32 @@ SIGMA.all.inv <- chol2inv(L.all)
 loglik.all <- -1/2*p*N*log(2*pi) - 1/2*logdetSIGMA.all - 
   1/2*t(z.all)%*%SIGMA.all.inv%*%z.all
 loglik.all <- as.numeric(loglik.all)
+# it runs without problems!
+
+# now, let us define the objective function
+objective_ML <- function(x, MLIST = MLIST) {
+  MLIST <- x2MLIST(x = x, MLIST = MLIST)
+  # compute Sigma.hat
+  SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
+  if (all(eigen(SIGMA0)$values >0)) {
+    RHO <- get.RHO(MLIST,h)
+    SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
+    L.all = chol(SIGMA.all)
+    logdetSIGMA.all = 2*sum(log(diag(L.all)))
+    SIGMA.all.inv <- chol2inv(L.all)
+    objective <- -1 * (-1/2*p*N*log(2*pi) - 1/2*logdetSIGMA.all - 
+      1/2*t(z.all)%*%SIGMA.all.inv%*%z.all)
+    cat("objective = ", objective, "\n")
+    objective
+  } else {
+    objective <- Inf
+    objective
+  }
+}
+# get the 51 starting values to feed x
+lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
+start.x <- c(lav.est, alpha, a)
+
+# optimizer of objective funtion 
+lav.out  <- nlminb(start = start.x, objective = objective_ML, 
+                   MLIST = MLIST, control = list(iter.max = 3, trace = 1))
