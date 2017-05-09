@@ -14,10 +14,7 @@ plotMat(SIGMA0)
 
 # initialise matrix with standardised observations
 # rows are locations, columns variables
-z <- matrix(0, nrow=N, ncol=p)
-for (i in 1:N) {
-  z[i,] <- rnorm(p,0,1)  # assign random values
-}
+z <- s
 z <- scale(z)  # make sure the column means are zero
 
 # first the Bollen method
