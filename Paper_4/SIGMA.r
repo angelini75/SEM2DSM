@@ -16,7 +16,7 @@ plotMat <- function(matrix=matrix){
 ################ HOW LAVAAN ESTIMATES THE COEFICIENTS? #########################
 ################################################################################
 # load lavaan model 
-setwd("~/Documents/SEM2DSM1/Paper_4/data")
+setwd("~/big/SEM2DSM1/Paper_4/data")
 load("lavaan.model.RData")
 
 # adapted from https://groups.google.com/forum/#!searchin/lavaan/lavaan$20function$20github%7Csort:relevance/lavaan/0Hitqi3k_do/pYfyoocABwAJ
@@ -72,7 +72,7 @@ get.IB.inv <- function (lavMLIST = NULL) {
 
 # Since lavaan uses Sigma-hat intead of residuals in the ML function,
 # it needs a function to estimate it
-computeSigmaHat.LISREL <- function (lavMLIST = NULL, delta = TRUE) 
+computeSigmaHat.LISREL <- function (lavMLIST = NULL)#, delta = TRUE) 
 {
   LAMBDA <- lavMLIST$lambda # links between observed var and latent variables
   nvar <- nrow(LAMBDA) 
@@ -89,20 +89,20 @@ computeSigmaHat.LISREL <- function (lavMLIST = NULL, delta = TRUE)
     LAMBDA..IB.inv <- LAMBDA %*% IB.inv 
   }
   VYx <- tcrossprod(LAMBDA..IB.inv %*% PSI, LAMBDA..IB.inv) + THETA # key function
-  if (delta && !is.null(lavMLIST$delta)) {
-    DELTA <- diag(lavMLIST$delta[, 1L], nrow = nvar, ncol = nvar)
-    VYx <- DELTA %*% VYx %*% DELTA
-  }
+  # if (delta && !is.null(lavMLIST$delta)) {
+  #   DELTA <- diag(lavMLIST$delta[, 1L], nrow = nvar, ncol = nvar)
+  #   VYx <- DELTA %*% VYx %*% DELTA
+  # }
   VYx
 }
 
 # objective function 'ML'
 
-objective_ML <- function(x, lavMLIST = lavMLIST) {
+objective_ML_lav <- function(x, lavMLIST = lavMLIST) {
   lavMLIST <- x2lavMLIST(x = x, lavMLIST = lavMLIST)
   # compute Sigma.hat
   Sigma <- computeSigmaHat.LISREL(lavMLIST = lavMLIST)
-  if (all(eigen(Sigma)$values >0)) {
+  if (all(eigen(Sigma)$values >0)) { #Marcos included this
     nvar <- NROW(Sigma)
     cS <- chol(Sigma)
     Sigma.inv <- chol2inv(cS)
@@ -120,10 +120,10 @@ objective_ML <- function(x, lavMLIST = lavMLIST) {
 (lav.start.x <- parTable(my.fit.lv.ML)$start[parTable(my.fit.lv.ML)$free > 0])
 
 # optimizer of objective funtion 
-lav.out  <- nlminb(start = lav.start.x, objective = objective_ML, 
-                  lavMLIST = lavMLIST)
+lav.out  <- nlminb(start = lav.start.x, objective = objective_ML_lav, 
+                   lavMLIST = lavMLIST)
 # Now, we assign the coefficients to the lavMLIST matrices
-lavMLIST <- x2lavMLIST(lav.out$par, lavMLIST)
+lavMLIST <- x2lavMLIST(1001:1051, lavMLIST)
 
 
 ################################################################################
@@ -134,6 +134,7 @@ lavMLIST <- x2lavMLIST(lav.out$par, lavMLIST)
 sp <- rownames(inspect(my.fit.lv.ML, "est")$lambda)[1:9] #names of soil properties
 covar <- rownames(inspect(my.fit.lv.ML, "est")$lambda)[10:18] # names of covariates
 ks <- read.csv("ks.csv")[,-1] # standardized data
+#ks <- ks[c(-151,-152),]
 s <- as.matrix(ks[,sp]) # soil properties
 p <- as.matrix(ks[,covar]) #covariates
 
@@ -178,9 +179,9 @@ get.IB.inv <- function (m = NULL) {
   IB.inv
 }
 
-tmp <- -B
-tmp[lavaan:::lav_matrix_diag_idx(nrow(PSI))] <- 1
-IB.inv <- solve(tmp)
+# tmp <- -B
+# tmp[lavaan:::lav_matrix_diag_idx(nrow(PSI))] <- 1
+# IB.inv <- solve(tmp)
 
 # Now, we create matrices with free and fixed parameters
 # MLIST ####
@@ -197,12 +198,21 @@ MLIST <- list(A = A, B = B, PSI = PSI, alpha = alpha, a = a, TH = TH,
 
 # Get SIGMA0
 # 
+# get.SIGMA0 <- function (m = NULL) {
+#   PSI <- m$PSI
+#   THETA <- m$TH
+#   IB.inv <- get.IB.inv(m = MLIST)
+#   IB.PSI.IBinv <- tcrossprod(IB.inv %*% PSI, IB.inv) + THETA
+#   IB.PSI.IBinv
+# }
 get.SIGMA0 <- function (m = NULL) {
   PSI <- m$PSI
   THETA <- m$TH
-  IB.inv <- get.IB.inv(m = MLIST)
-  IB.PSI.IBinv <- tcrossprod(IB.inv %*% PSI, IB.inv) + THETA
-  IB.PSI.IBinv
+  I <- diag(nrow = ncol(m$sp), ncol = ncol(m$sp))
+  B <- m$B
+  IB.inv <- solve(I - B)
+  SIGMA0 <- tcrossprod(IB.inv %*% PSI, IB.inv) + THETA
+  SIGMA0
 }
 plotMat(get.SIGMA0(m = MLIST))
 
@@ -224,12 +234,12 @@ plotMat(get.RHO(m = MLIST)[1:27,1:27])
 # Get residuals 
 get.res <- function (m = NULL){
   A <- m$A
+  I <- diag(nrow = ncol(m$sp), ncol = ncol(m$sp))
   B <- m$B
-  I <- diag(nrow = 9, ncol = 9)
-  IB.inv <- get.IB.inv(m = m)
+  IB.inv <- solve(I - B)
   s <- m$sp
   p <- m$covar
-  res <- matrix(data = NA, nrow = 153, ncol = 9)
+  res <- matrix(data = NA, nrow = nrow(s), ncol = ncol(s))
   for(i in seq_along(p[,1])){
     res[i,] <- t(s[i,] - (IB.inv %*% A %*% p[i,]))
   }
@@ -249,34 +259,38 @@ new.par.list <- list(A = par.list$beta[1:9,10:18],
                      PSI = par.list$psi[1:9,1:9],
                      alpha = 52,
                      a = 53)
-x2MLIST <- function(x, MLIST) {
+x2MLIST <- function(x, m) {
   par <- list(A = x[1:25],
-            B = x[26:37],
-            PSI = x[38:51])#,
-#            alpha = x[52],
-#            a = x[53])
-  MLIST$A[which(as.vector(new.par.list$A)!=0)]          <- par$A
-  MLIST$B[which(as.vector(new.par.list$B)!=0)]          <- par$B
-  MLIST$PSI[which(as.vector(new.par.list$PSI)!=0)]      <- 
+              B = x[26:37],
+              PSI = x[38:51])#,
+  #            alpha = x[52],
+  #            a = x[53])
+  # m$A[which(as.vector(new.par.list$A)!=0)]          <- par$A
+  m$A[c(1,2,5,9,14,17,18,27,31,32,34,35,36,40,
+        41,43,49,52,53,61,62,71,74,75,77)]          <- par$A
+  #m$B[which(as.vector(new.par.list$B)!=0)]          <- par$B
+  m$B[c(28,32,42,55,58,62,65,67,68,75,79,80)]          <- par$B
+  #m$PSI[which(as.vector(new.par.list$PSI)!=0)]      <- 
+  m$PSI[c(1,2,3,8,10,11,12,19,20,21,31,41,51,53,61,64,69,71,81)] <- 
     par$PSI[c(1,2,3,4, 2 ,5,6, 3 , 6 ,7,8,9,10,11,12, 4 , 11 ,13,14)]
   # MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)]  <- par$alpha
   # MLIST$a[which(as.vector(new.par.list$a)!=0)]          <- par$a
-  MLIST
+  m
 }
 # check how it works
-MLIST2 <- x2MLIST(x = 1:51, MLIST)
+MLIST2 <- x2MLIST(x = 1001:1051, MLIST)
 MLIST2[1:3]
 # MLIST2$A - inspect(my.fit.lv.ML, "est")$beta[1:9,10:18]
 # MLIST2$B - inspect(my.fit.lv.ML, "est")$beta[1:9,1:9]
 # MLIST2$PSI - inspect(my.fit.lv.ML, "est")$psi[1:9,1:9]
 
 # objective function 'ML'
-objective_ML <- function(x, MLIST) {
-  MLIST <- x2MLIST(x = x, MLIST = MLIST)
+objective_ML <- function(x, m) {
+  m <- x2MLIST(x = x, m = m)
   # compute Sigma.hat
-  res <- get.res(MLIST = MLIST)
-  SIGMA0 <- get.IB.PSI.IBinv(MLIST = MLIST)
-  RHO <- get.RHO(MLIST = MLIST)
+  res <- as.vector(get.res(m = m))
+  SIGMA0 <- get.SIGMA0(m = m)
+  RHO <- get.RHO(m = m)
   SIGMA <- kronecker(RHO, SIGMA0)
   if (all(eigen(SIGMA0, only.values = T)$values > 0)) {
     nvar <- NROW(SIGMA)
@@ -287,6 +301,44 @@ objective_ML <- function(x, MLIST) {
     objective <- logdet + t(res) %*% Sigma.inv %*% res
     cat("objective = ", objective, "\n")
     objective
+    # plotMat(SIGMA0)
+  } else {
+    objective <- Inf
+    objective
+  }
+}
+################################################################################
+# This is the sample covariance matrix called S
+#S <- my.fit.lv.ML@SampleStats@cov[[1]][1:9,1:9]
+Si <- var(s)
+RHO <- diag(153,153)
+Si <- kronecker(RHO, Si)
+# inverse and log(det(S))
+cSi <- chol(Si)
+Si.inv <- chol2inv(cSi)
+diag.cSi <- diag(cSi)
+Si.logdet <- sum(log(diag.cSi * diag.cSi))
+x <- start.x
+m <- MLIST
+
+objective_ML_S <- function(x, m = MLIST) {
+  m <- x2MLIST(x = x, m)
+  # compute Sigma.hat
+  #res <- as.vector(get.res(m))
+  SIGMA0 <- get.SIGMA0(m)
+  #RHO <- diag(153,153) #get.RHO(MLIST)
+  SIGMA <- kronecker(RHO, SIGMA0)
+  if (all(eigen(SIGMA0, only.values = T)$values > 0)) {
+    nvar <- NROW(SIGMA)
+    cS <- chol(SIGMA)
+    Sigma.inv <- chol2inv(cS)
+    diag.cS <- diag(cS)
+    logdet <- sum(log(diag.cS * diag.cS))
+    objective <- logdet + sum(diag(Si %*% Sigma.inv)) - Si.logdet - nvar
+    #objective <- logdet + t(res) %*% Sigma.inv %*% res
+    cat("objective = ", objective, "\n")
+    objective
+    # plotMat(SIGMA0)
   } else {
     objective <- Inf
     objective
@@ -299,22 +351,39 @@ start.x <- append(start.x, inspect(my.fit.lv.ML, "est")$beta[1:9,1:9][
   which(as.vector(new.par.list$B)!=0)])
 starting.psi <- partable(my.fit.lv.ML)$est[
   unique(as.vector(lavTech(my.fit.lv.ML,"partable")$psi[1:9,1:9]))
-]
+  ]
 start.x <- append(start.x, starting.psi)
 #start.x <- append(start.x, MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)])
 #start.x <- append(start.x, MLIST$a[which(as.vector(new.par.list$a)!=0)] )
 
 # estimate parameters ML
-out1  <- nlminb(start = start.x, objective = objective_ML, 
-                MLIST = MLIST, control = list(iter.max = 150, trace = 1))
+out1  <- nlminb(start = start.x, objective = objective_ML_S, 
+                m = MLIST, control = list(iter.max = 250, trace = 1))
+####################################################################################
+
+# get starting values
+start.x <- rep(0,25)
+start.x <- append(start.x, rep(0,12))
+# starting.psi <- partable(my.fit.lv.ML)$est[
+#   unique(as.vector(lavTech(my.fit.lv.ML,"partable")$psi[1:9,1:9]))
+# ]
+# start.x <- append(start.x, starting.psi)
+start.x <- append(start.x, c(.05, 0,0,0,.05,0,.05,.05,.05,.05,0,.05,.05,.05))
+#start.x <- append(start.x, MLIST$alpha[which(as.vector(new.par.list$alpha)!=0)])
+#start.x <- append(start.x, MLIST$a[which(as.vector(new.par.list$a)!=0)] )
+#start.x <- c(rep(0, 42), rep(0.05,9))
+# estimate parameters ML
+out1.1  <- nlminb(start = out1$par, objective = objective_ML_S, 
+                  m = MLIST, #lower = rep(-1, 51), upper = rep(1, 51),
+                  control = list(iter.max = 50, trace = 1))
 
 # compare estimates from lavaan and from current method
-MLIST.out1 <- x2MLIST(out1$par, MLIST)
-MLIST2 <- x2MLIST(x = start.x, MLIST = MLIST)
+MLIST.out1 <- x2MLIST(out1$par, m = MLIST)
+MLIST2 <- x2MLIST(x = start.x, m = MLIST)
 
 # get residuals with both methods
-res.out1 <- get.res(MLIST = MLIST.out1)
-res.lavaan <- get.res(MLIST = MLIST2)
+res.out1 <- get.res(m = MLIST.out1)
+res.lavaan <- get.res(m = MLIST2)
 
 # function to estimate RMSE
 rmse <- function(x){
@@ -331,4 +400,3 @@ E[1:9,1] <- sapply(as.data.frame(res.out1), FUN = rmse)
 E[1:9,2] <- sapply(as.data.frame(res.lavaan), FUN = rmse)
 rownames(E) <- colnames(MLIST$B)
 E
-
