@@ -92,14 +92,17 @@ get.RHO <- function(MLIST = NULL, h = h) {
   RHO
 }
 
+source("~/big/SEM2DSM1/Paper_4/kronM.R")
+
 # next our approach with alpha != 0
 MLIST$alpha <- alpha
 MLIST$a <- a
 
 z.all <- as.vector(t(z))  # compile to one big vector
 RHO <- get.RHO(MLIST,h)
-SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
-plotMat(SIGMA.all[1:90,1:90])
+#SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
+SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
+plotMat(SIGMA.all[(1+90):(90+90),(1+90):(90+90)])
 
 L.all = chol(SIGMA.all)
 logdetSIGMA.all = 2*sum(log(diag(L.all)))
