@@ -92,6 +92,7 @@ get.RHO <- function(MLIST = NULL, h = h) {
   RHO
 }
 
+# KronM function: adaptation of Kronecker function 
 source("~/big/SEM2DSM1/Paper_4/kronM.R")
 
 # next our approach with alpha != 0
@@ -120,7 +121,7 @@ objective_ML <- function(x, MLIST = MLIST) {
   SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
   if (all(eigen(SIGMA0)$values >0)) {
     RHO <- get.RHO(MLIST,h)
-    SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
+    SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
     L.all = chol(SIGMA.all)
     logdetSIGMA.all = 2*sum(log(diag(L.all)))
     SIGMA.all.inv <- chol2inv(L.all)
@@ -138,8 +139,8 @@ lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
 start.x <- c(lav.est, alpha, a)
 
 # optimizer of objective funtion 
-lav.out  <- nlminb(start = start.x, objective = objective_ML, 
-                   MLIST = MLIST, control = list(iter.max = 500, trace = 1))
+sp.out  <- nlminb(start = start.x, objective = objective_ML, 
+                  MLIST = MLIST, control = list(iter.max = 500, trace = 1))
 
 round((start.x - lav.out$par),4)
 x2MLIST(lav.out$par, MLIST)
