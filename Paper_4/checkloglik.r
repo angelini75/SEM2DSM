@@ -16,7 +16,7 @@ plotMat(SIGMA0)
 # initialise matrix with standardised observations
 # rows are locations, columns variables
 z <- s
-z <- scale(z)  # make sure the column means are zero
+#z <- scale(z)  # make sure the column means are zero
 
 # first the Bollen method
 N = 153
