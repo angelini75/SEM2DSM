@@ -1,7 +1,7 @@
 rm(list=ls()[])
 
 # load lavaan model 
-setwd("~/Documents/SEM2DSM1/Paper_4/data")
+setwd("~/big/SEM2DSM1/Paper_4/data")
 load("env.for.gerard.RData")
 
 # lavaan model
@@ -57,9 +57,9 @@ h <- spDists(ks)
 # Define the parameters alpha and range, and estimate distance matrix:
 # Sill to nugget ratio (alpha) ####
 # alpha = C/(C0 + C) = 0.8/(0.2 + 0.8) 
-alpha <- 1
+alpha <- 0.5
 # Range (a) ####
-a <- 1 #e+05
+a <- 0.5 #e+05
 
 # Change x2MLIST to add alpha and a parameters
 x2MLIST <- function(x, MLIST) {
@@ -136,4 +136,60 @@ start.x <- c(lav.est, alpha, a)
 
 # optimizer of objective funtion 
 lav.out  <- nlminb(start = start.x, objective = objective_ML, 
-                   MLIST = MLIST, control = list(iter.max = 3, trace = 1))
+                   MLIST = MLIST, control = list(iter.max = 500, trace = 1))
+
+round((start.x - lav.out$par),4)
+x2MLIST(lav.out$par, MLIST)
+
+# accuracy
+MLIS.out <- x2MLIST(lav.out$par, MLIST)
+
+get.res <- function (m = NULL){
+  A <- m$beta[1:9,10:18]
+  B <- m$beta[1:9,1:9]
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - B)
+  sp <- s[,1:9]
+  p <- s[,10:18]
+  res <- matrix(data = NA, nrow = 153, ncol = 9)
+  for(i in seq_along(p[,1])){
+    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
+  }
+  colnames(res) <- colnames(sp)
+  res
+}
+res <- get.res(m= MLIS.out)
+
+rmse <- function(x){
+  x = x^2
+  y = sapply(as.data.frame(x), mean)
+  z = sapply(y, sqrt)
+  z
+}
+
+E <- data.frame(out1 = NA, lavaan = NA)
+
+E[1:9,1] <- sapply(as.data.frame(res), FUN = rmse)
+E[1:9,2] <- sapply(as.data.frame(res.lavaan), FUN = rmse)
+rownames(E) <- colnames(s)[1:9]
+E
+
+# differences
+
+A <- lavMLIST$beta[1:9,10:18] - MLIS.out$beta[1:9,10:18]
+colnames(A) <- colnames(s)[10:18]
+rownames(A) <- colnames(s)[1:9]
+levelplot(round(A,2), scale=list(x=list(rot=45)), 
+          main = expression(Gamma))
+
+B <- lavMLIST$beta[1:9,1:9] - MLIS.out$beta[1:9,1:9]
+colnames(B) <- colnames(s)[1:9]
+rownames(B) <- colnames(s)[1:9]
+levelplot(round(B,2), scale=list(x=list(rot=45)), 
+          main = expression(Beta))
+
+PSI <- lavMLIST$psi[1:9,1:9] - MLIS.out$psi[1:9,1:9]
+colnames(PSI) <- colnames(s)[1:9]
+rownames(PSI) <- colnames(s)[1:9]
+psiPlot <- levelplot(round(PSI,2), scale=list(x=list(rot=45)), 
+          main = expression(Psi))
