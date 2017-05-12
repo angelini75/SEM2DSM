@@ -33,6 +33,14 @@ loglik <- -1/2*p*N*log(2*pi) - 1/2*N*logdetSIGMA -
   1/2*N*sum(diag(S%*%SIGMA.inv))  # sum(diag()) gives the trace
 
 # next our approach
+# get the correct h
+library(sp)
+s <- as.data.frame(s)
+coordinates(s) <- ~X+Y2
+h <- spDists(s)
+s <- as.data.frame(s[,1:18])
+s <- as.matrix(s)
+#
 z.all <- as.vector(t(z))  # compile to one big vector
 RHO <- diag(153)
 SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
@@ -50,7 +58,10 @@ loglik; loglik.all
 
 ################################################################################
 ks <- read.csv("ks.csv")[,-1] # standardized data
-coordinates(ks) <- ~X+Y
+ST <- read.csv("STt.ks.csv")
+ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
+
+coordinates(ks) <- ~X+Y2
 # h = n x n matrix of distances between samples 
 h <- spDists(ks)
 
@@ -140,13 +151,29 @@ start.x <- c(lav.est, alpha, a)
 
 # optimizer of objective funtion 
 sp.out  <- nlminb(start = start.x, objective = objective_ML, 
-                  MLIST = MLIST, control = list(iter.max = 500, trace = 1))
+                  MLIST = MLIST, control = list(iter.max = 200, trace = 1))
 
 round((start.x - sp.out$par),4)
 x2MLIST(lav.out$par, MLIST)
 
 # accuracy
 MLIST.sp <- x2MLIST(sp.out$par, MLIST)
+
+get.pred.sp <- function (m = NULL){
+  A <- m$beta[1:9,10:18]
+  B <- m$beta[1:9,1:9]
+  RHO <- get.RHO(MLIST = m, h)
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - MLIST.sp$beta[1:9,1:9])
+  sp <- s[,1:9]
+  p <- s[,10:18]
+  pred <- matrix(data = NA, nrow = 153, ncol = 9)
+  for(i in seq_along(p[,1])){
+    pred[i,] <- IB.inv %*% A %*% p[i,]
+  }
+  colnames(res) <- colnames(sp)
+  hist((t(RHO) %*% (sp - pred))[,4])
+}
 
 get.res <- function (m = NULL){
   A <- m$beta[1:9,10:18]
