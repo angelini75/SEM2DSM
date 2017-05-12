@@ -131,9 +131,9 @@ objective_ML <- function(x, MLIST = MLIST) {
   # compute Sigma.hat
   SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
   RHO <- get.RHO(MLIST,h)
+  if (all(eigen(SIGMA0)$values >0) & (all(eigen(RHO)$values >0))) {
   SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
-    if (all(eigen(SIGMA.all)$values >0)) {
-      L.all = chol(SIGMA.all)
+    L.all = chol(SIGMA.all)
     logdetSIGMA.all = 2*sum(log(diag(L.all)))
     SIGMA.all.inv <- chol2inv(L.all)
     objective <- -1 * (-1/2*p*N*log(2*pi) - 1/2*logdetSIGMA.all - 
