@@ -119,10 +119,10 @@ objective_ML <- function(x, MLIST = MLIST) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
   SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
-  if (all(eigen(SIGMA0)$values >0)) {
-    RHO <- get.RHO(MLIST,h)
-    SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
-    L.all = chol(SIGMA.all)
+  RHO <- get.RHO(MLIST,h)
+  SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
+    if (all(eigen(SIGMA.all)$values >0)) {
+      L.all = chol(SIGMA.all)
     logdetSIGMA.all = 2*sum(log(diag(L.all)))
     SIGMA.all.inv <- chol2inv(L.all)
     objective <- -1 * (-1/2*p*N*log(2*pi) - 1/2*logdetSIGMA.all - 
@@ -142,11 +142,11 @@ start.x <- c(lav.est, alpha, a)
 sp.out  <- nlminb(start = start.x, objective = objective_ML, 
                   MLIST = MLIST, control = list(iter.max = 500, trace = 1))
 
-round((start.x - lav.out$par),4)
+round((start.x - sp.out$par),4)
 x2MLIST(lav.out$par, MLIST)
 
 # accuracy
-MLIS.out <- x2MLIST(lav.out$par, MLIST)
+MLIST.sp <- x2MLIST(sp.out$par, MLIST)
 
 get.res <- function (m = NULL){
   A <- m$beta[1:9,10:18]
@@ -180,19 +180,19 @@ E
 
 # differences
 
-A <- lavMLIST$beta[1:9,10:18] - MLIS.out$beta[1:9,10:18]
+A <- lavMLIST$beta[1:9,10:18] - MLIST.sp$beta[1:9,10:18]
 colnames(A) <- colnames(s)[10:18]
 rownames(A) <- colnames(s)[1:9]
 levelplot(round(A,2), scale=list(x=list(rot=45)), 
           main = expression(Gamma))
 
-B <- lavMLIST$beta[1:9,1:9] - MLIS.out$beta[1:9,1:9]
+B <- lavMLIST$beta[1:9,1:9] - MLIST.sp$beta[1:9,1:9]
 colnames(B) <- colnames(s)[1:9]
 rownames(B) <- colnames(s)[1:9]
 levelplot(round(B,2), scale=list(x=list(rot=45)), 
           main = expression(Beta))
 
-PSI <- lavMLIST$psi[1:9,1:9] - MLIS.out$psi[1:9,1:9]
+PSI <- lavMLIST$psi[1:9,1:9] - MLIST.sp$psi[1:9,1:9]
 colnames(PSI) <- colnames(s)[1:9]
 rownames(PSI) <- colnames(s)[1:9]
 psiPlot <- levelplot(round(PSI,2), scale=list(x=list(rot=45)), 
