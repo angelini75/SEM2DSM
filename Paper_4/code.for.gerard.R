@@ -13,7 +13,7 @@ library(gstat)
 rm(list=ls()[])
 
 # load lavaan model 
-setwd("~/Documents/SEM2DSM1/Paper_4/data")
+setwd("~/big/SEM2DSM1/Paper_4/data")
 load("env.for.gerard.RData")
 fit <- my.fit.lv.ML
 # initial list of model matrices
@@ -80,6 +80,6 @@ objective_ML <- function(x, MLIST) {
 out.ML  <- nlminb(start = start.x, objective = objective_ML, 
                   MLIST = MLIST, control = list(eval.max = 150, trace = 1))
 # Differences between lavaan and lavaan+RHO
-round((parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0] - lav.out$par),4)
+round((parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0] - out.ML$par),4)
 x2MLIST(out.ML$par, MLIST)
 
