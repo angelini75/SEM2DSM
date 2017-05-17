@@ -1,7 +1,8 @@
 rm(list=ls()[])
 
 # load lavaan model 
-setwd("~/big/SEM2DSM1/Paper_4/data")
+# setwd("~/big/SEM2DSM1/Paper_4/data")
+setwd("~/Documents/SEM2DSM1/Paper_4/data")
 load("env.for.gerard.RData")
 
 # lavaan model
