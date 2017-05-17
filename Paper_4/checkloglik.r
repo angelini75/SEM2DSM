@@ -1,7 +1,7 @@
 rm(list=ls()[])
 
 # load lavaan model 
-setwd("~/Documents/SEM2DSM1/Paper_4/data")
+setwd("~/big/SEM2DSM1/Paper_4/data")
 load("env.for.gerard.RData")
 
 # lavaan model
@@ -16,7 +16,7 @@ plotMat(SIGMA0)
 # initialise matrix with standardised observations
 # rows are locations, columns variables
 z <- s
-z <- scale(z)  # make sure the column means are zero
+#z <- scale(z)  # make sure the column means are zero
 
 # first the Bollen method
 N = 153
@@ -33,6 +33,14 @@ loglik <- -1/2*p*N*log(2*pi) - 1/2*N*logdetSIGMA -
   1/2*N*sum(diag(S%*%SIGMA.inv))  # sum(diag()) gives the trace
 
 # next our approach
+# get the correct h
+library(sp)
+s <- as.data.frame(s)
+coordinates(s) <- ~X+Y2
+h <- spDists(s)
+s <- as.data.frame(s[,1:18])
+s <- as.matrix(s)
+#
 z.all <- as.vector(t(z))  # compile to one big vector
 RHO <- diag(153)
 SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
@@ -50,16 +58,19 @@ loglik; loglik.all
 
 ################################################################################
 ks <- read.csv("ks.csv")[,-1] # standardized data
-coordinates(ks) <- ~X+Y
+ST <- read.csv("STt.ks.csv")
+ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
+
+coordinates(ks) <- ~X+Y2
 # h = n x n matrix of distances between samples 
 h <- spDists(ks)
 
 # Define the parameters alpha and range, and estimate distance matrix:
 # Sill to nugget ratio (alpha) ####
 # alpha = C/(C0 + C) = 0.8/(0.2 + 0.8) 
-alpha <- 1
+alpha <- 0.5
 # Range (a) ####
-a <- 1 #e+05
+a <- 0.5 #e+05
 
 # Change x2MLIST to add alpha and a parameters
 x2MLIST <- function(x, MLIST) {
@@ -92,14 +103,18 @@ get.RHO <- function(MLIST = NULL, h = h) {
   RHO
 }
 
+# KronM function: adaptation of Kronecker function 
+source("~/big/SEM2DSM1/Paper_4/kronM.R")
+
 # next our approach with alpha != 0
 MLIST$alpha <- alpha
 MLIST$a <- a
 
 z.all <- as.vector(t(z))  # compile to one big vector
 RHO <- get.RHO(MLIST,h)
-SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
-plotMat(SIGMA.all[1:90,1:90])
+#SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
+SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
+plotMat(SIGMA.all[(1+90):(90+90),(1+90):(90+90)])
 
 L.all = chol(SIGMA.all)
 logdetSIGMA.all = 2*sum(log(diag(L.all)))
@@ -115,9 +130,9 @@ objective_ML <- function(x, MLIST = MLIST) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
   SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
-  if (all(eigen(SIGMA0)$values >0)) {
-    RHO <- get.RHO(MLIST,h)
-    SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
+  RHO <- get.RHO(MLIST,h)
+  if (all(eigen(SIGMA0)$values >0) & (all(eigen(RHO)$values >0))) {
+  SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
     L.all = chol(SIGMA.all)
     logdetSIGMA.all = 2*sum(log(diag(L.all)))
     SIGMA.all.inv <- chol2inv(L.all)
@@ -135,5 +150,77 @@ lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
 start.x <- c(lav.est, alpha, a)
 
 # optimizer of objective funtion 
-lav.out  <- nlminb(start = start.x, objective = objective_ML, 
-                   MLIST = MLIST, control = list(iter.max = 3, trace = 1))
+sp.out  <- nlminb(start = start.x, objective = objective_ML, 
+                  MLIST = MLIST, control = list(iter.max = 200, trace = 1))
+
+round((start.x - sp.out$par),4)
+x2MLIST(lav.out$par, MLIST)
+
+# accuracy
+MLIST.sp <- x2MLIST(sp.out$par, MLIST)
+
+get.pred.sp <- function (m = NULL){
+  A <- m$beta[1:9,10:18]
+  B <- m$beta[1:9,1:9]
+  RHO <- get.RHO(MLIST = m, h)
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - MLIST.sp$beta[1:9,1:9])
+  sp <- s[,1:9]
+  p <- s[,10:18]
+  pred <- matrix(data = NA, nrow = 153, ncol = 9)
+  for(i in seq_along(p[,1])){
+    pred[i,] <- IB.inv %*% A %*% p[i,]
+  }
+  colnames(res) <- colnames(sp)
+  hist((t(RHO) %*% (sp - pred))[,4])
+}
+
+get.res <- function (m = NULL){
+  A <- m$beta[1:9,10:18]
+  B <- m$beta[1:9,1:9]
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - B)
+  sp <- s[,1:9]
+  p <- s[,10:18]
+  res <- matrix(data = NA, nrow = 153, ncol = 9)
+  for(i in seq_along(p[,1])){
+    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
+  }
+  colnames(res) <- colnames(sp)
+  res
+}
+res <- get.res(m= MLIS.out)
+
+rmse <- function(x){
+  x = x^2
+  y = sapply(as.data.frame(x), mean)
+  z = sapply(y, sqrt)
+  z
+}
+
+E <- data.frame(out1 = NA, lavaan = NA)
+
+E[1:9,1] <- sapply(as.data.frame(res), FUN = rmse)
+E[1:9,2] <- sapply(as.data.frame(res.lavaan), FUN = rmse)
+rownames(E) <- colnames(s)[1:9]
+E
+
+# differences
+
+A <- lavMLIST$beta[1:9,10:18] - MLIST.sp$beta[1:9,10:18]
+colnames(A) <- colnames(s)[10:18]
+rownames(A) <- colnames(s)[1:9]
+levelplot(round(A,2), scale=list(x=list(rot=45)), 
+          main = expression(Gamma))
+
+B <- lavMLIST$beta[1:9,1:9] - MLIST.sp$beta[1:9,1:9]
+colnames(B) <- colnames(s)[1:9]
+rownames(B) <- colnames(s)[1:9]
+levelplot(round(B,2), scale=list(x=list(rot=45)), 
+          main = expression(Beta))
+
+PSI <- lavMLIST$psi[1:9,1:9] - MLIST.sp$psi[1:9,1:9]
+colnames(PSI) <- colnames(s)[1:9]
+rownames(PSI) <- colnames(s)[1:9]
+psiPlot <- levelplot(round(PSI,2), scale=list(x=list(rot=45)), 
+          main = expression(Psi))
