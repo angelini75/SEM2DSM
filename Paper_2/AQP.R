@@ -149,18 +149,18 @@ hor <- xyplot(top ~ value, groups=variable, data=a.long, subset=value > 0,
        auto.key=list(columns=3, lines=TRUE,
                      points = FALSE, space = "bottom"))
 tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/sp.tif",
-     width = 1500, height = 1300, res =  250)
+     width = 1500, height = 1300, res =  300)
 sp
 dev.off()
 tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/hor.tif",
-     width = 1500, height = 1300, res =  250)
+     width = 1500, height = 1300, res =  300)
 hor
 dev.off()
 
 library(latticeExtra)
 
 tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig2.tif",
-     width = 2500, height = 1300, res =  250)
+     width = 2500, height = 1300, res =  320)
 update(c(sp,hor),
        xlab = NULL, ylab = "Depth / cm", x.same = FALSE, 
        y.same = TRUE, layout = c(4, 1), 
@@ -169,7 +169,7 @@ update(c(sp,hor),
            factor.levels = c(expression("CEC"~~"/ cmol"[c]~~"kg"^{-1}),
                              "OC / %",
                              "Clay / %",
-                             "Horizons / freq.")))
+                             "Horizons / frequency")))
 dev.off()
 # select a profile to use as the basis for simulation
 s <- p[3, ]
