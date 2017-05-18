@@ -1,6 +1,8 @@
+rm(list=ls()[])
 setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/")
+
 library(raster)
-library(sp)
+#library(sp)
 
 ## Points over DEM and its derivates
 files <- list.files(pattern = ".dat$")
@@ -63,8 +65,15 @@ xy <- spTransform(x = xy, NAD83.KS.N)
 
 xy <- as.data.frame(xy)
 names(xy)[8:9] <- c("X", "Y")
+xy$twi <- log10(xy$twi)
+xy$vdchn <- log10(xy$vdchn+10)
+xy$ndwi.a <- (xy$ndwi.a+10)^.3
+
+#ST <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/STt.ks.csv")
 
 xy <- xy[,colnames(s)[10:18]]
 xy <- as.matrix(xy)
+#
 
+#
 write.csv(file = "~/Documents/SEM2DSM1/Paper_4/data/xy.csv",x = xy)
