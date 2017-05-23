@@ -527,7 +527,7 @@ vgm <- list()
 # vgm[[1]] <- fit.variogram(vg[[1]], vgm[[1]], fit.method = 6)
 # plot(vg[[1]], vgm[[1]], main = "CEC.A")
 
-names(R)[8:10] <- c("Clay.A", "Clay.B", "Clay.C") 
+#names(R)[8:10] <- c("Clay.A", "Clay.B", "Clay.C") 
 rm(cv)
 cv <- gstat(id = "CEC.A", formula = CEC.A ~ 1, data = R, nmax = 10)
 cv <- gstat(cv, id = "CEC.B", formula = CEC.B ~ 1, data = R, nmax = 10)
