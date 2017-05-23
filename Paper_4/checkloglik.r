@@ -105,7 +105,7 @@ get.RHO <- function(MLIST = NULL, h = h) {
 }
 
 # KronM function: adaptation of Kronecker function 
-source("~/big/SEM2DSM1/Paper_4/kronM.R")
+source("~/Documents/SEM2DSM1/Paper_4/kronM.R")
 
 # next our approach with alpha != 0
 MLIST$alpha <- alpha
@@ -155,7 +155,173 @@ sp.out  <- nlminb(start = start.x, objective = objective_ML,
                   MLIST = MLIST, control = list(iter.max = 200, trace = 1))
 
 round((start.x - sp.out$par),4)
-x2MLIST(lav.out$par, MLIST)
+MLIST.sp <- x2MLIST(sp.out$par, MLIST)
+
+################################################################################
+# prediction ####
+################################################################################
+library(gstat)
+# load estimates
+load("checkloglik.RData")
+MLIST.sp <- x2MLIST(sp.out$par, MLIST)
+
+get.res <- function (m = NULL){
+  A <- m$beta[1:9,10:18]
+  B <- m$beta[1:9,1:9]
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - B)
+  sp <- s[,1:9]
+  p <- s[,10:18]
+  res <- matrix(data = NA, nrow = 153, ncol = 9)
+  for(i in seq_along(p[,1])){
+    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
+  }
+  colnames(res) <- colnames(sp)
+  res
+}
+## compute the residuals from multivariate linear model
+r <- get.res(m = MLIST.sp)
+res <- ks
+res@data[,2:10] <- r
+res@data <- res@data[,2:10]
+#var.res <- apply(X = r,FUN =  var, MARGIN = 2)
+
+# spatial model
+cv <- gstat(id = "CEC.A", formula = CEC.A ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "CEC.B", formula = CEC.B ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "CEC.C", formula = CEC.C ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "OC.A", formula = OC.A ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "OC.B", formula = OC.B ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "OC.C", formula = OC.C ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "Clay.A", formula = Clay.A ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "Clay.B", formula = Clay.B ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "Clay.C", formula = Clay.C ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, # To fill in the object
+            model = vgm(nugget = 0 ,
+                        psill= 0,
+                        range= MLIST.sp$a, # estimated range
+                        model = "Exp"), 
+            fill.all = T)
+# replace nugget and psill
+psi <- MLIST.sp$psi[1:9,1:9] # system variance-covariance matrix
+psill <- psi[lower.tri(psi,T)] # psill for those free variables 
+nugget <- psi[lower.tri(psi,T)]/2.077891 # c0 = psill/2.077891
+
+# replace nugget and psill values in cv object
+for(i in 1:45){
+  cv$model[[i]][1,"psill"] <- nugget[i]
+  cv$model[[i]][2,"psill"] <- psill[i]
+}
+
+#
+cv.var<- variogram(object = cv, cutoff = 0.7) 
+cv.fit<-fit.lmc(v = cv.var,g =  cv, fit.lmc = F, fit.ranges = F) 
+
+# 
+cv.fit$model <- cv$model
+# png(filename = "~/Dropbox/PhD Marcos/Paper 4/Figures/Fig2.png", 
+# width = 3000, height = 3000, res =  250)
+plot(cv.var, model=cv.fit, 
+     main="Variograms and cross-variograms of standardized residuals",
+     xlab = "Distance / m", 
+     ylab = "Semivariance",
+     scales=list(x = list(alternating = 1), y = list(alternating = 1)),
+     par.settings=list(grid.pars=list(fontfamily="serif")))
+# dev.off()
+
+# location standarized points
+xy <- read.csv( "xy.csv")[,-1]
+for(i in names(xy)){
+  xy[,i] <- (xy[,i] - ST$mean[ST$X == i])/ST$std.dev[ST$X == i]
+}
+xy$Y2 <- xy$Y * ST$std.dev[ST$X=="Y"]/ST$std.dev[ST$X=="X"]
+coordinates(xy) <- ~X+Y2
+
+# prediction function
+get.pred <- function (m = NULL, data = s, newdata){
+  A <- m$beta[1:9,10:18]
+  B <- m$beta[1:9,1:9]
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - B)
+  #sp <- s[,1:9]
+  p <- newdata[,colnames(s)[10:18]]
+  pred <- matrix(data = NA, nrow = nrow(newdata), ncol = 9)
+  for(i in seq_along(p[,1])){
+    return(i)
+    pred[i,] <- t(IB.inv %*% A %*% p[i,])
+  }
+  colnames(pred) <- colnames(s)[1:9]
+  pred
+}
+
+# predictions from multivariate linear model
+pred.lm <- get.pred(m= MLIST.sp, data = s, newdata = as(xy, "data.frame"))
+
+## krige
+data <- ks[,-1]
+data@data[1:9] <- res@data
+gstat:::predict.gstat(formula = Clay.C ~ 1, data = data, newdata = xy, cv)
+
+#
+library(sp)
+data(meuse)
+coordinates(meuse) = ~x+y
+data(meuse.grid)
+gridded(meuse.grid) = ~x+y
+m <- vgm(.59, "Sph", 874, .04)
+# ordinary kriging:
+x <- krige(log(zinc)~1, meuse, meuse.grid, model = m)
+spplot(x["var1.pred"], main = "ordinary kriging predictions")
+spplot(x["var1.var"],  main = "ordinary kriging variance")
+# simple kriging:
+x <- krige(log(zinc)~1, meuse, meuse.grid, model = m, beta = 5.9)
+# residual variogram:
+m <- vgm(.4, "Sph", 954, .06)
+# universal block kriging:
+x <- krige(log(zinc)~x+y, meuse, meuse.grid, model = m, block = c(40,40))
+spplot(x["var1.pred"], main = "universal kriging predictions")
+
+v = function(x, y) { exp(-spDists(coordinates(x),coordinates(y))) }
+
+
+# krige0, using user-defined covariance function and multiple responses in y:
+# exponential variogram with range 500, defined as covariance function:
+v = function(x, y = x) { exp(-spDists(coordinates(x),coordinates(y))/500) }
+# krige two variables in a single pass (using 1 covariance model):
+y = cbind(meuse$zinc,meuse$copper,meuse$lead,meuse$cadmium)
+x <- krige0(formula = zinc~1,data =  meuse,newdata =  meuse.grid, v, y = y)
+meuse.grid$zinc = x[,1]
+spplot(meuse.grid["zinc"], main = "zinc")
+meuse.grid$copper = x[,2]
+spplot(meuse.grid["copper"], main = "copper")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # accuracy
 MLIST.sp <- x2MLIST(sp.out$par, MLIST)
@@ -176,20 +342,7 @@ get.pred.sp <- function (m = NULL){
   hist((t(RHO) %*% (sp - pred))[,4])
 }
 
-get.res <- function (m = NULL){
-  A <- m$beta[1:9,10:18]
-  B <- m$beta[1:9,1:9]
-  I <- diag(nrow = 9, ncol = 9)
-  IB.inv <- solve(I - B)
-  sp <- s[,1:9]
-  p <- s[,10:18]
-  res <- matrix(data = NA, nrow = 153, ncol = 9)
-  for(i in seq_along(p[,1])){
-    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
-  }
-  colnames(res) <- colnames(sp)
-  res
-}
+
 res <- get.res(m= MLIS.out)
 
 rmse <- function(x){
