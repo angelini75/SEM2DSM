@@ -29,7 +29,7 @@ name <- function(x) { as.data.frame(names(x))}
 # mod = modification indices (for respecification)
 #------------------------------------------------#
 
-e <- read.csv("~/Documents/SEM2DSM1/Paper_2/data/calib.data-5.0.csv")[,c(-1,-20)]
+e <- read.csv("~/big/SEM2DSM1/Paper_2/data/calib.data-5.0.csv")[,c(-1,-20)]
 # Descriptive statistics and normality test. ####
 round(stat.desc(e,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
@@ -60,7 +60,7 @@ std <- function(x, st){
 Arg <- std(e,STt.arg)
 Arg[,1] <- e[,1] 
 
-setwd("~/Documents/SEM2DSM1/Paper_3/data/")
+setwd("~/big/SEM2DSM1/Paper_3/data/")
 d <- read.csv("KS.data-0.2.csv")[,c(-1)] 
 name(d)
 names(d)[2:10] <- c("Clay.A", "Clay.B", "Clay.C",
@@ -73,6 +73,8 @@ d <- cbind(d[1],
            d[,colnames(Arg)[2:10]],
            d[11:21])
 d <- d[c(-156,-157),]
+d <- d[c(-103,-105),]
+d <- d[c(-102),]
 # Descriptive statistics and normality test. ####
 round(stat.desc(d,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
@@ -93,7 +95,7 @@ d$ndwi.a <- (d$ndwi.a+10)^.3
 round(stat.desc(d,norm = TRUE),3)
 # New mean and sd
 STt.ks <- t(stat.desc(d,norm = TRUE)[c(9,13),])
-#write.csv(STt.ks, "/home/marcos/Documents/SEM2DSM1/Paper_4/data/STt.ks.csv")
+#write.csv(STt.ks, "~/big/SEM2DSM1/Paper_4/data/STt.ks.csv")
 
 # standardised data set ####
 std <- function(x, st){
@@ -110,25 +112,25 @@ ks[,1] <- d[,1]
 ks[order(ks[,c(20)]),c(1,20,21)]
 
 # X is the difference between samples and mean of samples
-X = sqrt((sapply(X = ks[c(103,105,106),c(2:10)],FUN = median) - 
-            ks[c(103,105,106),c(2:10)])^2)
-# sum of difference
-sum(X[1,])
-sum(X[2,])
-sum(X[3,])
-# 106 is the most similar to median
-ks <- ks[c(-103, -105),]
-
-# again
-ks[order(ks[,c(20)]),c(1,20,21)]
-X = sqrt((sapply(X = ks[c(100,102),c(2:10)],FUN = mean) - 
-            ks[c(100,102),c(2:10)])^2)
-# sum of difference
-sum(X[1,])
-sum(X[2,])
-# 106 is the most similar to median
-ks <- ks[c(-102),]
-#write.csv(ks,"/home/marcos/Documents/SEM2DSM1/Paper_4/data/ks.csv")
+# X = sqrt((sapply(X = ks[c(103,105,106),c(2:10)],FUN = median) - 
+#             ks[c(103,105,106),c(2:10)])^2)
+# # sum of difference
+# sum(X[1,])
+# sum(X[2,])
+# sum(X[3,])
+# # 106 is the most similar to median
+# ks <- ks[c(-103, -105),]
+# 
+# # again
+# ks[order(ks[,c(20)]),c(1,20,21)]
+# X = sqrt((sapply(X = ks[c(100,102),c(2:10)],FUN = mean) - 
+#             ks[c(100,102),c(2:10)])^2)
+# # sum of difference
+# sum(X[1,])
+# sum(X[2,])
+# # 106 is the most similar to median
+# ks <- ks[c(-102),]
+# write.csv(ks,"~/big/SEM2DSM1/Paper_4/data/ks.csv")
 ### END ###
 #######################################
 
@@ -200,7 +202,7 @@ CEC.Ar  ~    dem
 # Model calibration ####
 my.fit.lv.ML <- sem(model = my.model.lv,data = ks, meanstructure = FALSE, 
                     fixed.x = T)
-inspect(my.fit.lv.ML,"cov.lv")
+inspect(my.fit.lv.ML,"est")
 # Model evaluation ####
 summary(my.fit.lv.ML, fit.measures=TRUE, rsquare = T)
 mod.ks <- modindices(my.fit.lv.ML,sort. = T)
@@ -527,7 +529,7 @@ vgm <- list()
 # vgm[[1]] <- fit.variogram(vg[[1]], vgm[[1]], fit.method = 6)
 # plot(vg[[1]], vgm[[1]], main = "CEC.A")
 
-#names(R)[8:10] <- c("Clay.A", "Clay.B", "Clay.C") 
+names(R)[8:10] <- c("Clay.A", "Clay.B", "Clay.C") 
 rm(cv)
 cv <- gstat(id = "CEC.A", formula = CEC.A ~ 1, data = R, nmax = 10)
 cv <- gstat(cv, id = "CEC.B", formula = CEC.B ~ 1, data = R, nmax = 10)
