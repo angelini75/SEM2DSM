@@ -1,7 +1,7 @@
 # RHO=matrix(c(1,10,100,
 #            10, 1,10,
 #            100,10,1), 3,3)
-# dimnames(RHO) <- list(letters[10:12], letters[10:12]) 
+# dimnames(RHO) <- list(letters[10:12], letters[10:12])
 # 
 # RHO
 # #     j  k   l
@@ -12,7 +12,7 @@
 # RHO.I=matrix(c(1,0,0,
 #             0,1,0,
 #             0,0,1), 3,3)
-# dimnames(RHO.I) <- list(letters[10:12], letters[10:12]) 
+# dimnames(RHO.I) <- list(letters[10:12], letters[10:12])
 # 
 # RHO.I
 # #   j k l
@@ -22,7 +22,7 @@
 # 
 # SIGMA0= matrix(rep(7:8),4,4)
 # diag(SIGMA0) <- 1:4
-# dimnames(SIGMA0) <- list(LETTERS[1:4], LETTERS[1:4]) 
+# dimnames(SIGMA0) <- list(LETTERS[1:4], LETTERS[1:4])
 # 
 # SIGMA0
 # #   A B C D
@@ -30,9 +30,10 @@
 # # B 8 2 8 8
 # # C 7 7 3 7
 # # D 8 8 8 4
-# 
+# outer(RHO, SIGMA0)
 
-kronM <- function (RHO, RHO.I, SIGMA0, sp = 1:9)#, make.dimnames = TRUE) 
+
+kronM <- function (RHO, RHO.I, SIGMA0, sp = 1:9, cov=10:18)#, make.dimnames = TRUE) 
 {
   RHO <- as.array(RHO)
   RHO.I <- as.array(RHO.I)
@@ -48,11 +49,14 @@ kronM <- function (RHO, RHO.I, SIGMA0, sp = 1:9)#, make.dimnames = TRUE)
   opobjRHO.I <- outer(RHO.I, SIGMA0)
   opobj <- opobjRHO.I
   opobj[,,sp,sp] <- opobjRHO[,,sp,sp]
+  for(i in cov){
+    opobj[,,i,i] <- opobjRHO[,,i,i]
+  }
   
-  dp <- as.vector(t(matrix(1L:(2 * length(dRHO)), ncol = 2)[, 
-                                                          2:1]))
-  opobj <- aperm(a = opobj, dp)
-  dim(opobj) <- dRHO * dSIGMA0
+  dp <- as.vector(t(matrix(1L:(2 * length(dRHO)), ncol = 2)[,1:2]))
+
+  opobj1 <- aperm(a = opobj, dp)
+  dim(opobj1) <- dSIGMA0 * dRHO
   # if (make.dimnames && !(is.null(dnx) && is.null(dny))) {
   #   if (is.null(dnx)) 
   #     dnx <- vector("list", length(dX))
@@ -74,5 +78,5 @@ kronM <- function (RHO, RHO.I, SIGMA0, sp = 1:9)#, make.dimnames = TRUE)
   #   }
   #   dimnames(opobj) <- dno
   # }
-  opobj
+  opobj1
 }
