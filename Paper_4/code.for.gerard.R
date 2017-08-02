@@ -80,6 +80,6 @@ objective_ML <- function(x, MLIST) {
 out.ML  <- nlminb(start = start.x, objective = objective_ML, 
                   MLIST = MLIST, control = list(eval.max = 150, trace = 1))
 # Differences between lavaan and lavaan+RHO
-round((parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0] - out.ML$par),4)
-x2MLIST(out.ML$par, MLIST)
+round((parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0] - out.ML$par[1:51]),4)
+MLIST.out <- x2MLIST(out.ML$par, MLIST)
 
