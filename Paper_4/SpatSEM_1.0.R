@@ -125,6 +125,88 @@ round((start.x - sp.ou$par),4)
 MLIST.out <- x2MLIST(sp.ou$par, MLIST)
 
 
+################################################################################
+# prediction ####
+################################################################################
+library(gstat)
+library(sp)
+
+# function to obtain residuals
+get.res <- function (m = NULL){
+  A <- m$beta[1:9,10:18]
+  B <- m$beta[1:9,1:9]
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - B)
+  sp <- z[,1:9]
+  p <- z[,10:18]
+  res <- matrix(data = NA, nrow = 153, ncol = 9)
+  for(i in seq_along(p[,1])){
+    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
+  }
+  colnames(res) <- colnames(sp)
+  res
+}
+## compute the residuals from multivariate linear model
+r <- get.res(m = MLIST.out)
+res <- ks
+res@data[,2:10] <- r
+res@data <- res@data[,2:10]
+#var.res <- apply(X = r,FUN =  var, MARGIN = 2)
+
+res <- as.data.frame(res)
+res$X <- (res$X * ST$std.dev[20]) + ST$mean[20]
+res$Y2 <- (res$Y2 * ST$std.dev[20]) + ST$mean[21]
+coordinates(res) <- ~X+Y2
+
+
+# spatial model
+cv <- gstat(id = "CEC.A", formula = CEC.A ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "CEC.B", formula = CEC.B ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "CEC.C", formula = CEC.C ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "OC.A", formula = OC.A ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "OC.B", formula = OC.B ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "OC.C", formula = OC.C ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "Clay.A", formula = Clay.A ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "Clay.B", formula = Clay.B ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, id = "Clay.C", formula = Clay.C ~ 1, data = res, nmax = 10)
+cv <- gstat(cv, # To fill in the object
+            model = vgm(nugget = 0 ,
+                        psill= 0,
+                        range= MLIST.out$a * ST$std.dev[20], # estimated range times 
+                        model = "Exp"), 
+            fill.all = T)
+# replace nugget and psill # [[[[[[[[[[[[to be continued...]]]]]]]]]]]]]]]]]]]]]
+sigma0 <- computeSigmaHat.LISREL(MLIST = MLIST.out)[1:9,1:9]
+psi <- MLIST.out$psi[1:9,1:9] # system variance-covariance matrix
+variance <- sigma0-psi
+psill <- variance[lower.tri(variance,T)] # psill for those free variables 
+nugget <- variance[lower.tri(variance,T)] * MLIST.out$alpha # c0 = psill/alpha
+
+# replace nugget and psill values in cv object
+for(i in 1:45){
+  cv$model[[i]][1,"psill"] <- nugget[i]
+  cv$model[[i]][2,"psill"] <- psill[i]
+}
+
+#
+cv.var<- variogram(object = cv, cutoff = 150000) 
+cv.fit<-fit.lmc(v = cv.var,g =  cv, fit.lmc = F, fit.ranges = F) 
+
+# 
+cv.fit$model <- cv$model
+# png(filename = "~/Dropbox/PhD Marcos/Paper 4/Figures/Fig2.png", 
+# width = 3000, height = 3000, res =  250)
+plot(cv.var, model=cv.fit, 
+     main="Variograms and cross-variograms of standardized residuals",
+     xlab = "Distance / m", 
+     ylab = "Semivariance",
+     scales=list(x = list(alternating = 1), y = list(alternating = 1)),
+     par.settings=list(grid.pars=list(fontfamily="serif")))
+# dev.off()
+NAD83.KS.N <- CRS("+init=epsg:2796")
+# Assign projection
+proj4string(res) <- NAD83.KS.N
+mapview(res)
 
 
 
