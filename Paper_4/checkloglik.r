@@ -1,9 +1,11 @@
 rm(list=ls()[])
+library(lavaan)
 
 # load lavaan model 
-# setwd("~/big/SEM2DSM1/Paper_4/data")
+ setwd("~/big/SEM2DSM1/Paper_4/data")
 setwd("~/Documents/SEM2DSM1/Paper_4/data")
 load("env.for.gerard.RData")
+load("lavaan.model.RData")
 
 # lavaan model
 fit <- my.fit.lv.ML
@@ -71,7 +73,7 @@ h <- spDists(ks)
 # alpha = C/(C0 + C) = 0.8/(0.2 + 0.8) 
 alpha <- 0.5
 # Range (a) ####
-a <- 0.5 #e+05
+a <- 0.7 #e+05
 
 # Change x2MLIST to add alpha and a parameters
 x2MLIST <- function(x, MLIST) {
@@ -91,6 +93,11 @@ x2MLIST <- function(x, MLIST) {
   MLIST
 }
 
+
+
+
+
+
 # get.RHO function
 get.RHO <- function(MLIST = NULL, h = h) {
   a <- MLIST$a
@@ -98,24 +105,29 @@ get.RHO <- function(MLIST = NULL, h = h) {
   alpha <- MLIST$alpha
   RHO <- matrix(rep(NA,n^2), nrow = n)
   for(i in seq_along(RHO)) {
-    RHO[i] <- alpha * exp(-h[i]/a)
+    RHO[i] <- (1-alpha) * exp(-h[i]/a)
   }
   diag(RHO) <- 1
   RHO
 }
 
+
+
+
 # KronM function: adaptation of Kronecker function 
-source("~/Documents/SEM2DSM1/Paper_4/kronM.R")
+#source("~/big/SEM2DSM1/Paper_4/kronM.R")
+
+
 
 # next our approach with alpha != 0
 MLIST$alpha <- alpha
 MLIST$a <- a
 
-z.all <- as.vector(t(z))  # compile to one big vector
+z.all <- as.vector(z)  # compile to one big vector
 RHO <- get.RHO(MLIST,h)
 #SIGMA.all <- kronecker(RHO, SIGMA0)  # create covariance matrix of z.all
 SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
-plotMat(SIGMA.all[(1+90):(90+90),(1+90):(90+90)])
+plotMat(SIGMA.all[1000:1700,1000:1700])
 
 L.all = chol(SIGMA.all)
 logdetSIGMA.all = 2*sum(log(diag(L.all)))
@@ -126,6 +138,8 @@ loglik.all <- -1/2*p*N*log(2*pi) - 1/2*logdetSIGMA.all -
 loglik.all <- as.numeric(loglik.all)
 # it runs without problems!
 
+
+
 # now, let us define the objective function
 objective_ML <- function(x, MLIST = MLIST) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
@@ -133,7 +147,8 @@ objective_ML <- function(x, MLIST = MLIST) {
   SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
   RHO <- get.RHO(MLIST,h)
   if (all(eigen(SIGMA0)$values >0) & (all(eigen(RHO)$values >0))) {
-  SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9)
+  SIGMA.all <- kronM(RHO = RHO,RHO.I = diag(153),SIGMA0 = SIGMA0, sp = 1:9, cov = 10:18)
+#  if (all(eigen(SIGMA.all)$values >0)) {
     L.all = chol(SIGMA.all)
     logdetSIGMA.all = 2*sum(log(diag(L.all)))
     SIGMA.all.inv <- chol2inv(L.all)
@@ -148,11 +163,31 @@ objective_ML <- function(x, MLIST = MLIST) {
 }
 # get the 51 starting values to feed x
 lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
-start.x <- c(lav.est, alpha, a)
 
-# optimizer of objective funtion 
-sp.out  <- nlminb(start = start.x, objective = objective_ML, 
-                  MLIST = MLIST, control = list(iter.max = 200, trace = 1))
+# ranges <- c(0.01, 0.02,
+#             0.03, 0.04,
+#             0.05, 0.06, 
+#             0.08, 0.1,
+#             0.15, 0.20,
+#             0.27, 0.35,
+#             0.47, 0.52)
+likhood <- numeric()
+output <- list()
+output[1:14] <- NA
+#for(i in seq_along(ranges)){
+#  MLIST$a <- ranges[i]
+  start.x <- c(lav.est, alpha)
+  # optimizer of objective funtion 
+  l  <- try(nlminb(start = start.x, objective = objective_ML, 
+                    MLIST = MLIST, control = list(iter.max = 200, trace = 1)))
+  if ('try-error' %in% class(l)) (output[[i]]=NA & next)
+  else output[[i]] <- l
+  likhood <- append(likhood, l$objective)
+}
+
+start.x <- c(lav.est, 0.7, 0.5)
+sp.ou <- nlminb(start = start.x, objective = objective_ML, 
+       MLIST = MLIST, control = list(iter.max = 150, trace = 1))
 
 round((start.x - sp.out$par),4)
 MLIST.sp <- x2MLIST(sp.out$par, MLIST)
