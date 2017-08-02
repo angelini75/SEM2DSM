@@ -1,8 +1,12 @@
 rm(list=ls()[])
 library(lavaan)
 
-# load lavaan model 
+# load lavaan model (from RS server)
 setwd("~/big/SEM2DSM1/Paper_4/data")
+
+# load lavaan model (from RS desktop)
+setwd("~/Documents/SEM2DSM1/Paper_4/data")
+
 load("env.for.gerard.RData")
 load("lavaan.model.RData")
 ks <- read.csv("ks.csv")
@@ -142,12 +146,12 @@ start.x <- c(lav.est, 0.8, 0.5)
 sp.ou <- nlminb(start = start.x, objective = objective_ML, 
                 MLIST = MLIST, control = list(iter.max = 500, trace = 1))
 
-round((start.x - sp.ou$par),4)
+#round((start.x - sp.ou$par),4)
 MLIST.out <- x2MLIST(sp.ou$par, MLIST)
 
-sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
-                MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
-                                              rel.tol = 1e-14, x.tol = 1e-12))
+# sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
+#                 MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
+#                                               rel.tol = 1e-14, x.tol = 1e-12))
 
 ################################################################################
 # prediction ####
@@ -232,3 +236,4 @@ NAD83.KS.N <- CRS("+init=epsg:2796")
 # Assign projection
 proj4string(res) <- NAD83.KS.N
 mapview(res)
+
