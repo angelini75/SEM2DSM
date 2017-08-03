@@ -142,7 +142,7 @@ objective_ML <- function(x, MLIST = MLIST) {
 # get the 51 starting values to feed x
 lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
 
-start.x <- c(lav.est, 0.8, 0.5)
+start.x <- c(lav.est, 0.4, 0.4)
 sp.ou <- nlminb(start = start.x, objective = objective_ML, 
                 MLIST = MLIST, control = list(iter.max = 500, trace = 1))
 
@@ -237,3 +237,88 @@ NAD83.KS.N <- CRS("+init=epsg:2796")
 proj4string(res) <- NAD83.KS.N
 mapview(res)
 
+# map of predictions
+# libraries
+library(raster)
+library(maptools)
+library(sp)
+#library(sf)
+library(rgdal)
+
+#define crs
+wgs84 <- CRS("+init=epsg:4326")
+NAD83.KS.N <- CRS("+init=epsg:2796")
+modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+
+# points based on MODIS LST grid 
+r <- raster("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/LST.mean.tif")
+plot(r)
+r <- rasterToPoints(r,spatial = TRUE)
+proj4string(r) <- modis
+
+# study area WGS84
+area <- readOGR("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/Platte_area_extended.shp")
+proj4string(area) <- wgs84
+area <- spTransform(area, modis)
+area <- as(area,"SpatialPolygons")
+
+# remove points outside the study area
+r <- r[!is.na(over(r,area)),]
+r <- spTransform(r, NAD83.KS.N)
+spplot(r)
+
+# wd
+setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling")
+# sdat files (dem covariates) 
+files <- list.files(pattern=".sdat$")
+header <- gsub(".sdat", "", files)
+header <- c("dem", "twi","vdchn") 
+
+# tif files (modis)
+files_m <- list.files(pattern=".tif$")
+# set names of covariates
+header_m <- c("evim", "evisd", "lstm", "lstsd", "ndwi.a", "ndwi.b")
+
+# extract values from files (.sdat)
+stack <- list()
+for(i in seq_along(files)) {
+  r@data[,i] <- NULL
+  stack[[i]] <- readGDAL(files[i])
+  proj4string(stack[[i]]) <- NAD83.KS.N
+  r@data[,i] <- over(r, stack[[i]])[,1]
+  stack <- list()
+  names(r@data)[length(r@data)] <- header[i]
+}  
+
+## extract values from modis files 
+stack <- list()
+# reproject endo to modis projection
+r <- spTransform(r, modis)
+for(i in seq_along(files_m)) {
+  r@data[,length(r@data)+1] <- NULL
+  stack[[i]] <- readGDAL(files_m[i])
+  proj4string(stack[[i]]) <- modis # change projection
+  r@data[,length(r@data)+1] <- over(r, stack[[i]])[,1]
+  stack <- list()
+  names(r@data)[length(r@data)] <- header_m[i]
+}  
+r <- spTransform(r, NAD83.KS.N)
+r.df <- as.data.frame(r)
+r.df <- r.df[complete.cases(r.df),] 
+
+# transform
+r.df$twi <- log10(r.df$twi)
+r.df$vdchn <- log10(r.df$vdchn+10)
+r.df$ndwi.a <- (r.df$ndwi.a+10)^.3
+
+# standardise #
+std <- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] - st[i,2]) / st[i,3]
+  }
+  y
+}
+STt <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/STt.ks.csv")
+r.st <- std(x = r.df,st = STt[11:21,])
+name(pred.st)
