@@ -149,6 +149,9 @@ sp.ou <- nlminb(start = start.x, objective = objective_ML,
 #round((start.x - sp.ou$par),4)
 MLIST.out <- x2MLIST(sp.ou$par, MLIST)
 
+library(numDeriv)
+jacobian(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
+
 # sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
 #                 MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
 #                                               rel.tol = 1e-14, x.tol = 1e-12))
