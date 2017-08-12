@@ -150,12 +150,12 @@ sp.ou <- nlminb(start = start.x, objective = objective_ML,
 MLIST.out <- x2MLIST(sp.ou$par, MLIST)
 
 library(numDeriv)
-jacobian(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
+jacobian <- jacobian(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
 
 # sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
 #                 MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
 #                                               rel.tol = 1e-14, x.tol = 1e-12))
-
+load("~/Documents/SEM2DSM1/Paper_4/data/9August_SpatSEM_1.1.RData")
 ################################################################################
 # prediction ####
 ################################################################################
