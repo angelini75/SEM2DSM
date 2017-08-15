@@ -122,9 +122,48 @@ library(GGally)
 library(ggplot2)
 d <- d[d$OC.C<5,]
 d <- d[,c(2:13,15:16,18:21)]
+names(d) <- c("Clay.A","Clay.B","Clay.C","CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C",
+              "DEM","TWI","VDCHN","EVISD","LSTM","NDWI.A","NDWI.B","X", "Y")
+d <- d[,c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C","Clay.A","Clay.B","Clay.C",
+          "DEM","TWI","VDCHN","EVISD","LSTM","NDWI.A","NDWI.B","X", "Y")]
 
-png(filename =  "~/Documents/SEM2DSM1/Paper_4/data/plot.1.png",
-    width = 5000,height = 5000, res = 400 )
-ggscatmat(d, columns = 1:18,  alpha=0.15) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+ggscatmatM <- function (data, columns = 1:ncol(data), color = NULL, alpha = 1, 
+                        corMethod = "pearson") 
+{
+  data <- data
+  data.choose <- data[columns]
+  dn <- data.choose[sapply(data.choose, is.numeric)]
+  if (ncol(dn) == 0) {
+    stop("All of your variables are factors. Need numeric variables to make scatterplot matrix.")
+  }
+  if (ncol(dn) < 2) {
+    stop("Not enough numeric variables to make a scatter plot matrix")
+  }
+  a <- uppertriangle(data, columns = columns, color = color, 
+                     corMethod = corMethod)
+  if (is.null(color)) {
+    plot <- scatmat(data, columns = columns, alpha = alpha) + 
+      geom_text(data = a, aes_string(label = "r"), colour = "black", family = "serif")
+  }
+  else {
+    plot <- scatmat(data, columns = columns, color = color, 
+                    alpha = alpha) + geom_text(data = a, aes_string(label = "r", 
+                                                                    color = "colorcolumn")) + labs(color = color)
+  }
+  factor <- data.choose[sapply(data.choose, is.factor)]
+  if (ncol(factor) == 0) {
+    return(plot)
+  }
+  else {
+    warning("Factor variables are omitted in plot")
+    return(plot)
+  }
+}
+
+png(filename =  "~/Dropbox/PhD_Marcos/Paper 4/TeX/Figures/scatterplot.png",
+    width = 2000,height = 2000, res = 300 )
+ggscatmatM(d, columns = 1:9,  alpha=0.15)+  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        text = element_text(size = 13, family = "serif"),
+        title = element_text(family = "serif"))
 dev.off()
