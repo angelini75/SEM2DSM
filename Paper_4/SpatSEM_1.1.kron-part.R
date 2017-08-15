@@ -151,6 +151,12 @@ MLIST.out <- x2MLIST(sp.ou$par, MLIST)
 
 library(numDeriv)
 jacobian <- jacobian(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
+delta <- numDeriv::genD(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
+.vcov
+
+
+
+
 
 # sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
 #                 MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
