@@ -155,6 +155,7 @@ jacobian <- jacobian(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
 # sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
 #                 MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
 #                                               rel.tol = 1e-14, x.tol = 1e-12))
+rm(list=ls()[])
 load("~/Documents/SEM2DSM1/Paper_4/data/9August_SpatSEM_1.1.RData")
 ################################################################################
 # prediction ####
@@ -163,28 +164,28 @@ library(gstat)
 library(sp)
 
 # function to obtain residuals
-get.res <- function (m = NULL){
-  A <- m$beta[1:9,10:18]
-  B <- m$beta[1:9,1:9]
-  I <- diag(nrow = 9, ncol = 9)
-  IB.inv <- solve(I - B)
-  sp <- z[,1:9]
-  p <- z[,10:18]
-  res <- matrix(data = NA, nrow = 153, ncol = 9)
-  for(i in seq_along(p[,1])){
-    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
-  }
-  colnames(res) <- colnames(sp)
-  res
-}
+# get.res <- function (m = NULL){
+#   A <- m$beta[1:9,10:18]
+#   B <- m$beta[1:9,1:9]
+#   I <- diag(nrow = 9, ncol = 9)
+#   IB.inv <- solve(I - B)
+#   sp <- z[,1:9]
+#   p <- z[,10:18]
+#   res <- matrix(data = NA, nrow = 153, ncol = 9)
+#   for(i in seq_along(p[,1])){
+#     res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
+#   }
+#   colnames(res) <- colnames(sp)
+#   res
+# }
 ## compute the residuals from multivariate linear model
-r <- get.res(m = MLIST.out)
-res <- ks
-res@data[,2:10] <- r
-res@data <- res@data[,2:10]
+# r <- get.res(m = MLIST.out)
+# res <- ks
+# res@data[,2:10] <- r
+# res@data <- res@data[,2:10]
 #var.res <- apply(X = r,FUN =  var, MARGIN = 2)
 
-ks <- as.data.frame(res)
+ks <- as.data.frame(ks)
 ks$X <- (ks$X * ST$std.dev[20]) + ST$mean[20]
 ks$Y2 <- (ks$Y2 * ST$std.dev[20]) + ST$mean[21]
 coordinates(ks) <- ~X+Y2
@@ -225,16 +226,17 @@ cv.fit<-fit.lmc(v = cv.var,g =  cv, fit.lmc = F, fit.ranges = F)
 
 # 
 cv.fit$model <- cv$model
-# png(filename = "~/Dropbox/PhD Marcos/Paper 4/Figures/Fig2.png", 
-# width = 3000, height = 3000, res =  250)
+png(filename = "~/Dropbox/PhD_Marcos/Paper 4/TeX/Figures/Semivar.png",
+width = 3000, height = 3000, res =  250)
 plot(cv.var, model=cv.fit, 
-     main="Variograms and cross-variograms of standardized residuals",
-     xlab = "Distance / m", 
+     main="",
+     xlab = "Distance (m)", 
      ylab = "Semivariance",
      ylim = c(0,1.5),
      scales=list(x = list(alternating = 1), y = list(alternating = 1)),
      par.settings=list(grid.pars=list(fontfamily="serif")))
-# dev.off()
+dev.off()
+
 NAD83.KS.N <- CRS("+init=epsg:2796")
 # Assign projection
 proj4string(res) <- NAD83.KS.N
