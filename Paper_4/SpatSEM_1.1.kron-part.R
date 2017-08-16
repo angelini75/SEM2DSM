@@ -141,10 +141,17 @@ objective_ML <- function(x, MLIST = MLIST) {
 }
 # get the 51 starting values to feed x
 lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
-
+# try with fixted a and alpha
 start.x <- c(lav.est, 0.4, 0.4)
 sp.ou <- nlminb(start = start.x, objective = objective_ML, 
                 MLIST = MLIST, control = list(iter.max = 500, trace = 1))
+################borrar
+# lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
+# # try with fixted a and alpha
+# start.x <- c(lav.est)#, 0.379304387,  0.340061458)
+# sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
+#                 MLIST = MLIST, control = list(maxit = 500, trace = 1))
+###############hasta aca
 
 #round((start.x - sp.ou$par),4)
 MLIST.out <- x2MLIST(sp.ou$par, MLIST)
@@ -152,8 +159,8 @@ MLIST.out <- x2MLIST(sp.ou$par, MLIST)
 library(numDeriv)
 jacobian <- jacobian(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
 delta <- numDeriv::genD(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
-.vcov
-
+stats:::vcov.nls
+#
 
 
 
