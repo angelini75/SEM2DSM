@@ -6,8 +6,7 @@ library(reshape)
 library(ggplot2)
 
 load("~/Documents/SEM2DSM1/Paper_4/data/se_vs_bootstraping.RData")
-ks <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/KS.data-0.3.csv")[,-1: -2]
-names(ks)[1:9] <- c("Clay.A","Clay.B","Clay.C","CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
+ks <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/ks.csv")[,-1]
 s <- ks
 # get the estimates  
 registerDoParallel(cores = 4)
@@ -49,7 +48,7 @@ ggplot2::ggplot(data = reshape::melt(x), mapping = aes(x = value)) +
 p <- partable(my.fit)
 p$se.boots <- NA
 p$se.boots[p$free != 0] <- xsd
-p$se[p$free != 0] - p$se.boots[p$free != 0]
+(p$se[p$free != 0] - p$se.boots[p$free != 0]) / p$se[p$free != 0]
 
 lav_model_x2GLIST <- function (lavmodel = NULL, x = NULL) 
 {
