@@ -29,7 +29,7 @@ name <- function(x) { as.data.frame(names(x))}
 # mod = modification indices (for respecification)
 #------------------------------------------------#
 
-e <- read.csv("~/big/SEM2DSM1/Paper_2/data/calib.data-5.0.csv")[,c(-1,-20)]
+e <- read.csv("~/Documents/SEM2DSM1/Paper_2/data/calib.data-5.0.csv")[,c(-1,-20)]
 # Descriptive statistics and normality test. ####
 round(stat.desc(e,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
@@ -60,8 +60,8 @@ std <- function(x, st){
 Arg <- std(e,STt.arg)
 Arg[,1] <- e[,1] 
 
-setwd("~/big/SEM2DSM1/Paper_3/data/")
-d <- read.csv("KS.data-0.2.csv")[,c(-1)] 
+setwd("~/Documents/SEM2DSM1/Paper_3/data/")
+d <- read.csv("KS.data-0.3.csv")[,c(-1)] 
 name(d)
 names(d)[2:10] <- c("Clay.A", "Clay.B", "Clay.C",
                     "CEC.A","CEC.B","CEC.C",
@@ -72,9 +72,6 @@ names(d)[2:10] <- c("Clay.A", "Clay.B", "Clay.C",
 d <- cbind(d[1],
            d[,colnames(Arg)[2:10]],
            d[11:21])
-d <- d[c(-156,-157),]
-d <- d[c(-103,-105),]
-d <- d[c(-102),]
 # Descriptive statistics and normality test. ####
 round(stat.desc(d,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
@@ -95,7 +92,7 @@ d$ndwi.a <- (d$ndwi.a+10)^.3
 round(stat.desc(d,norm = TRUE),3)
 # New mean and sd
 STt.ks <- t(stat.desc(d,norm = TRUE)[c(9,13),])
-#write.csv(STt.ks, "~/big/SEM2DSM1/Paper_4/data/STt.ks.csv")
+#write.csv(STt.ks, "~/Documents/SEM2DSM1/Paper_4/data/STt.ks-0.3.csv")
 
 # standardised data set ####
 std <- function(x, st){
@@ -130,7 +127,7 @@ ks[order(ks[,c(20)]),c(1,20,21)]
 # sum(X[2,])
 # # 106 is the most similar to median
 # ks <- ks[c(-102),]
-# write.csv(ks,"~/big/SEM2DSM1/Paper_4/data/ks.csv")
+#write.csv(ks,"~/Documents/SEM2DSM1/Paper_4/data/ks.csv")
 ### END ###
 #######################################
 
