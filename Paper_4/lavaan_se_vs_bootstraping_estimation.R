@@ -6,14 +6,15 @@ library(reshape)
 library(ggplot2)
 
 load("~/Documents/SEM2DSM1/Paper_4/data/se_vs_bootstraping.RData")
-s <- ks[!(ks$OC.B >4),]
-
+ks <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/KS.data-0.3.csv")[,-1: -2]
+names(ks)[1:9] <- c("Clay.A","Clay.B","Clay.C","CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
+s <- ks
 # get the estimates  
-registerDoParallel(cores = 3)
+registerDoParallel(cores = 4)
 trials = 1000
 x <- foreach(icount(trials), .combine=rbind) %dopar% {
   samples <- s[sample(x = 1:nrow(s), size = nrow(s), replace = TRUE),]
-  rownames(samples) <- 1:151
+  rownames(samples) <- 1:147
   fit <- sem(model = my.model.lv,data = samples, meanstructure = FALSE, 
              fixed.x = T)
   lavaan:::lav_model_get_parameters(lavmodel = fit@Model)
