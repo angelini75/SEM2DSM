@@ -1138,7 +1138,7 @@ OC.Cr ~~ 0*CEC.Br + 0*CEC.Cr + 0*CEC.Ar
 
 
 setwd("~/Documents/SEM2DSM1/Paper_3/data/")
-d <- read.csv("KS.data-0.2.csv")[,c(-1)] 
+d <- read.csv("KS.data-0.3.csv")[,c(-1)] 
 name(d)
 names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
 # remove outlayers
@@ -1419,11 +1419,11 @@ res <- rbind(res, as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
 res <- rbind(res, as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
              as.matrix(Res[,c(10,19)]))
 
-rownames(res) <- 1:(156*9)
+rownames(res) <- 1:(147*9)
 colnames(res) <- c("observed","predicted")
 res <- as.data.frame(res)
-res$hor <- rep(c("A", "B", "C"), each= 156,3)
-res$sp <- rep(c("CEC", "OC", "clay"), each= 156*3)
+res$hor <- rep(c("A", "B", "C"), each= 147,3)
+res$sp <- rep(c("CEC", "OC", "clay"), each= 147*3)
 res$hor <- as.factor(res$hor)
 #levels(res$hor) <- c("C", "B", "A")
 ```
