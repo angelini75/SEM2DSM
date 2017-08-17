@@ -250,85 +250,88 @@ plot(cv.var, model=cv.fit,
      par.settings=list(grid.pars=list(fontfamily="serif")))
 dev.off()
 
-NAD83.KS.N <- CRS("+init=epsg:2796")
-# Assign projection
-proj4string(res) <- NAD83.KS.N
-mapview(res)
 
-# map of predictions
-# libraries
-library(raster)
-library(maptools)
-library(sp)
-#library(sf)
-library(rgdal)
-
-#define crs
-wgs84 <- CRS("+init=epsg:4326")
-NAD83.KS.N <- CRS("+init=epsg:2796")
-modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
-
-# points based on MODIS LST grid 
-r <- raster("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/LST.mean.tif")
-plot(r)
-r <- rasterToPoints(r,spatial = TRUE)
-proj4string(r) <- modis
-
-# study area WGS84
-area <- readOGR("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/Platte_area_extended.shp")
-proj4string(area) <- wgs84
-area <- spTransform(area, modis)
-area <- as(area,"SpatialPolygons")
-
-# remove points outside the study area
-r <- r[!is.na(over(r,area)),]
-r <- spTransform(r, NAD83.KS.N)
-spplot(r)
-
-# wd
-setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling")
-# sdat files (dem covariates) 
-files <- list.files(pattern=".sdat$")
-header <- gsub(".sdat", "", files)
-header <- c("dem", "twi","vdchn") 
-
-# tif files (modis)
-files_m <- list.files(pattern=".tif$")
-# set names of covariates
-header_m <- c("evim", "evisd", "lstm", "lstsd", "ndwi.a", "ndwi.b")
-
-# extract values from files (.sdat)
-stack <- list()
-for(i in seq_along(files)) {
-  r@data[,i] <- NULL
-  stack[[i]] <- readGDAL(files[i])
-  proj4string(stack[[i]]) <- NAD83.KS.N
-  r@data[,i] <- over(r, stack[[i]])[,1]
-  stack <- list()
-  names(r@data)[length(r@data)] <- header[i]
-}  
-
-## extract values from modis files 
-stack <- list()
-# reproject endo to modis projection
-r <- spTransform(r, modis)
-for(i in seq_along(files_m)) {
-  r@data[,length(r@data)+1] <- NULL
-  stack[[i]] <- readGDAL(files_m[i])
-  proj4string(stack[[i]]) <- modis # change projection
-  r@data[,length(r@data)+1] <- over(r, stack[[i]])[,1]
-  stack <- list()
-  names(r@data)[length(r@data)] <- header_m[i]
-}  
-r <- spTransform(r, NAD83.KS.N)
-r.df <- as.data.frame(r)
-r.df <- r.df[complete.cases(r.df),] 
-
-# transform
-r.df$twi <- log10(r.df$twi)
-r.df$vdchn <- log10(r.df$vdchn+10)
-r.df$ndwi.a <- (r.df$ndwi.a+10)^.3
-
+#### PERDICTION PROCESS ####
+# comes from get.pred.points.w.covar.R 
+# setwd("/mnt/L0135974_DATA/UserData/BaseARG/COVARIATES/USA/modelling/")
+# 
+# library(raster)
+# #library(sp)
+# 
+# ## Points over DEM and its derivates
+# files <- list.files(pattern = ".dat$")
+# header <- gsub(".sdat", "", files)
+# header <-  c("dem", "twi", "vdchn") 
+# 
+# #define crs
+# wgs84 <- CRS("+init=epsg:4326")
+# #UTM14N <- CRS("+init=epsg:32614")
+# modis <- CRS("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
+# NAD83.KS.N <- CRS("+init=epsg:2796")
+# 
+# library(maptools)
+# sa <- readShapeSpatial("/mnt/L0135974_DATA/UserData/BaseARG/study area/USA/Platte_area_extended.shp")
+# 
+# spplot(sa)
+# proj4string(sa) <- wgs84
+# sa <- spTransform(sa, NAD83.KS.N)
+# extent(sa)
+# 
+# xcoord <- as.vector(extent(sa))[1:2]
+# x <- seq(from=xcoord[1], to = xcoord[2], 1000)
+# ycoord <- as.vector(extent(sa))[3:4]
+# y <- seq(from = ycoord[1], to = ycoord[2], 1000)
+# coord <- expand.grid(x,y)
+# 
+# xy <- SpatialPointsDataFrame(coords = coord,data =  as.data.frame(rep(NA, length(coord[,1]))))
+# proj4string(xy) <- NAD83.KS.N
+# 
+# xy <- xy[rownames(over(sa, xy, returnList = TRUE)$`0`),]
+# 
+# 
+# for(i in seq_along(files)){
+#   xy@data[,i] <- extract(x = raster(files[i]), y = xy)
+#   names(xy@data)[i] <- header[i]
+# }
+# 
+# # list of tif files (modis)
+# files <- list.files(pattern = ".tif$")[c(-1,-4)]
+# header <- gsub(".tif", "", files)
+# header <-  c("evisd", "lstm", "ndwi.a", "ndwi.b") 
+# 
+# # transform projection
+# xy <- spTransform(x = xy, modis)
+# 
+# xy@data[,3+seq_along(files)] <- NA
+# names(xy@data)[4:7] <- header
+# 
+# # extract values from tiff files
+# for(i in seq_along(files)){
+#   xy@data[,3+i] <- extract(x = raster(files[i]), y = xy)
+# }
+# xy <- spTransform(x = xy, NAD83.KS.N)
+# 
+# # r <- raster(xy, res = 1000)
+# # proj4string(r)
+# # plot(rasterize(xy[1],r, background= NA))
+# # 
+# # distanceFromPoints(object = , xy = , filename = )
+# 
+# xy <- as.data.frame(xy)
+# names(xy)[8:9] <- c("X", "Y")
+# xy$twi <- log10(xy$twi)
+# xy$vdchn <- log10(xy$vdchn+10)
+# xy$ndwi.a <- (xy$ndwi.a+10)^.3
+# 
+# #ST <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/STt.ks.csv")
+# 
+# xy <- xy[,colnames(s)[10:18]]
+# xy <- as.matrix(xy)
+# #
+# 
+# #
+# write.csv(file = "~/Documents/SEM2DSM1/Paper_4/data/xy.csv",x = xy)
+covar <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/xy.csv")[,-1]
 # standardise #
 std <- function(x, st){
   y <- x
@@ -338,5 +341,7 @@ std <- function(x, st){
   y
 }
 STt <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/STt.ks.csv")
-r.st <- std(x = r.df,st = STt[11:21,])
-name(pred.st)
+covar.st <- std(x = covar[,as.character(STt[c(11:13,15,16,18:21),1])],st = STt[c(11:13,15,16,18:21),])
+summary(covar.st)
+covar.st <- covar.st[complete.cases(covar.st),]
+GGally::scatmat(covar.st[sample(x = 1:nrow(covar.st), size = 1200),], alpha = 0.1)
