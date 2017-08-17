@@ -169,7 +169,7 @@ mod.Arg[mod.Arg$mi>3 & (mod.Arg$op == "~~"|mod.Arg$op == "~"),]
 
 
 setwd("~/Documents/SEM2DSM1/Paper_3/data/")
-d <- read.csv("KS.data-0.2.csv")[,c(-1)] 
+d <- read.csv("KS.data-0.3.csv")[,c(-1)] #changed to version 0.3
 name(d)
 names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
 # remove outlayers
@@ -178,7 +178,6 @@ names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
 d <- cbind(d[1],
            d[,colnames(Arg)[2:10]],
            d[11:19])
-d <- d[c(-156,-157),]
 # Descriptive statistics and normality test. ####
 round(stat.desc(d,norm = TRUE),3)
 # Soil properties does not present strong deviation from normality.
@@ -433,11 +432,11 @@ res <- rbind(res, as.matrix(Res[,c(5,14)]), as.matrix(Res[,c(6,15)]),
 res <- rbind(res, as.matrix(Res[,c(8,17)]), as.matrix(Res[,c(9,18)]),
              as.matrix(Res[,c(10,19)]))
 
-rownames(res) <- 1:(156*9)
+rownames(res) <- 1:(147*9)
 colnames(res) <- c("observed","predicted")
 res <- as.data.frame(res)
-res$hor <- rep(c("A", "B", "C"), each= 156,3)
-res$sp <- rep(c("CEC", "OC", "clay"), each= 156*3)
+res$hor <- rep(c("A", "B", "C"), each= 147,3)
+res$sp <- rep(c("CEC", "OC", "clay"), each= 147*3)
 res$hor <- as.factor(res$hor)
 #levels(res$hor) <- c("C", "B", "A")
 ```
