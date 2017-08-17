@@ -92,12 +92,12 @@ summary(profiles.e)
 # profiles.r$oc[is.na(profiles.r$oc)] <- profiles.r$c_tot[which(is.na(profiles.r$oc))]
 # profiles.r <- profiles.r[,-11]
 # copy values from c_tot to oc where oc == NA
-profiles.e$oc[is.na(profiles.e$oc)] <- profiles.e$c_tot[which(is.na(profiles.e$oc))]
+# profiles.e$oc[is.na(profiles.e$oc)] <- profiles.e$c_tot[which(is.na(profiles.e$oc))]
 profiles.e <- profiles.e[,-14]
 
 # copy values from cec_tot to cec_nh4 where cec_nh4 == NA
-profiles.e$cec_nh4[is.na(profiles.e$cec_nh4)] <- 
-  profiles.e$cec_sum[which(is.na(profiles.e$cec_nh4))]
+# profiles.e$cec_nh4[is.na(profiles.e$cec_nh4)] <- 
+#   profiles.e$cec_sum[which(is.na(profiles.e$cec_nh4))]
 profiles.e <- profiles.e[,c(-12)]
 
 # names(profiles.r) <- c("labsampnum","idp", "X", "Y","hzn","hzn_nom","top", "bot", "cec", "oc", "clay")
