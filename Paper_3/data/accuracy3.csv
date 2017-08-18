@@ -1,0 +1,85 @@
+sp,model,ME,RMSE,AVE
+CEC.A ,Model 1,-1.42,5.97,-0.03
+CEC.B ,Model 1,-3.18,7.04,-0.13
+CEC.C ,Model 1,-3.12,7.41,-0.04
+OC.A ,Model 1,-0.31,0.69,-0.22
+OC.B ,Model 1,0.09,0.26,-0.18
+OC.C ,Model 1,0.05,0.12,-0.22
+Clay.A ,Model 1,1.02,8.42,0.08
+Clay.B ,Model 1,-3.84,9.65,0.14
+Clay.C ,Model 1,4.85,10.71,-0.01
+CEC ,Model 1,-2.57,6.84,0.02
+OC ,Model 1,-0.05,0.43,0.64
+Clay ,Model 1,0.68,9.64,0.18
+CEC.A ,Model 2,0.01,6.23,-0.12
+CEC.B ,Model 2,-0.01,6.33,0.09
+CEC.C ,Model 2,-0.01,7.01,0.06
+OC.A ,Model 2,0.00,0.59,0.12
+OC.B ,Model 2,0.00,0.25,-0.09
+OC.C ,Model 2,0.00,0.11,0.02
+Clay.A ,Model 2,0.00,8.94,-0.03
+Clay.B ,Model 2,-0.02,9.35,0.19
+Clay.C ,Model 2,0.00,10.01,0.12
+CEC ,Model 2,0.00,6.53,0.11
+OC ,Model 2,0.00,0.37,0.73
+Clay ,Model 2,-0.01,9.45,0.21
+CEC.A ,Model 3,0.01,5.73,0.05
+CEC.B ,Model 3,0.00,6.12,0.15
+CEC.C ,Model 3,0.00,6.63,0.16
+OC.A ,Model 3,0.00,0.58,0.13
+OC.B ,Model 3,0.00,0.24,0.00
+OC.C ,Model 3,0.00,0.11,0.00
+Clay.A ,Model 3,0.01,8.26,0.12
+Clay.B ,Model 3,-0.01,9.00,0.25
+Clay.C ,Model 3,0.00,9.62,0.19
+CEC ,Model 3,0.00,6.17,0.20
+OC ,Model 3,0.00,0.37,0.74
+Clay ,Model 3,0.00,8.97,0.29
+CEC.A ,Model 4,0.00,5.57,0.10
+CEC.B ,Model 4,-0.01,5.97,0.19
+CEC.C ,Model 4,0.00,6.39,0.22
+OC.A ,Model 4,0.00,0.56,0.19
+OC.B ,Model 4,0.00,0.23,0.00
+OC.C ,Model 4,0.00,0.11,0.05
+Clay.A ,Model 4,0.00,7.90,0.19
+Clay.B ,Model 4,-0.03,8.80,0.28
+Clay.C ,Model 4,0.01,9.38,0.23
+CEC ,Model 4,0.00,5.99,0.25
+OC ,Model 4,0.00,0.36,0.75
+Clay ,Model 4,-0.01,8.71,0.33
+CEC.A ,Model 5,-1.42,6.02,-0.05
+CEC.B ,Model 5,-3.18,7.23,-0.18
+CEC.C ,Model 5,-3.12,7.58,-0.09
+OC.A ,Model 5,-0.31,0.69,-0.23
+OC.B ,Model 5,0.09,0.25,-0.16
+OC.C ,Model 5,0.05,0.12,-0.21
+Clay.A ,Model 5,1.02,8.41,0.09
+Clay.B ,Model 5,-3.84,9.74,0.12
+Clay.C ,Model 5,4.85,10.73,-0.01
+CEC ,Model 5,-2.57,6.98,-0.02
+OC ,Model 5,-0.05,0.43,0.64
+Clay ,Model 5,0.68,9.67,0.17
+CEC.A ,Model 6,0.01,5.57,0.10
+CEC.B ,Model 6,-0.04,6.15,0.14
+CEC.C ,Model 6,-0.03,6.63,0.16
+OC.A ,Model 6,0.00,0.58,0.14
+OC.B ,Model 6,0.00,0.24,-0.04
+OC.C ,Model 6,0.00,0.11,-0.05
+Clay.A ,Model 6,0.00,7.86,0.20
+Clay.B ,Model 6,-0.04,8.95,0.26
+Clay.C ,Model 6,0.01,9.54,0.20
+CEC ,Model 6,-0.02,6.13,0.21
+OC ,Model 6,0.00,0.37,0.74
+Clay ,Model 6,-0.01,8.81,0.31
+CEC.A ,Reference,0.00,3.16,0.18
+CEC.B ,Reference,-0.01,3.00,0.50
+CEC.C ,Reference,-0.01,5.46,0.45
+OC.A ,Reference,0.00,0.40,0.24
+OC.B ,Reference,0.00,0.14,0.03
+OC.C ,Reference,0.00,0.06,0.02
+Clay.A ,Reference,0.00,4.05,0.15
+Clay.B ,Reference,-0.01,5.14,0.60
+Clay.C ,Reference,-0.01,6.87,0.41
+CEC ,Reference,0.00,4.30,0.53
+OC ,Reference,0.00,0.25,0.91
+Clay ,Reference,-0.01,5.45,0.72
