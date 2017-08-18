@@ -8,10 +8,10 @@ setwd("~/big/SEM2DSM1/Paper_4/data")
 setwd("~/Documents/SEM2DSM1/Paper_4/data")
 
 load("env.for.gerard.RData")
-load("new.lavaan.model.RData")
+load("new.lavaan.model.noY.RData")
 ks <- read.csv("ks.csv")
 ks <- ks[,colnames(s)]
-s <- as.matrix(ks)
+s <- as.matrix(ks[,-17])
 
 # lavaan model
 fit <- my.fit.lv.ML
@@ -25,10 +25,10 @@ plotMat(SIGMA0)
 
 # initialise matrix with standardised observations
 # rows are locations, columns variables
-z <- as.matrix(ks)
+z <- as.matrix(s)
 
 ################################################################################
-ks <- read.csv("ks.csv")[,-1] # standardized data
+#ks <- read.csv("ks.csv")[,-1] # standardized data
 ST <- read.csv("STt.ks-0.3.csv")
 ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
 
