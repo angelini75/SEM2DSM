@@ -185,6 +185,8 @@ mod.ks <- modindices(my.fit.lv.ML,sort. = T)
 mod.ks[mod.ks$mi & (mod.ks$op == "~"|mod.ks$op == "~~"),]# & 
 # mod.ks$lhs != "CEC.Ar",]# & mod.ks$lhs == "clay.Cr",] 
 
+write.csv(partable(my.fit.lv.ML)[partable(my.fit.lv.ML)$free != 0,], 
+          "~/Documents/SEM2DSM1/Paper_3/data/partable_model4.csv")
 
 # Model validation ####
 #### Prediction ####
