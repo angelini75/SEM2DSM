@@ -84,7 +84,7 @@ library(reshape)
 rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 
-a <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/accuracy4.csv")
+a <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/accuracy3.csv")
 a <- melt(a, id.vars = c("sp","hor", "model"), measure.vars = c( "ME", "RMSE", "AVE"))
 
 with(a, levels(hor))
