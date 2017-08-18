@@ -160,7 +160,7 @@ OC.Cr  ~      dem
 OC.Ar  ~   ndwi.a
 
 OC.Ar  ~  clay.Br
-OC.Br  ~  clay.Ar
+OC.Br  ~~  clay.Ar
 
 CEC.Ar  ~     dem
 CEC.Cr  ~   evisd
