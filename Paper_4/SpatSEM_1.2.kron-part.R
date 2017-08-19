@@ -1,5 +1,6 @@
 rm(list=ls()[])
 library(lavaan)
+library(doParallel)
 
 # load lavaan model (from RS server)
 setwd("~/big/SEM2DSM1/Paper_4/data")
@@ -7,29 +8,28 @@ setwd("~/big/SEM2DSM1/Paper_4/data")
 # load lavaan model (from RS desktop)
 setwd("~/Documents/SEM2DSM1/Paper_4/data")
 
-load("env.for.gerard.RData")
-load("new.lavaan.model.noY.RData")
-ks <- read.csv("ks.csv")
-ks <- ks[,colnames(s)]
-s <- as.matrix(ks[,-17])
-
-# lavaan model
-fit <- my.fit.lv.ML
-par.list <- inspect(fit)
-# estimated parameters with lavaan
-MLIST <- lavTech(fit, "est")
-
-# compute SIGMA0 (18x18)
-SIGMA0 <- computeSigmaHat.LISREL(MLIST)
-plotMat(SIGMA0)
-
-# initialise matrix with standardised observations
-# rows are locations, columns variables
-z <- as.matrix(s)
-
-################################################################################
-#ks <- read.csv("ks.csv")[,-1] # standardized data
-ST <- read.csv("STt.ks-0.3.csv")
+load("SpatSEM_1.2.RData")
+# ks <- read.csv("ks.csv")
+# ks <- ks[,colnames(s)]
+# s <- as.matrix(ks[,-17])
+# 
+# # lavaan model
+# fit <- my.fit.lv.ML
+# par.list <- inspect(fit)
+# # estimated parameters with lavaan
+# MLIST <- lavTech(fit, "est")
+# 
+# # compute SIGMA0 (18x18)
+# SIGMA0 <- computeSigmaHat.LISREL(MLIST)
+# #plotMat(SIGMA0)
+# 
+# # initialise matrix with standardised observations
+# # rows are locations, columns variables
+# z <- as.matrix(s)
+# 
+# ################################################################################
+# #ks <- read.csv("ks.csv")[,-1] # standardized data
+# ST <- read.csv("STt.ks-0.3.csv")
 ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
 
 coordinates(ks) <- ~X+Y2
@@ -86,20 +86,7 @@ get.RHO <- function(MLIST = NULL, h = h) {
 # next our approach with alpha != 0
 MLIST$alpha <- alpha
 MLIST$a <- a
-
-z.all <- as.vector(z)  # compile to one big vector
 RHO <- get.RHO(MLIST,h)
-#SIGMA.all <- kronecker(SIGMA0, RHO)  # create covariance matrix of z.all
-#plotMat(SIGMA.all[1000:1700,1000:1700])
-# SIGMA.all2 <- kronM(RHO = RHO,RHO.I = RHO,SIGMA0 = SIGMA0, sp = 1:9, cov = 10:18)
-# plotMat(SIGMA.all1[1000:1500,1000:1500]-SIGMA.all2[1000:1500,1000:1500])
-
-
-# Choleschy decomposition
-# L.all = chol(SIGMA.all)
-# logdetSIGMA.all = 2*sum(log(diag(L.all)))
-# SIGMA.all.inv <- chol2inv(L.all)
-
 
 
 
@@ -110,17 +97,13 @@ objective_ML <- function(x, MLIST = MLIST) {
   SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
   RHO <- get.RHO(MLIST,h)
   if (all(eigen(SIGMA0)$values >0) & (all(eigen(RHO)$values >0))) {
-    # L.SIGMA0 <- chol(SIGMA0)
-    # L.RHO <- chol(RHO)
+
     SIGMA0.inv <- chol2inv(chol(SIGMA0))
     RHO.inv <- chol2inv(chol(RHO))
     SIGMA.all.inv <- kronecker(SIGMA0.inv, RHO.inv)
     dL.S.R <- append((diag(chol(SIGMA0)))^N, (diag(chol(RHO)))^18)
     logdetSIGMA.all = 2*sum(log(dL.S.R))
-    # SIGMA.all <- kronecker(SIGMA0, RHO)
-    # L.all = chol(SIGMA.all)
-    # logdetSIGMA.all = 2*sum(log(diag(L.all)))
-    # SIGMA.all.inv <- chol2inv(L.all)
+
     objective <- -1 * (-1/2*p*N*log(2*pi) - 1/2*logdetSIGMA.all - 
                          1/2*t(z.all)%*%SIGMA.all.inv%*%z.all)
     cat("objective = ", objective, "\n")
@@ -134,8 +117,24 @@ objective_ML <- function(x, MLIST = MLIST) {
 lav.est <- parTable(fit)$est[parTable(fit)$free > 0]
 # try with fixted a and alpha
 start.x <- c(lav.est, 0.4, 0.4)
-sp.ou <- nlminb(start = start.x, objective = objective_ML, 
-                MLIST = MLIST, control = list(iter.max = 500, trace = 1))
+
+#### BOOTSTRAPPING #####
+registerDoParallel(cores = 2)
+trials = 2
+#ptime <- system.time({
+x <- foreach(icount(trials), .combine=rbind) %dopar% {
+  samples <- s[sample(x = 1:nrow(s), size = nrow(s), replace = TRUE),]
+  rownames(samples) <- 1:147
+  z <- s
+  z.all <- as.vector(z)
+  start.x <- start.x + start.x * rnorm(n = length(start.x),mean = 0,0.07)
+  MLIST <- x2MLIST(x = start.x, MLIST = MLIST)
+  out <- nlminb(start = start.x, objective = objective_ML, 
+                  MLIST = MLIST, control = list(iter.max = 2, trace = 1))
+  out$par
+}
+
+
 ################borrar
 # lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
 # # try with fixted a and alpha
