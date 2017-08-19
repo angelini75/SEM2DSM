@@ -1,13 +1,14 @@
 rm(list=ls()[])
 library(lavaan)
 library(doParallel)
+library(sp)
 
 # load lavaan model (from RS server)
 setwd("~/big/SEM2DSM1/Paper_4/data")
 
 # load lavaan model (from RS desktop)
 setwd("~/Documents/SEM2DSM1/Paper_4/data")
-
+setwd("C:/Users/quics/Marcos/SEM2DSM1/Paper_4/data")
 load("SpatSEM_1.2.RData")
 # ks <- read.csv("ks.csv")
 # ks <- ks[,colnames(s)]
@@ -28,9 +29,9 @@ load("SpatSEM_1.2.RData")
 # z <- as.matrix(s)
 # 
 # ################################################################################
-# #ks <- read.csv("ks.csv")[,-1] # standardized data
-# ST <- read.csv("STt.ks-0.3.csv")
-ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
+ks <- read.csv("ks.csv")[,-1] # standardized data
+ST <- read.csv("STt.ks-0.3.csv")
+#ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
 
 coordinates(ks) <- ~X+Y2
 # h = n x n matrix of distances between samples 
@@ -86,24 +87,21 @@ get.RHO <- function(MLIST = NULL, h = h) {
 # next our approach with alpha != 0
 MLIST$alpha <- alpha
 MLIST$a <- a
-RHO <- get.RHO(MLIST,h)
 
 
-
-# to define the objective function:
 objective_ML <- function(x, MLIST = MLIST) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
   SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
   RHO <- get.RHO(MLIST,h)
   if (all(eigen(SIGMA0)$values >0) & (all(eigen(RHO)$values >0))) {
-
+    
     SIGMA0.inv <- chol2inv(chol(SIGMA0))
     RHO.inv <- chol2inv(chol(RHO))
     SIGMA.all.inv <- kronecker(SIGMA0.inv, RHO.inv)
-    dL.S.R <- append((diag(chol(SIGMA0)))^N, (diag(chol(RHO)))^18)
+    dL.S.R <- append((diag(chol(SIGMA0)))^N, (diag(chol(RHO)))^p)
     logdetSIGMA.all = 2*sum(log(dL.S.R))
-
+    
     objective <- -1 * (-1/2*p*N*log(2*pi) - 1/2*logdetSIGMA.all - 
                          1/2*t(z.all)%*%SIGMA.all.inv%*%z.all)
     cat("objective = ", objective, "\n")
@@ -113,25 +111,33 @@ objective_ML <- function(x, MLIST = MLIST) {
     objective
   }
 }
+
+# to define the objective function:
+
 # get the 51 starting values to feed x
 lav.est <- parTable(fit)$est[parTable(fit)$free > 0]
 # try with fixted a and alpha
 start.x <- c(lav.est, 0.4, 0.4)
 
 #### BOOTSTRAPPING #####
-registerDoParallel(cores = 2)
-trials = 2
+registerDoParallel(cores = 46)
+trials = 250
 #ptime <- system.time({
 x <- foreach(icount(trials), .combine=rbind) %dopar% {
-  samples <- s[sample(x = 1:nrow(s), size = nrow(s), replace = TRUE),]
+  
+  samples <- ks[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
   rownames(samples) <- 1:147
-  z <- s
+  samples$Y2 <- samples$Y * ST$std.dev[21] / ST$std.dev[20]
+  sp::coordinates(samples) <- ~X+Y2
+  h <- sp::spDists(samples)
+  RHO <- get.RHO(MLIST,h)
+  z <- as.matrix(as.data.frame(samples)[,colnames(s)])
   z.all <- as.vector(z)
-  start.x <- start.x + start.x * rnorm(n = length(start.x),mean = 0,0.07)
-  MLIST <- x2MLIST(x = start.x, MLIST = MLIST)
-  out <- nlminb(start = start.x, objective = objective_ML, 
-                  MLIST = MLIST, control = list(iter.max = 2, trace = 1))
-  out$par
+  out <- try( nlminb(start = start.x, objective = objective_ML, 
+                     MLIST = MLIST, control = list(iter.max = 500)), silent = TRUE)
+  if(inherits(out, "try-error")) {NA} else {
+    out$par  
+  }
 }
 
 
