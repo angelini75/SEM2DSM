@@ -151,7 +151,7 @@ out <-  nlminb(start = start.x, objective = objective_ML,
 ###############hasta aca
 
 #round((start.x - sp.ou$par),4)
-MLIST.out <- x2MLIST(out.par$par, MLIST)
+MLIST.out <- x2MLIST(out$par, MLIST)
 
 # sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
 #                 MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
@@ -180,13 +180,26 @@ ggplot2::ggplot(data = meltx, mapping = aes(x = value)) +
   geom_vline(aes(xintercept=value, color='bootstrap'), data=xmean)
 ######### Matrices for prediction 
 # for x = zeta_obs (s_i) and y = zeta_obs (s_0)
+MLIST.obs <- MLIST.out
+# MLIST.obs$lambda <- MLIST.obs$lambda[1:9,1:9]
+# MLIST.obs$theta <- MLIST.obs$theta[1:9,1:9]
+# MLIST.obs$psi <- MLIST.obs$psi[1:9,1:9]
+# MLIST.obs$beta <- MLIST.obs$beta[1:9,1:9]
 
-SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST) # 17x17
-SIGMA.obs <- SIGMA0[1:9,1:9]                    # 9x9
-SIGMA.obs.inv <- chol2inv(chol(SIGMA.obs))      # 9x9
-RHO.0 <- get.RHO(MLIST,h)                       #147x147
-RHO.inv <- chol2inv(chol(RHO.0))                #147x147
-SIGMA.xx <- kronecker(SIGMA.obs.inv, RHO.inv)   #147.9x147.9
+SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
+RHO <- get.RHO(MLIST,h)
+if (all(eigen(SIGMA0)$values >0) & (all(eigen(RHO)$values >0))) {
+  
+  SIGMA0.inv <- chol2inv(chol(SIGMA0))
+  RHO.inv <- chol2inv(chol(RHO))
+  SIGMA.all.inv <- kronecker(SIGMA0.inv, RHO.inv)
+
+SIGMA0.obs <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # 9x9
+# SIGMA.obs.inv <- chol2inv(chol(SIGMA0.obs))      # 9x9
+# RHO <- get.RHO(MLIST,h)                       #147x147
+# RHO.inv <- chol2inv(chol(RHO.0))                #147x147
+SIGMA.xx <- kronecker(SIGMA0.obs, RHO)   #147 9 x 147 9
+plotMat(SIGMA.xx[1:70,1:70])
 
 
 #
