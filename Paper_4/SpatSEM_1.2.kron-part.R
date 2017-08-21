@@ -116,29 +116,31 @@ objective_ML <- function(x, MLIST = MLIST) {
 
 # get the 51 starting values to feed x
 lav.est <- parTable(fit)$est[parTable(fit)$free > 0]
+lavaan:::lav_model_get_parameters(lavmodel = fit@Model)
 # try with fixted a and alpha
 start.x <- c(lav.est, 0.4, 0.4)
 
 #### BOOTSTRAPPING #####
-registerDoParallel(cores = 46)
-trials = 250
+#registerDoParallel(cores = 46)
+#trials = 250
 #ptime <- system.time({
-x <- foreach(icount(trials), .combine=rbind) %dopar% {
+#x <- foreach(icount(trials), .combine=rbind) %dopar% {
   
-  samples <- ks[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
-  rownames(samples) <- 1:147
-  samples$Y2 <- samples$Y * ST$std.dev[21] / ST$std.dev[20]
-  sp::coordinates(samples) <- ~X+Y2
-  h <- sp::spDists(samples)
-  RHO <- get.RHO(MLIST,h)
-  z <- as.matrix(as.data.frame(samples)[,colnames(s)])
-  z.all <- as.vector(z)
-  out <- try( nlminb(start = start.x, objective = objective_ML, 
-                     MLIST = MLIST, control = list(iter.max = 500)), silent = TRUE)
-  if(inherits(out, "try-error")) {NA} else {
-    out$par  
-  }
-}
+samples <- ks#[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
+rownames(samples) <- 1:147
+samples$Y2 <- samples$Y * ST$std.dev[21] 
+samples$X2 <- samples$X * ST$std.dev[20]
+sp::coordinates(samples) <- ~X2+Y2
+h <- sp::spDists(samples)
+RHO <- get.RHO(MLIST,h)
+z <- as.matrix(as.data.frame(samples)[,colnames(s)])
+z.all <- as.vector(z)
+out <-  nlminb(start = start.x, objective = objective_ML, 
+                   MLIST = MLIST, control = list(iter.max = 500, trace = 1))# try( function , silent = TRUE)
+#   if(inherits(out, "try-error")) {NA} else {
+#     out$par  
+#   }
+# }
 
 
 ################borrar
@@ -150,22 +152,70 @@ x <- foreach(icount(trials), .combine=rbind) %dopar% {
 ###############hasta aca
 
 #round((start.x - sp.ou$par),4)
-MLIST.out <- x2MLIST(sp.ou$par, MLIST)
-
-library(numDeriv)
-jacobian <- jacobian(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
-delta <- numDeriv::genD(objective_ML, x=sp.ou$par, MLIST=MLIST.out)
-stats:::vcov.nls
-#
-
-
-
+MLIST.out <- x2MLIST(out.par$par, MLIST)
 
 # sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
 #                 MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
 #                                               rel.tol = 1e-14, x.tol = 1e-12))
-rm(list=ls()[])
-load("~/Documents/SEM2DSM1/Paper_4/data/9August_SpatSEM_1.1.RData")
+#rm(list=ls()[])
+#load("~/Documents/SEM2DSM1/Paper_4/data/9August_SpatSEM_1.1.RData")
+####### Parameters bootstrapping #####################
+load("~/Documents/SEM2DSM1/Paper_4/parameters.RData")
+x <- rbind(as.data.frame(x),as.data.frame(x0))
+x <- x[complete.cases(x),]
+library(lavaan)
+partable <- partable(my.fit.lv.ML)
+colnames(x) <- c(paste0(partable$lhs[partable$free!=0],
+                      partable$op[partable$free!=0],
+                      partable$rhs[partable$free!=0]), "alpha", "a")
+# statistics of the estimates
+xmean <- mean(x[,"a"])
+xmean <- reshape::melt(as.data.frame(xmean))
+xmean$variable <- names(x)
+xsd <- apply(x, 2, sd)
+
+library(ggplot2)
+meltx <- reshape::melt(x)
+ggplot2::ggplot(data = meltx, mapping = aes(x = value)) +
+  geom_histogram(bins = 40) + facet_wrap(~variable, scales = 'free_x') +
+  geom_vline(aes(xintercept=value, color='bootstrap'), data=xmean)
+######### Matrices for prediction 
+# for x = zeta_obs (s_i) and y = zeta_obs (s_0)
+
+SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST) # 17x17
+SIGMA.obs <- SIGMA0[1:9,1:9]                    # 9x9
+SIGMA.obs.inv <- chol2inv(chol(SIGMA.obs))      # 9x9
+RHO.0 <- get.RHO(MLIST,h)                       #147x147
+RHO.inv <- chol2inv(chol(RHO.0))                #147x147
+SIGMA.xx <- kronecker(SIGMA.obs.inv, RHO.inv)   #147.9x147.9
+
+
+#
+
+covar <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/xy.csv")[,-1]
+# standardise #
+std <- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] - st[i,2]) / st[i,3]
+  }
+  y
+}
+STt <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/STt.ks-0.3.csv")
+covar.st <- std(x = covar[,as.character(STt[c(11:13,15,16,18:21),1])],st = STt[c(11:13,15,16,18:21),])
+summary(covar.st)
+covar.st <- covar.st[complete.cases(covar.st),]
+
+
+
+
+
+
+
+
+
+
+
 ################################################################################
 # prediction ####
 ################################################################################
@@ -327,17 +377,3 @@ dev.off()
 # 
 # #
 # write.csv(file = "~/Documents/SEM2DSM1/Paper_4/data/xy.csv",x = xy)
-covar <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/xy.csv")[,-1]
-# standardise #
-std <- function(x, st){
-  y <- x
-  for(i in seq_along(names(x))){
-    y[,i] <- (x[,i] - st[i,2]) / st[i,3]
-  }
-  y
-}
-STt <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/STt.ks.csv")
-covar.st <- std(x = covar[,as.character(STt[c(11:13,15,16,18:21),1])],st = STt[c(11:13,15,16,18:21),])
-summary(covar.st)
-covar.st <- covar.st[complete.cases(covar.st),]
-GGally::scatmat(covar.st[sample(x = 1:nrow(covar.st), size = 1200),], alpha = 0.1)
