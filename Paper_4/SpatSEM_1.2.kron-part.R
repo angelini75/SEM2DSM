@@ -187,7 +187,7 @@ MLIST.obs <- MLIST.out
 # MLIST.obs$psi <- MLIST.obs$psi[1:9,1:9]
 # MLIST.obs$beta <- MLIST.obs$beta[1:9,1:9]
 
-# SIGMA_xx (pN x pN)
+# SIGMA_xx (pN x pN)                                        check if SIGMA0.obs is correct
 SIGMA0.obs <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # pxp
 SIGMA.xx <- kronecker(SIGMA0.obs, RHO)   # pN x pN
 plotMat(SIGMA.xx[1:70,1:70])
@@ -238,6 +238,9 @@ RHO0 <- get.RHO0(MLIST.obs, h = h0)
 SIGMA.xy <- kronecker(SIGMA0.obs, RHO0)   # pN x p
 dim(SIGMA.xy)
 
+# SIGMA.yx
+SIGMA.yx <- t(SIGMA.xy) # p x pN
+dim(SIGMA.yx)
 
 
 
