@@ -35,7 +35,8 @@ ST <- read.csv("STt.ks-0.3.csv")
 
 coordinates(ks) <- ~X+Y2
 # h = n x n matrix of distances between samples 
-h <- spDists(ks)
+h <- sp:spDists(ks)
+
 
 # Define the parameters alpha and range, and estimate distance matrix:
 # Sill to nugget ratio (alpha) ####
@@ -186,26 +187,16 @@ MLIST.obs <- MLIST.out
 # MLIST.obs$psi <- MLIST.obs$psi[1:9,1:9]
 # MLIST.obs$beta <- MLIST.obs$beta[1:9,1:9]
 
-SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
-RHO <- get.RHO(MLIST,h)
-if (all(eigen(SIGMA0)$values >0) & (all(eigen(RHO)$values >0))) {
-  
-  SIGMA0.inv <- chol2inv(chol(SIGMA0))
-  RHO.inv <- chol2inv(chol(RHO))
-  SIGMA.all.inv <- kronecker(SIGMA0.inv, RHO.inv)
-
-SIGMA0.obs <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # 9x9
-# SIGMA.obs.inv <- chol2inv(chol(SIGMA0.obs))      # 9x9
-# RHO <- get.RHO(MLIST,h)                       #147x147
-# RHO.inv <- chol2inv(chol(RHO.0))                #147x147
-SIGMA.xx <- kronecker(SIGMA0.obs, RHO)   #147 9 x 147 9
+# SIGMA_xx (pN x pN)
+SIGMA0.obs <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # pxp
+SIGMA.xx <- kronecker(SIGMA0.obs, RHO)   # pN x pN
 plotMat(SIGMA.xx[1:70,1:70])
 
+# SIGMA_yy (pN x p)
 
-#
+SIGMA0.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9]
 
-covar <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/xy.csv")[,-1]
-# standardise #
+# SIGMA.xy (pN x p)
 std <- function(x, st){
   y <- x
   for(i in seq_along(names(x))){
@@ -213,15 +204,39 @@ std <- function(x, st){
   }
   y
 }
-STt <- read.csv("~/Documents/SEM2DSM1/Paper_4/data/STt.ks-0.3.csv")
+# standardize
+covar <- read.csv("~/big/SEM2DSM1/Paper_4/data/xy.csv")[,-1]
+STt <- read.csv("~/big/SEM2DSM1/Paper_4/data/STt.ks-0.3.csv")
 covar.st <- std(x = covar[,as.character(STt[c(11:13,15,16,18:21),1])],st = STt[c(11:13,15,16,18:21),])
-summary(covar.st)
 covar.st <- covar.st[complete.cases(covar.st),]
+# single location (latlong)
+ll <- covar.st[1,]
 
+obs <- ks[,names(ll)] # locations
+obs.ll <- rbind(ll, obs)
+obs.ll$Y2 <- obs.ll$Y * ST$std.dev[21] / ST$std.dev[20]
+coordinates(obs.ll) <- ~X+Y2
+# h = n x n matrix of distances between samples 
+h.all <- sp::spDists(obs.ll)
 
+h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
+#
+get.RHO0 <- function(MLIST = NULL, h = h) {
+  a <- MLIST$a
+  n <- nrow(h0)
+  alpha <- MLIST$alpha
+  RHO <- matrix(rep(NA,n^2), nrow = nrow(h), ncol = ncol(h))
+  for(i in seq_along(RHO)) {
+    RHO[i] <- (1-alpha) * exp(-h[i]/a)
+  }
+  #diag(RHO) <- 1
+  RHO
+}
 
+RHO0 <- get.RHO0(MLIST.obs, h = h0)
 
-
+SIGMA.xy <- kronecker(SIGMA0.obs, RHO0)   # pN x p
+dim(SIGMA.xy)
 
 
 
