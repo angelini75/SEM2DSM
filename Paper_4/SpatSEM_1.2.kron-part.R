@@ -128,15 +128,14 @@ start.x <- c(lav.est, 0.4, 0.4)
   
 samples <- ks#[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
 rownames(samples) <- 1:147
-samples$Y2 <- samples$Y * ST$std.dev[21] 
-samples$X2 <- samples$X * ST$std.dev[20]
-sp::coordinates(samples) <- ~X2+Y2
+samples$Y2 <- samples$Y * ST$std.dev[21] / ST$std.dev[20]
+sp::coordinates(samples) <- ~X+Y2
 h <- sp::spDists(samples)
 RHO <- get.RHO(MLIST,h)
 z <- as.matrix(as.data.frame(samples)[,colnames(s)])
 z.all <- as.vector(z)
 out <-  nlminb(start = start.x, objective = objective_ML, 
-                   MLIST = MLIST, control = list(iter.max = 500, trace = 1))# try( function , silent = TRUE)
+                   MLIST = MLIST, control = list(trace = 1))# try( function , silent = TRUE)
 #   if(inherits(out, "try-error")) {NA} else {
 #     out$par  
 #   }
