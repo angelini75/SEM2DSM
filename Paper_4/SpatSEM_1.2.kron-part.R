@@ -123,24 +123,44 @@ start.x <- c(lav.est, 0.4, 0.4)
 
 #### BOOTSTRAPPING #####
 #registerDoParallel(cores = 46)
-#trials = 250
+trials = 1
 #ptime <- system.time({
-#x <- foreach(icount(trials), .combine=rbind) %dopar% {
+
+change.coords <- function(x = samples){
+  duplos <- unique(zerodist(x, zero=0.0)[,2])
+  coords <- x@coords[duplos,]
+  coords.v <- as.vector(as.matrix(coords))
+  coords[coords>0] <- coords[coords>0] + 
+    rnorm(length(coords[coords>0]), mean = 50, sd = 30)
+  coords[coords<0] <- coords[coords<0] +
+    rnorm(length(coords[coords<0]), mean = -50, sd = 30)
+  x@coords[duplos,] <- coords
+  new.coords <- as.data.frame(x@coords)
+  x <- as.data.frame(x)
+  sp::coordinates(x) <- ~X+Y2
+  x
+}
+
+x <- foreach(icount(trials), .combine=rbind) %dopar% {
   
-samples <- ks#[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
+samples <- ks[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
 rownames(samples) <- 1:147
 samples$Y2 <- samples$Y * ST$std.dev[21] / ST$std.dev[20]
 sp::coordinates(samples) <- ~X+Y2
-h <- sp::spDists(samples)
+samples.ch <- change.coords(x = samples)
+
+h <- sp::spDists(samples.ch)
+#plotMat(h)
 RHO <- get.RHO(MLIST,h)
+#plotMat(RHO)
 z <- as.matrix(as.data.frame(samples)[,colnames(s)])
 z.all <- as.vector(z)
-out <-  nlminb(start = start.x, objective = objective_ML, 
-                   MLIST = MLIST, control = list(trace = 1))# try( function , silent = TRUE)
-#   if(inherits(out, "try-error")) {NA} else {
-#     out$par  
-#   }
-# }
+out <-  try(nlminb(start = start.x, objective = objective_ML, 
+                   MLIST = MLIST, control = list(trace = 1)), silent = TRUE)
+  if(inherits(out, "try-error")) {NA} else {
+    out$par
+  }
+}
 
 
 ################borrar
