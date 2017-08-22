@@ -143,24 +143,26 @@ change.coords <- function(x = samples){
 
 x <- foreach(icount(trials), .combine=rbind) %dopar% {
   
-samples <- ks[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
+samples <- ks#[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
 rownames(samples) <- 1:147
 samples$Y2 <- samples$Y * ST$std.dev[21] / ST$std.dev[20]
 sp::coordinates(samples) <- ~X+Y2
 samples.ch <- change.coords(x = samples)
 
-h <- sp::spDists(samples.ch)
+h <- sp::spDists(samples)#.ch)
 #plotMat(h)
 RHO <- get.RHO(MLIST,h)
 #plotMat(RHO)
 z <- as.matrix(as.data.frame(samples)[,colnames(s)])
 z.all <- as.vector(z)
-out <-  try(nlminb(start = start.x, objective = objective_ML, 
-                   MLIST = MLIST, control = list(trace = 1)), silent = TRUE)
-  if(inherits(out, "try-error")) {NA} else {
-    out$par
+# out <-  try(nlminb(start = start.x, objective = objective_ML, 
+#                    MLIST = MLIST, control = list(trace = 1)), silent = TRUE)
+#   if(inherits(out, "try-error")) {NA} else {
+#     out$par
   }
 }
+out <-  nlminb(start = start.x, objective = objective_ML, 
+                   MLIST = MLIST, control = list(trace = 1))
 
 
 ################borrar
@@ -180,7 +182,7 @@ MLIST.out <- x2MLIST(out$par, MLIST)
 #rm(list=ls()[])
 #load("~/Documents/SEM2DSM1/Paper_4/data/9August_SpatSEM_1.1.RData")
 ####### Parameters bootstrapping #####################
-load("~/Documents/SEM2DSM1/Paper_4/parameters.RData")
+load("/data/big/mangelini/SEM2DSM1/Paper_4/parameters.RData")
 x <- rbind(as.data.frame(x),as.data.frame(x0))
 x <- x[complete.cases(x),]
 library(lavaan)
@@ -262,7 +264,59 @@ dim(SIGMA.xy)
 SIGMA.yx <- t(SIGMA.xy) # p x pN
 dim(SIGMA.yx)
 
+############## get prediction and residuals
+# function to get prediction at new locations
+get.pred <- function (MLIST = NULL, covar = covar.st){
+  var.names <- c("CEC.Ar","CEC.Br","CEC.Cr","OC.Ar","OC.Br","OC.Cr",
+                 "clay.Ar","clay.Br","clay.Cr","dem","vdchn","X",
+                 "lstm","evisd","ndwi.b","twi","ndwi.a")
+  m <- MLIST
+  A <- m$beta[1:9,10:p]
+  B <- m$beta[1:9,1:9]
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - B)
 
+  xy <- covar[,c("X","Y")]
+  k <- covar[,var.names[10:p]]
+  library(doParallel)
+  registerDoParallel(6)
+  pred <- foreach(i = icount(nrow(k)), .combine = rbind) %dopar%{
+    p <- as.vector(as.matrix(k[i,]))
+    t(IB.inv %*% A %*% p) 
+  }
+  doParallel::stopImplicitCluster()
+  colnames(pred) <- var.names[1:9]
+  cbind(pred,xy)
+}
+# function to get residuals
+get.res <- function (m = NULL){
+  A <- m$beta[1:9,10:p]
+  B <- m$beta[1:9,1:9]
+  I <- diag(nrow = 9, ncol = 9)
+  IB.inv <- solve(I - B)
+  sp <- z[,1:9]
+  p <- z[,10:p]
+  res <- matrix(data = NA, nrow = N, ncol = 9)
+  for(i in seq_along(p[,1])){
+    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
+  }
+  colnames(res) <- colnames(sp)
+  res
+}
+
+#var <- diag(SIGMA0.yy - SIGMA.yx %*% solve(SIGMA.xx) %*% SIGMA.xy)
+
+# prediction
+
+pred <- get.pred(MLIST = MLIST.obs, covar = covar.st)
+
+function()
+res <- get.res(m = fit@Model@GLIST)
+z.res <- as.vector(res)
+
+y.all <- as.vector(s[,1:9])
+
+pred <- (SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) * STt$std.dev[c(5:7,8:10,2:4)] + STt$mean[c(5:7,8:10,2:4)]
 
 
 
