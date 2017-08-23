@@ -182,25 +182,34 @@ MLIST.out <- x2MLIST(out$par, MLIST)
 #rm(list=ls()[])
 #load("~/Documents/SEM2DSM1/Paper_4/data/9August_SpatSEM_1.1.RData")
 ####### Parameters bootstrapping #####################
-load("/data/big/mangelini/SEM2DSM1/Paper_4/parameters.RData")
-x <- rbind(as.data.frame(x),as.data.frame(x0))
-x <- x[complete.cases(x),]
+par <- read.csv("parameters.csv")[,-1]
+#x <- rbind(as.data.frame(parameters),as.data.frame(x0))
 library(lavaan)
 partable <- partable(my.fit.lv.ML)
-colnames(x) <- c(paste0(partable$lhs[partable$free!=0],
+colnames(par) <- c(paste0(partable$lhs[partable$free!=0],
                       partable$op[partable$free!=0],
                       partable$rhs[partable$free!=0]), "alpha", "a")
 # statistics of the estimates
-xmean <- mean(x[,"a"])
-xmean <- reshape::melt(as.data.frame(xmean))
-xmean$variable <- names(x)
-xsd <- apply(x, 2, sd)
+library(reshape)
+xmean <- as.data.frame(colMeans(par))
+xmean <- melt(xmean)
+xmean$variable <- names(par)
+xsd <- apply(par, 2, sd)
+
+est <- as.data.frame(out$par)
+est$variable <- names(par)
+names(est) <- c("value", "variable")
+
+lav <- data.frame(value = c(partable$est[partable$free!=0], NA, NA))
+lav$variable <- names(par)
 
 library(ggplot2)
-meltx <- reshape::melt(x)
+meltx <- reshape::melt(par)
 ggplot2::ggplot(data = meltx, mapping = aes(x = value)) +
   geom_histogram(bins = 40) + facet_wrap(~variable, scales = 'free_x') +
-  geom_vline(aes(xintercept=value, color='bootstrap'), data=xmean)
+  geom_vline(aes(xintercept=value, color='Bootstrap'), data=xmean) + 
+  geom_vline(aes(xintercept=value, color='Estimates'), data=est) +
+  geom_vline(aes(xintercept=value, color='lavaan'), data=lav)
 ######### Matrices for prediction 
 # for x = zeta_obs (s_i) and y = zeta_obs (s_0)
 MLIST.obs <- MLIST.out
