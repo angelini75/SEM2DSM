@@ -234,16 +234,7 @@ MLIST.obs <- MLIST.out
 # MLIST.obs$psi <- MLIST.obs$psi[1:9,1:9]
 # MLIST.obs$beta <- MLIST.obs$beta[1:9,1:9]
 
-# SIGMA_xx (pN x pN)                                        check if SIGMA0.obs is correct
-SIGMA0.obs <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # pxp
-SIGMA.xx <- kronecker(SIGMA0.obs, RHO)   # pN x pN
-plotMat(SIGMA.xx[1:70,1:70])
-
-# SIGMA_yy (pN x p)
-
-SIGMA0.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9]
-
-# SIGMA.xy (pN x p)
+# load and standardize prediction locations 
 std <- function(x, st){
   y <- x
   for(i in seq_along(names(x))){
@@ -254,20 +245,11 @@ std <- function(x, st){
 # standardize
 covar <- read.csv("~/big/SEM2DSM1/Paper_4/data/xy.csv")[,-1]
 STt <- read.csv("~/big/SEM2DSM1/Paper_4/data/STt.ks-0.3.csv")
-covar.st <- std(x = covar[,as.character(STt[c(11:13,15,16,18:21),1])],st = STt[c(11:13,15,16,18:21),])
+covar.st <- std(x = covar[,as.character(STt[c(11:13,15,16,18:21),1])],
+                st = STt[c(11:13,15,16,18:21),])
 covar.st <- covar.st[complete.cases(covar.st),]
-# single location (latlong)
-ll <- covar.st[1,]
 
-obs <- ks[,names(ll)] # locations
-obs.ll <- rbind(ll, obs)
-obs.ll$Y2 <- obs.ll$Y * ST$std.dev[21] / ST$std.dev[20]
-coordinates(obs.ll) <- ~X+Y2
-# h = n x n matrix of distances between samples 
-h.all <- sp::spDists(obs.ll)
-
-h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
-#
+# Function to get RHO including one prediction location
 get.RHO0 <- function(MLIST = NULL, h = h) {
   a <- MLIST$a
   n <- nrow(h0)
@@ -280,17 +262,19 @@ get.RHO0 <- function(MLIST = NULL, h = h) {
   RHO
 }
 
-RHO0 <- get.RHO0(MLIST.obs, h = h0)
 
-SIGMA.xy <- kronecker(SIGMA0.obs, RHO0)   # pN x p
-dim(SIGMA.xy)
+# SIGMA_xx (qN x qN)  q = number of soil properties = 9
+SIGMA0.obs <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # qxq
+SIGMA.xx <- kronecker(SIGMA0.obs, RHO)   # qN x qN
+plotMat(SIGMA.xx[1:70,1:70])
 
-# SIGMA.yx
-SIGMA.yx <- t(SIGMA.xy) # p x pN
-dim(SIGMA.yx)
+# SIGMA_yy (qN x q)
+
+SIGMA0.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9]
 
 ############## get prediction and residuals
-# function to get prediction at new locations
+# function to get prediction at new locations from trend model
+# it includes parallel processing
 get.pred <- function (MLIST = NULL, covar = covar.st){
   var.names <- c("CEC.Ar","CEC.Br","CEC.Cr","OC.Ar","OC.Br","OC.Cr",
                  "clay.Ar","clay.Br","clay.Cr","dem","vdchn","X",
@@ -331,17 +315,39 @@ get.res <- function (m = NULL){
 
 #var <- diag(SIGMA0.yy - SIGMA.yx %*% solve(SIGMA.xx) %*% SIGMA.xy)
 
-# prediction
+# prediction with linear trend
+# pred <- get.pred(MLIST = MLIST.obs, covar = covar.st)
+# res <- get.res(m = fit@Model@GLIST)
 
-pred <- get.pred(MLIST = MLIST.obs, covar = covar.st)
+# SIGMA.xy (qN x q)
+# at single location (latlong)
+library(doParllel)
+doParallel::registerDoParallel(cores = 8)
 
-function()
-res <- get.res(m = fit@Model@GLIST)
-z.res <- as.vector(res)
+obs <- ks[,names(covar.st)] 
+y.all <- as.vector(s[,1:9]) # Observed SP
 
-y.all <- as.vector(s[,1:9])
+predictions <- foreach(i = icount(nrow(covar.st)), .combine = rbind) %dopar%{
+  ll <- covar.st[i,]
+  obs.ll <- rbind(ll, obs)
+  obs.ll$Y2 <- obs.ll$Y * ST$std.dev[21] / ST$std.dev[20]
+  coordinates(obs.ll) <- ~X+Y2
+  # h = n x n matrix of distances between samples 
+  h.all <- sp::spDists(obs.ll)
+  h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
+  #
+  RHO0 <- get.RHO0(MLIST.obs, h = h0) # note that h0 is Nx1 
+  SIGMA.xy <- kronecker(SIGMA0.obs, RHO0) # qN x q
+  SIGMA.yx <- t(SIGMA.xy) # q x qN
+  (SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) * STt$std.dev[c(5:7,8:10,2:4)] + 
+    STt$mean[c(5:7,8:10,2:4)]
+}
 
-pred <- (SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) * STt$std.dev[c(5:7,8:10,2:4)] + STt$mean[c(5:7,8:10,2:4)]
+
+raster::rasterize()
+
+
+
 
 
 
