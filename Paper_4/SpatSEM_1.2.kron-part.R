@@ -194,7 +194,12 @@ library(reshape)
 xmean <- as.data.frame(colMeans(par))
 xmean <- melt(xmean)
 xmean$variable <- names(par)
-xsd <- apply(par, 2, sd)
+
+xsd <- data.frame(sd = apply(par, 2, sd))
+xsd$min <-xmean$value - xsd$sd
+xsd$max <-xmean$value + xsd$sd
+xsd <- xsd[,-1]
+xsd$variable <- rownames(xsd)
 
 est <- as.data.frame(out$par)
 est$variable <- names(par)
@@ -203,13 +208,24 @@ names(est) <- c("value", "variable")
 lav <- data.frame(value = c(partable$est[partable$free!=0], NA, NA))
 lav$variable <- names(par)
 
+
+
 library(ggplot2)
 meltx <- reshape::melt(par)
+
+png(filename = "estimates.png",
+    width = 2500, height = 2400, res = 180)
 ggplot2::ggplot(data = meltx, mapping = aes(x = value)) +
+  geom_rect(data = xsd, inherit.aes = F,
+            aes(xmin=min, xmax = max, ymin = -Inf, ymax = +Inf), 
+            fill = 'red', alpha = 0.2) +
   geom_histogram(bins = 40) + facet_wrap(~variable, scales = 'free_x') +
   geom_vline(aes(xintercept=value, color='Bootstrap'), data=xmean) + 
   geom_vline(aes(xintercept=value, color='Estimates'), data=est) +
-  geom_vline(aes(xintercept=value, color='lavaan'), data=lav)
+  geom_vline(aes(xintercept=value, color='lavaan'), data=lav) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        text=element_text(family="Serif"))
+dev.off()
 ######### Matrices for prediction 
 # for x = zeta_obs (s_i) and y = zeta_obs (s_0)
 MLIST.obs <- MLIST.out
