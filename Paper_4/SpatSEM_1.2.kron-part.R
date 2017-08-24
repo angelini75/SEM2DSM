@@ -164,7 +164,7 @@ change.coords <- function(x = samples){
 #   }
 # }
 out <-  nlminb(start = start.x, objective = objective_ML, 
-                   MLIST = MLIST, control = list(trace = 1))
+               MLIST = MLIST, control = list(trace = 1))
 
 
 ################borrar
@@ -189,8 +189,8 @@ par <- read.csv("parameters.csv")[,-1]
 library(lavaan)
 partable <- partable(my.fit.lv.ML)
 colnames(par) <- c(paste0(partable$lhs[partable$free!=0],
-                      partable$op[partable$free!=0],
-                      partable$rhs[partable$free!=0]), "alpha", "a")
+                          partable$op[partable$free!=0],
+                          partable$rhs[partable$free!=0]), "alpha", "a")
 # statistics of the estimates
 library(reshape)
 xmean <- as.data.frame(colMeans(par))
@@ -272,7 +272,7 @@ plotMat(SIGMA.xx[1:70,1:70])
 
 # SIGMA_yy (qN x q)
 
-SIGMA0.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9]
+SIGMA.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9]
 
 ############## get prediction and residuals
 # function to get prediction at new locations from trend model
@@ -286,7 +286,7 @@ get.pred <- function (MLIST = NULL, covar = covar.st){
   B <- m$beta[1:9,1:9]
   I <- diag(nrow = 9, ncol = 9)
   IB.inv <- solve(I - B)
-
+  
   xy <- covar[,c("X","Y")]
   k <- covar[,var.names[10:p]]
   library(doParallel)
@@ -333,22 +333,22 @@ backup <- covar.st
 loc <- covar.st[sample(x = rownames(covar.st),100), ]
 
 system.time({
-predictions <- foreach(i = icount(nrow(loc)), .combine = rbind, 
-                       .packages = c("sp")) %dopar%{
-  ll <- loc[i,]
-  coord.ll <- rbind(ll, coord)
-  coord.ll$Y2 <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
-  coordinates(coord.ll) <- ~X+Y2
-  # h = n x n matrix of distances between samples 
-  h.all <- sp::spDists(coord.ll)
-  h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
-  #
-  RHO0 <- get.RHO0(MLIST.obs, h = h0) # note that h0 is Nx1 
-  SIGMA.xy <- kronecker(SIGMA0.obs, RHO0) # qN x q
-  SIGMA.yx <- t(SIGMA.xy) # q x qN
-  t((SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) )#* STt$std.dev[c(5:7,8:10,2:4)] )#+ 
-    #STt$mean[c(5:7,8:10,2:4)])
-}
+  predictions <- foreach(i = icount(nrow(loc)), .combine = rbind, 
+                         .packages = c("sp")) %dopar%{
+                           ll <- loc[i,]
+                           coord.ll <- rbind(ll, coord)
+                           coord.ll$Y2 <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
+                           coordinates(coord.ll) <- ~X+Y2
+                           # h = n x n matrix of distances between samples 
+                           h.all <- sp::spDists(coord.ll)
+                           h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
+                           #
+                           RHO0 <- get.RHO0(MLIST.obs, h = h0) # note that h0 is Nx1 
+                           SIGMA.xy <- kronecker(SIGMA.yy, RHO0) # qN x q
+                           SIGMA.yx <- t(SIGMA.xy) # q x qN
+                           t((SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) )#* STt$std.dev[c(5:7,8:10,2:4)] )#+ 
+                           #STt$mean[c(5:7,8:10,2:4)])
+                         }
 })
 
 (pred[rownames(loc),1:9] + predictions) * t(as.data.frame(STt$std.dev[c(5:7,8:10,2:4)]))
@@ -433,7 +433,7 @@ cv.fit<-fit.lmc(v = cv.var,g =  cv, fit.lmc = F, fit.ranges = F)
 # 
 cv.fit$model <- cv$model
 png(filename = "~/Dropbox/PhD_Marcos/Paper 4/TeX/Figures/Semivar.png",
-width = 3000, height = 3000, res =  250)
+    width = 3000, height = 3000, res =  250)
 plot(cv.var, model=cv.fit, 
      main="",
      xlab = "Distance (m)", 
