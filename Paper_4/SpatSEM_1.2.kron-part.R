@@ -221,7 +221,7 @@ SIGMA.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9]
 # it includes parallel processing
 get.pred <- function (MLIST = NULL, covar = covar.st){
   var.names <- c("CEC.Ar","CEC.Br","CEC.Cr","OC.Ar","OC.Br","OC.Cr",
-                 "clay.Ar","clay.Br","clay.Cr","dem","vdchn","X",
+                 "Clay.Ar","Clay.Br","Clay.Cr","dem","vdchn","X",
                  "lstm","evisd","ndwi.b","twi","ndwi.a")
   m <- MLIST
   A <- m$beta[1:9,10:p]
@@ -302,6 +302,42 @@ summary((pred[rownames(loc),1:9] + k.res) *  sds + means)
 
 
 
+var.names <- c("CEC.Ar","CEC.Br","CEC.Cr","OC.Ar","OC.Br","OC.Cr",
+               "Clay.Ar","Clay.Br","Clay.Cr","dem","vdchn","X",
+               "lstm","evisd","ndwi.b","twi","ndwi.a")
+# Computing prediction variance
+m <- MLIST
+PSI <- m$psi[1:9,1:9]
+B <- m$beta[1:9,1:9]
+I <- diag(nrow = 9, ncol = 9)
+IB.inv <- solve(I - B)
+theta <- m$theta[1:9,1:9]
+var.SIGMA.yy <- PSI + IB.inv %*% theta %*% t(IB.inv)
+var.SIGMA.xx <- kronecker(var.SIGMA.yy, RHO)
+
+
+loc <- covar.st[sample(x = rownames(covar.st),100), c("X","Y")]
+
+system.time({
+  var.zeta <- 
+    foreach(i = icount(nrow(loc)), .combine = cbind,
+            .packages = c("sp")) %dopar%
+            {
+              ll <- loc[i,]
+              coord.ll <- rbind(coord,ll)
+              coord.ll$Y <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
+              coordinates(coord.ll) <- ~X+Y
+              # h = n x n matrix of distances between samples 
+              h.all <- sp::spDists(coord.ll)
+              h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
+              var.SIGMA.xy <- kronecker(var.SIGMA.yy, RHO0)
+              diag(var.SIGMA.yy - 
+                     crossprod(var.SIGMA.xy, 
+                               chol2inv(chol(var.SIGMA.xx))) %*% var.SIGMA.xy)
+            }
+})[3]
+
+(rowMeans(var.zeta)^0.5) * STt$std.dev[c(5:7,8:10,2:4)]
 
 
 
