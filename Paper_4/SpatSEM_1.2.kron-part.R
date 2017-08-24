@@ -275,9 +275,9 @@ y.all <- as.vector(res[,1:9]) # residuals SP
 backup <- covar.st
 loc <- covar.st[sample(x = rownames(covar.st),100), c("X","Y")]
 
-# system.time({
+system.time({
 k.res <-
-  foreach(i = icount(nrow(loc)), .combine = rbind,
+  foreach(i = icount(nrow(loc)), .combine = cbind,
           .packages = c("sp")) %dopar%
  {
             ll <- loc[i,]
@@ -290,19 +290,23 @@ k.res <-
             #
             RHO0 <- get.RHO0(MLIST.obs, h = h0) # note that h0 is Nx1 
             SIGMA.xy <- kronecker(SIGMA.yy, RHO0) # qN x q
-            SIGMA.yx <- t(SIGMA.xy) # q x qN
-            t((SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) )#* STt$std.dev[c(5:7,8:10,2:4)] )#+ 
-            #STt$mean[c(5:7,8:10,2:4)])
+            #SIGMA.yx <- t(SIGMA.xy) # q x qN
+            crossprod(SIGMA.xy, chol2inv(chol(SIGMA.xx))) %*% y.all
           }
-#})
+})[3]
+
 colnames(k.res) <- colnames(res)
-sd <- matrix(rep(STt$std.dev[c(5:7,8:10,2:4)], each=100), ncol=9)
+sds <- matrix(rep(STt$std.dev[c(5:7,8:10,2:4)], each=100), ncol=9)
 means <- matrix(rep(STt$mean[c(5:7,8:10,2:4)], each=100), ncol=9)
-summary((pred[rownames(loc),1:9] + k.res) *  sd + means)
+summary((pred[rownames(loc),1:9] + k.res) *  sds + means)
 
 
-(pred[rownames(loc),1:9] + predictions) * t(as.data.frame(STt$std.dev[c(5:7,8:10,2:4)]))
-STt$mean[c(5:7,8:10,2:4)]
+
+
+
+
+
+
 
 
 doParallel::stopImplicitCluster()
