@@ -166,68 +166,10 @@ change.coords <- function(x = samples){
 out <-  nlminb(start = start.x, objective = objective_ML, 
                MLIST = MLIST, control = list(trace = 1))
 
-
-################borrar
-# lav.est <- parTable(my.fit.lv.ML)$est[parTable(my.fit.lv.ML)$free > 0]
-# # try with fixted a and alpha
-# start.x <- c(lav.est)#, 0.379304387,  0.340061458)
-# sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
-#                 MLIST = MLIST, control = list(maxit = 500, trace = 1))
-###############hasta aca
-
-#round((start.x - sp.ou$par),4)
 MLIST.out <- x2MLIST(out$par, MLIST)
 
-# sp.ou2 <- nlminb(start = start.x, objective = objective_ML, 
-#                 MLIST = MLIST, control = list(iter.max = 500, trace = 1, 
-#                                               rel.tol = 1e-14, x.tol = 1e-12))
-#rm(list=ls()[])
-#load("~/Documents/SEM2DSM1/Paper_4/data/9August_SpatSEM_1.1.RData")
-####### Parameters bootstrapping #####################
-par <- read.csv("parameters.csv")[,-1]
-#x <- rbind(as.data.frame(parameters),as.data.frame(x0))
-library(lavaan)
-partable <- partable(my.fit.lv.ML)
-colnames(par) <- c(paste0(partable$lhs[partable$free!=0],
-                          partable$op[partable$free!=0],
-                          partable$rhs[partable$free!=0]), "alpha", "a")
-# statistics of the estimates
-library(reshape)
-xmean <- as.data.frame(colMeans(par))
-xmean <- melt(xmean)
-xmean$variable <- names(par)
-
-xsd <- data.frame(sd = apply(par, 2, sd))
-xsd$min <-xmean$value - xsd$sd
-xsd$max <-xmean$value + xsd$sd
-xsd <- xsd[,-1]
-xsd$variable <- rownames(xsd)
-
-est <- as.data.frame(out$par)
-est$variable <- names(par)
-names(est) <- c("value", "variable")
-
-lav <- data.frame(value = c(partable$est[partable$free!=0], NA, NA))
-lav$variable <- names(par)
 
 
-
-library(ggplot2)
-meltx <- reshape::melt(par)
-
-png(filename = "estimates.png",
-    width = 2500, height = 2400, res = 180)
-ggplot2::ggplot(data = meltx, mapping = aes(x = value)) +
-  geom_rect(data = xsd, inherit.aes = F,
-            aes(xmin=min, xmax = max, ymin = -Inf, ymax = +Inf), 
-            fill = 'red', alpha = 0.2) +
-  geom_histogram(bins = 40) + facet_wrap(~variable, scales = 'free_x') +
-  geom_vline(aes(xintercept=value, color='Bootstrap'), data=xmean) + 
-  geom_vline(aes(xintercept=value, color='Estimates'), data=est) +
-  geom_vline(aes(xintercept=value, color='lavaan'), data=lav) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
-        text=element_text(family="Serif"))
-dev.off()
 ######### Matrices for prediction 
 # for x = zeta_obs (s_i) and y = zeta_obs (s_0)
 MLIST.obs <- MLIST.out
@@ -332,36 +274,80 @@ y.all <- as.vector(res[,1:9]) # residuals SP
 backup <- covar.st
 loc <- covar.st[sample(x = rownames(covar.st),100), ]
 
-system.time({
-  predictions <- foreach(i = icount(nrow(loc)), .combine = rbind, 
-                         .packages = c("sp")) %dopar%{
-                           ll <- loc[i,]
-                           coord.ll <- rbind(ll, coord)
-                           coord.ll$Y2 <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
-                           coordinates(coord.ll) <- ~X+Y2
-                           # h = n x n matrix of distances between samples 
-                           h.all <- sp::spDists(coord.ll)
-                           h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
-                           #
-                           RHO0 <- get.RHO0(MLIST.obs, h = h0) # note that h0 is Nx1 
-                           SIGMA.xy <- kronecker(SIGMA.yy, RHO0) # qN x q
-                           SIGMA.yx <- t(SIGMA.xy) # q x qN
-                           t((SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) )#* STt$std.dev[c(5:7,8:10,2:4)] )#+ 
-                           #STt$mean[c(5:7,8:10,2:4)])
-                         }
-})
+# system.time({
+predictions <- 
+  foreach(i = icount(nrow(loc)), .combine = rbind, 
+          .packages = c("sp")) %dopar%
+          {
+            ll <- loc[i,]
+            coord.ll <- rbind(ll, coord)
+            coord.ll$Y2 <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
+            coordinates(coord.ll) <- ~X+Y2
+            # h = n x n matrix of distances between samples 
+            h.all <- sp::spDists(coord.ll)
+            h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
+            #
+            RHO0 <- get.RHO0(MLIST.obs, h = h0) # note that h0 is Nx1 
+            SIGMA.xy <- kronecker(SIGMA.yy, RHO0) # qN x q
+            SIGMA.yx <- t(SIGMA.xy) # q x qN
+            t((SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) )#* STt$std.dev[c(5:7,8:10,2:4)] )#+ 
+            #STt$mean[c(5:7,8:10,2:4)])
+          }
+#})
 
 (pred[rownames(loc),1:9] + predictions) * t(as.data.frame(STt$std.dev[c(5:7,8:10,2:4)]))
 STt$mean[c(5:7,8:10,2:4)]
 
 
 doParallel::stopImplicitCluster()
-raster::rasterize()
 
-GGally::scatmat(par)
+######################################################
+####### Parameters bootstrapping #####################
+######################################################
+par <- read.csv("parameters.csv")[,-1]
+#x <- rbind(as.data.frame(parameters),as.data.frame(x0))
+library(lavaan)
+partable <- partable(my.fit.lv.ML)
+colnames(par) <- c(paste0(partable$lhs[partable$free!=0],
+                          partable$op[partable$free!=0],
+                          partable$rhs[partable$free!=0]), "alpha", "a")
+# statistics of the estimates
+library(reshape)
+xmean <- as.data.frame(colMeans(par))
+xmean <- melt(xmean)
+xmean$variable <- names(par)
+
+xsd <- data.frame(sd = apply(par, 2, sd))
+xsd$min <-xmean$value - xsd$sd
+xsd$max <-xmean$value + xsd$sd
+xsd <- xsd[,-1]
+xsd$variable <- rownames(xsd)
+
+est <- as.data.frame(out$par)
+est$variable <- names(par)
+names(est) <- c("value", "variable")
+
+lav <- data.frame(value = c(partable$est[partable$free!=0], NA, NA))
+lav$variable <- names(par)
 
 
 
+library(ggplot2)
+meltx <- reshape::melt(par)
+
+png(filename = "estimates.png",
+    width = 2500, height = 2400, res = 180)
+ggplot2::ggplot(data = meltx, mapping = aes(x = value)) +
+  geom_rect(data = xsd, inherit.aes = F,
+            aes(xmin=min, xmax = max, ymin = -Inf, ymax = +Inf), 
+            fill = 'red', alpha = 0.2) +
+  geom_histogram(bins = 40) + facet_wrap(~variable, scales = 'free_x') +
+  geom_vline(aes(xintercept=value, color='Bootstrap'), data=xmean) + 
+  geom_vline(aes(xintercept=value, color='Estimates'), data=est) +
+  geom_vline(aes(xintercept=value, color='lavaan'), data=lav) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        text=element_text(family="Serif"))
+dev.off()
 
 ################################################################################
 # prediction ####
