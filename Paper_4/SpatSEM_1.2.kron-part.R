@@ -261,28 +261,29 @@ get.res <- function (m = NULL){
 
 # prediction with linear trend
 pred <- get.pred(MLIST = MLIST.obs, covar = covar.st)
+# residuals of the linear trend
 res <- get.res(m = fit@Model@GLIST)
 
 # SIGMA.xy (qN x q)
 # at single location (latlong)
 library(doParallel)
-doParallel::registerDoParallel(cores = 10)
-ks <- read.csv("ks.csv")[,-1] #
-coord <- ks[,colnames(covar.st)] 
+doParallel::registerDoParallel(cores = 3)
+ks <- read.csv("Paper_4/data/ks.csv")[,c(colnames(s), "Y")] #
+coord <- ks[,c("X", "Y")] 
 y.all <- as.vector(res[,1:9]) # residuals SP
 
 backup <- covar.st
-loc <- covar.st[sample(x = rownames(covar.st),100), ]
+loc <- covar.st[sample(x = rownames(covar.st),100), c("X","Y")]
 
 # system.time({
-predictions <- 
-  foreach(i = icount(nrow(loc)), .combine = rbind, 
+k.res <-
+  foreach(i = icount(nrow(loc)), .combine = rbind,
           .packages = c("sp")) %dopar%
-          {
+ {
             ll <- loc[i,]
-            coord.ll <- rbind(ll, coord)
-            coord.ll$Y2 <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
-            coordinates(coord.ll) <- ~X+Y2
+            coord.ll <- rbind(coord,ll)
+            coord.ll$Y <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
+            coordinates(coord.ll) <- ~X+Y
             # h = n x n matrix of distances between samples 
             h.all <- sp::spDists(coord.ll)
             h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
@@ -294,6 +295,11 @@ predictions <-
             #STt$mean[c(5:7,8:10,2:4)])
           }
 #})
+colnames(k.res) <- colnames(res)
+sd <- matrix(rep(STt$std.dev[c(5:7,8:10,2:4)], each=100), ncol=9)
+means <- matrix(rep(STt$mean[c(5:7,8:10,2:4)], each=100), ncol=9)
+summary((pred[rownames(loc),1:9] + k.res) *  sd + means)
+
 
 (pred[rownames(loc),1:9] + predictions) * t(as.data.frame(STt$std.dev[c(5:7,8:10,2:4)]))
 STt$mean[c(5:7,8:10,2:4)]
