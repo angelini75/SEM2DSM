@@ -31,11 +31,11 @@ load("SpatSEM_1.2.RData")
 # ################################################################################
 ks <- read.csv("ks.csv")[,-1] # standardized data
 ST <- read.csv("STt.ks-0.3.csv")
-#ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
+ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
 
 coordinates(ks) <- ~X+Y2
 # h = n x n matrix of distances between samples 
-h <- sp:spDists(ks)
+h <- sp::spDists(ks)
 
 
 # Define the parameters alpha and range, and estimate distance matrix:
@@ -89,7 +89,9 @@ get.RHO <- function(MLIST = NULL, h = h) {
 MLIST$alpha <- alpha
 MLIST$a <- a
 
+z.all <- as.vector(s)
 
+# to define the objective function:
 objective_ML <- function(x, MLIST = MLIST) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
@@ -113,7 +115,7 @@ objective_ML <- function(x, MLIST = MLIST) {
   }
 }
 
-# to define the objective function:
+
 
 # get the 51 starting values to feed x
 lav.est <- parTable(fit)$est[parTable(fit)$free > 0]
@@ -141,26 +143,26 @@ change.coords <- function(x = samples){
   x
 }
 
-x <- foreach(icount(trials), .combine=rbind) %dopar% {
-  
-samples <- ks#[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
-rownames(samples) <- 1:147
-samples$Y2 <- samples$Y * ST$std.dev[21] / ST$std.dev[20]
-sp::coordinates(samples) <- ~X+Y2
-samples.ch <- change.coords(x = samples)
-
-h <- sp::spDists(samples)#.ch)
-#plotMat(h)
-RHO <- get.RHO(MLIST,h)
-#plotMat(RHO)
-z <- as.matrix(as.data.frame(samples)[,colnames(s)])
-z.all <- as.vector(z)
-# out <-  try(nlminb(start = start.x, objective = objective_ML, 
-#                    MLIST = MLIST, control = list(trace = 1)), silent = TRUE)
-#   if(inherits(out, "try-error")) {NA} else {
-#     out$par
-  }
-}
+# x <- foreach(icount(trials), .combine=rbind) %dopar% {
+#   
+# samples <- as.data.ks#[sample(x = 1:nrow(ks), size = nrow(ks), replace = TRUE),]
+# rownames(samples) <- 1:147
+# samples$Y2 <- samples$Y * ST$std.dev[21] / ST$std.dev[20]
+# sp::coordinates(samples) <- ~X+Y2
+# samples.ch <- change.coords(x = samples)
+# 
+# h <- sp::spDists(samples)#.ch)
+# #plotMat(h)
+# RHO <- get.RHO(MLIST,h)
+# #plotMat(RHO)
+# z <- as.matrix(as.data.frame(samples)[,colnames(s)])
+# z.all <- as.vector(z)
+# # out <-  try(nlminb(start = start.x, objective = objective_ML, 
+# #                    MLIST = MLIST, control = list(trace = 1)), silent = TRUE)
+# #   if(inherits(out, "try-error")) {NA} else {
+# #     out$par
+#   }
+# }
 out <-  nlminb(start = start.x, objective = objective_ML, 
                    MLIST = MLIST, control = list(trace = 1))
 
@@ -261,7 +263,7 @@ get.RHO0 <- function(MLIST = NULL, h = h) {
   #diag(RHO) <- 1
   RHO
 }
-
+RHO <- get.RHO(MLIST.obs, h = h)
 
 # SIGMA_xx (qN x qN)  q = number of soil properties = 9
 SIGMA0.obs <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # qxq
@@ -316,37 +318,47 @@ get.res <- function (m = NULL){
 #var <- diag(SIGMA0.yy - SIGMA.yx %*% solve(SIGMA.xx) %*% SIGMA.xy)
 
 # prediction with linear trend
-# pred <- get.pred(MLIST = MLIST.obs, covar = covar.st)
-# res <- get.res(m = fit@Model@GLIST)
+pred <- get.pred(MLIST = MLIST.obs, covar = covar.st)
+res <- get.res(m = fit@Model@GLIST)
 
 # SIGMA.xy (qN x q)
 # at single location (latlong)
-library(doParllel)
-doParallel::registerDoParallel(cores = 8)
+library(doParallel)
+doParallel::registerDoParallel(cores = 10)
+ks <- read.csv("ks.csv")[,-1] #
+coord <- ks[,colnames(covar.st)] 
+y.all <- as.vector(res[,1:9]) # residuals SP
 
-obs <- ks[,names(covar.st)] 
-y.all <- as.vector(s[,1:9]) # Observed SP
+backup <- covar.st
+loc <- covar.st[sample(x = rownames(covar.st),100), ]
 
-predictions <- foreach(i = icount(nrow(covar.st)), .combine = rbind) %dopar%{
-  ll <- covar.st[i,]
-  obs.ll <- rbind(ll, obs)
-  obs.ll$Y2 <- obs.ll$Y * ST$std.dev[21] / ST$std.dev[20]
-  coordinates(obs.ll) <- ~X+Y2
+system.time({
+predictions <- foreach(i = icount(nrow(loc)), .combine = rbind, 
+                       .packages = c("sp")) %dopar%{
+  ll <- loc[i,]
+  coord.ll <- rbind(ll, coord)
+  coord.ll$Y2 <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
+  coordinates(coord.ll) <- ~X+Y2
   # h = n x n matrix of distances between samples 
-  h.all <- sp::spDists(obs.ll)
+  h.all <- sp::spDists(coord.ll)
   h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
   #
   RHO0 <- get.RHO0(MLIST.obs, h = h0) # note that h0 is Nx1 
   SIGMA.xy <- kronecker(SIGMA0.obs, RHO0) # qN x q
   SIGMA.yx <- t(SIGMA.xy) # q x qN
-  (SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) * STt$std.dev[c(5:7,8:10,2:4)] + 
-    STt$mean[c(5:7,8:10,2:4)]
+  t((SIGMA.yx %*% solve(SIGMA.xx) %*% y.all) )#* STt$std.dev[c(5:7,8:10,2:4)] )#+ 
+    #STt$mean[c(5:7,8:10,2:4)])
 }
+})
+
+(pred[rownames(loc),1:9] + predictions) * t(as.data.frame(STt$std.dev[c(5:7,8:10,2:4)]))
+STt$mean[c(5:7,8:10,2:4)]
 
 
+doParallel::stopImplicitCluster()
 raster::rasterize()
 
-
+GGally::scatmat(par)
 
 
 
