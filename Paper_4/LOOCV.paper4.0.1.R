@@ -60,7 +60,7 @@ x2MLIST <- function(x, MLIST) {
 }
 
 # get.RHO function
-get.RHO <- function(MLIST = NULL, h = h) {
+get.RHO <- function(MLIST = NULL, h = NULL) {
   a <- MLIST$a
   n <- nrow(h)
   alpha <- MLIST$alpha
@@ -127,7 +127,7 @@ get.RHO0 <- function(MLIST = NULL, h0 = NULL) {
 
 ## function to get prediction at new location from trend model
 # it includes parallel processing
-get.pred <- function (MLIST = NULL, covar = covar.st, xy){
+get.pred <- function (MLIST = NULL, covar = NULL, xy){
   var.names <- c("CEC.Ar","CEC.Br","CEC.Cr","OC.Ar","OC.Br","OC.Cr",
                  "Clay.Ar","Clay.Br","Clay.Cr","dem","vdchn","X",
                  "lstm","evisd","ndwi.b","twi","ndwi.a")
@@ -177,68 +177,77 @@ start.x <- c(lav.est, 0.4, 0.4) #lavaan parameters + alpha + a
 predicted <- ks[,1:9]
 predicted[,] <- NA
 k.residual <- predicted
+variance <- predicted
 var.names <- c("CEC.Ar","CEC.Br","CEC.Cr","OC.Ar","OC.Br","OC.Cr",
                "Clay.Ar","Clay.Br","Clay.Cr","dem","vdchn","X",
                "lstm","evisd","ndwi.b","twi","ndwi.a")
-
+h <- matrix()
+z.all <- numeric()
 #################################################################
 ############### Foreach loop ###################################
 ###############################################################
-doParallel::registerDoParallel(cores = 12)
+library(doParallel)
+registerDoParallel(cores = 10)
+
 system.time({
-foreach(i = icount(nrow(12)), .combine = cbind,
-        .packages = c("sp")) %dopar% {
-  # calibration dataset
-  cal <- ks[-i,]
-  rownames(cal) <- 1:N
-  # get h
-  xy <- cal[, c("X","Y")]
-  xy[,"Y"] <- xy[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
-  coordinates(xy) <- ~X+Y
-  h <- sp::spDists(xy)
-  cal <- as.matrix(cal[,colnames(s)])
-  z.all <- as.vector(cal)
-  out <- nlminb(start = start.x, objective = objective_ML, 
-                 MLIST = MLIST, control = list(iter.max = 2))
-  MLIST.obs <- x2MLIST(out$par, MLIST)
-  RHO <- get.RHO(MLIST = MLIST.obs, h = h)
-  #
-  covar.st <- ks[i,c("dem","vdchn","X", "lstm","evisd","ndwi.b","twi","ndwi.a")]
-  ll <- ks[i,c("X","Y")]
-  ll[,"Y"] <- ll[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
-  SIGMA.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # qxq
-  SIGMA.xx <- kronecker(SIGMA.yy, RHO)   # qN x qN
-  pred.lm <- get.pred(MLIST = MLIST.obs, covar = covar.st, xy = ll)  
-  res <- get.res(m = fit@Model@GLIST)
-  y.all <- as.vector(res) # vector of residuals
-  xy <- as.data.frame(xy)
-  xy.ll <- rbind(xy,ll)
-  coordinates(xy.ll) <- ~X+Y
-  h.all <- sp::spDists(xy.ll)
-  h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
-  RHO0 <- get.RHO0(MLIST.obs, h0 = h0) # note that h0 is Nx1 
-  SIGMA.xy <- kronecker(SIGMA.yy, RHO0) # qN x q
-  k.res <- t(crossprod(SIGMA.xy, chol2inv(chol(SIGMA.xx))) %*% y.all)
-  colnames(k.res) <- colnames(res)
-  # total prediction
-  predicted[i,] <- pred.lm + k.res
-  k.residual[i,] <- k.res
-  # Computing prediction variance
-  PSI <- MLIST.obs$psi[1:9,1:9]
-  B <- MLIST.obs$beta[1:9,1:9]
-  I <- diag(nrow = 9, ncol = 9)
-  IB.inv <- solve(I - B)
-  theta <- MLIST.obs$theta[1:9,1:9]
-  var.SIGMA.yy <- PSI + IB.inv %*% tcrossprod(theta, IB.inv)
-  var.SIGMA.xx <- kronecker(var.SIGMA.yy, RHO)
-  var.SIGMA.xy <- kronecker(var.SIGMA.yy, RHO0)
-  var.zeta <- var.SIGMA.yy - 
-                     crossprod(var.SIGMA.xy, 
-                               chol2inv(chol(var.SIGMA.xx))) %*% var.SIGMA.xy
-  variance[i,] <- diag(var.zeta)
-  as.vector(var.zeta)
-}
+  result <- 
+    foreach(i = icount(nrow(ks[1:3,])), .combine = rbind,
+            .packages = "sp") %dopar% {
+              # calibration dataset
+              cal <- ks[-i,]
+              rownames(cal) <- 1:N
+              # get h
+              xy <- cal[, c("X","Y")]
+              xy[,"Y"] <- xy[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
+              coordinates(xy) <- ~X+Y
+              h <- sp::spDists(xy)
+              cal <- as.matrix(cal[,colnames(s)])
+              z.all <- as.vector(cal)
+              out <- nlminb(start = start.x, objective = objective_ML, 
+                            MLIST = MLIST, control = list(iter.max = 2))
+              MLIST.obs <- x2MLIST(out$par, MLIST)
+              RHO <- get.RHO(MLIST = MLIST.obs, h = h)
+              #
+              covar.st <- ks[i,c("dem","vdchn","X", "lstm","evisd","ndwi.b","twi","ndwi.a")]
+              ll <- ks[i,c("X","Y")]
+              ll[,"Y"] <- ll[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
+              SIGMA.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # qxq
+              SIGMA.xx <- kronecker(SIGMA.yy, RHO)   # qN x qN
+              pred.lm <- get.pred(MLIST = MLIST.obs, covar = covar.st, xy = ll)  
+              res <- get.res(m = fit@Model@GLIST)
+              y.all <- as.vector(res) # vector of residuals
+              xy <- as.data.frame(xy)
+              xy.ll <- rbind(xy,ll)
+              coordinates(xy.ll) <- ~X+Y
+              h.all <- sp::spDists(xy.ll)
+              h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
+              RHO0 <- get.RHO0(MLIST.obs, h0 = h0) # note that h0 is Nx1 
+              SIGMA.xy <- kronecker(SIGMA.yy, RHO0) # qN x q
+              k.res <- t(crossprod(SIGMA.xy, chol2inv(chol(SIGMA.xx))) %*% y.all)
+              colnames(k.res) <- paste0(colnames(res),".res")
+              # total prediction
+              predicted <- pred.lm + k.res
+              # Computing prediction variance
+              PSI <- MLIST.obs$psi[1:9,1:9]
+              B <- MLIST.obs$beta[1:9,1:9]
+              I <- diag(nrow = 9, ncol = 9)
+              IB.inv <- solve(I - B)
+              theta <- MLIST.obs$theta[1:9,1:9]
+              var.SIGMA.yy <- PSI + IB.inv %*% tcrossprod(theta, IB.inv)
+              var.SIGMA.xx <- kronecker(var.SIGMA.yy, RHO)
+              var.SIGMA.xy <- kronecker(var.SIGMA.yy, RHO0)
+              var.zeta <- var.SIGMA.yy - 
+                crossprod(var.SIGMA.xy, 
+                          chol2inv(chol(var.SIGMA.xx))) %*% var.SIGMA.xy
+              variance <- matrix(diag(var.zeta), nrow = 1)
+              colnames(variance) <- paste0(colnames(res),".var")
+              #as.vector(var.zeta)
+              result <- cbind(predicted, k.res, variance)
+              result
+            }
 })
+doParallel::stopImplicitCluster()
+
 
 (rowMeans(var.zeta)^0.5) * STt$std.dev[c(5:7,8:10,2:4)]
 doParallel::stopImplicitCluster()
