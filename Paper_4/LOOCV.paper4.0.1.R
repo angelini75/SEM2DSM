@@ -196,7 +196,6 @@ foreach(i = icount(nrow(12)), .combine = cbind,
   xy[,"Y"] <- xy[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
   coordinates(xy) <- ~X+Y
   h <- sp::spDists(xy)
-  RHO <- get.RHO(MLIST = MLIST, h = h)
   cal <- as.matrix(cal[,colnames(s)])
   z.all <- as.vector(cal)
   out <- nlminb(start = start.x, objective = objective_ML, 
