@@ -267,7 +267,7 @@ res <- get.res(m = fit@Model@GLIST)
 # SIGMA.xy (qN x q)
 # at single location (latlong)
 library(doParallel)
-doParallel::registerDoParallel(cores = 3)
+doParallel::registerDoParallel(cores = 12)
 ks <- read.csv("Paper_4/data/ks.csv")[,c(colnames(s), "Y")] #
 coord <- ks[,c("X", "Y")] 
 y.all <- as.vector(res[,1:9]) # residuals SP
@@ -275,11 +275,10 @@ y.all <- as.vector(res[,1:9]) # residuals SP
 backup <- covar.st
 loc <- covar.st[sample(x = rownames(covar.st),100), c("X","Y")]
 
-system.time({
 k.res <-
   foreach(i = icount(nrow(loc)), .combine = cbind,
           .packages = c("sp")) %dopar%
- {
+          {
             ll <- loc[i,]
             coord.ll <- rbind(coord,ll)
             coord.ll$Y <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
@@ -293,13 +292,14 @@ k.res <-
             #SIGMA.yx <- t(SIGMA.xy) # q x qN
             crossprod(SIGMA.xy, chol2inv(chol(SIGMA.xx))) %*% y.all
           }
-})[3]
+
 
 colnames(k.res) <- colnames(res)
 sds <- matrix(rep(STt$std.dev[c(5:7,8:10,2:4)], each=100), ncol=9)
 means <- matrix(rep(STt$mean[c(5:7,8:10,2:4)], each=100), ncol=9)
 summary((pred[rownames(loc),1:9] + k.res) *  sds + means)
 
+#write.csv(k.res, "Paper_4/data/k_res.csv")
 
 
 var.names <- c("CEC.Ar","CEC.Br","CEC.Cr","OC.Ar","OC.Br","OC.Cr",
@@ -316,36 +316,72 @@ var.SIGMA.yy <- PSI + IB.inv %*% theta %*% t(IB.inv)
 var.SIGMA.xx <- kronecker(var.SIGMA.yy, RHO)
 
 
-loc <- covar.st[sample(x = rownames(covar.st),100), c("X","Y")]
+loc <- covar.st[, c("X","Y")] #sample(x = rownames(covar.st),100)
 
-system.time({
-  var.zeta <- 
-    foreach(i = icount(nrow(loc)), .combine = cbind,
-            .packages = c("sp")) %dopar%
-            {
-              ll <- loc[i,]
-              coord.ll <- rbind(coord,ll)
-              coord.ll$Y <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
-              coordinates(coord.ll) <- ~X+Y
-              # h = n x n matrix of distances between samples 
-              h.all <- sp::spDists(coord.ll)
-              h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
-              var.SIGMA.xy <- kronecker(var.SIGMA.yy, RHO0)
-              diag(var.SIGMA.yy - 
-                     crossprod(var.SIGMA.xy, 
-                               chol2inv(chol(var.SIGMA.xx))) %*% var.SIGMA.xy)
-            }
-})[3]
+
+var.zeta <- 
+  foreach(i = icount(nrow(loc)), .combine = cbind,
+          .packages = c("sp")) %dopar%
+          {
+            ll <- loc[i,]
+            coord.ll <- rbind(coord,ll)
+            coord.ll$Y <- coord.ll$Y * ST$std.dev[21] / ST$std.dev[20]
+            coordinates(coord.ll) <- ~X+Y
+            h.all <- sp::spDists(coord.ll)
+            h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N)
+            RHO0 <- get.RHO0(MLIST.obs, h = h0)
+            var.SIGMA.xy <- kronecker(var.SIGMA.yy, RHO0)
+            diag(var.SIGMA.yy - 
+                   crossprod(var.SIGMA.xy, 
+                             chol2inv(chol(var.SIGMA.xx))) %*% var.SIGMA.xy)
+          }
+
 
 (rowMeans(var.zeta)^0.5) * STt$std.dev[c(5:7,8:10,2:4)]
-
-
-
-
-
-
-
 doParallel::stopImplicitCluster()
+######################################################
+############# rasterize results #####################
+####################################################
+t.k.res <- t(k.res)
+colnames(t.k.res) <- colnames(res)
+sds <- matrix(rep(STt$std.dev[c(5:7,8:10,2:4)], each=nrow(pred)), ncol=9)
+means <- matrix(rep(STt$mean[c(5:7,8:10,2:4)], each=nrow(pred)), ncol=9)
+predicted <- (pred[,1:9] + t.k.res) *  sds + means
+
+t.var.zeta <- t(var.zeta)
+colnames(t.var.zeta) <- paste0(colnames(res),".var")
+sd.predredicted <- sqrt(t.var.zeta)
+loc
+loc <- loc * ST$std.dev[20]
+loc$X <- loc$X + ST$mean[20]
+loc$Y <- loc$Y + ST$mean[21]
+df <- cbind(predicted,  loc)#sd.predredicted
+
+library(sp)
+library(rgdal)
+library(raster)
+coordinates(df)=~X+Y
+
+sp::bbox(df)
+
+NAD83.KS.N <- CRS("+init=epsg:2796") # set it to lat-long
+#wgs84 <- CRS("+init=epsg:4326")
+proj4string(df) <- NAD83.KS.N
+#df <- spTransform(df, wgs84)
+
+r <- raster("/home/mangelini/big/platte_raster100_NAD83.tif")
+raster::projection(r) <- NAD83.KS.N
+plot(r)
+extent(r)@xmin <- sp::bbox(df)[1,1]
+extent(r)@xmax <- sp::bbox(df)[1,2]
+extent(r)@ymin <- sp::bbox(df)[2,1]
+extent(r)@ymax <- sp::bbox(df)[2,2]
+
+#r <- projectRaster(from = r, crs = wgs84, method = 'bilinear')
+r <-  rasterize(df, r, fun=mean)
+r <- r[[2:10]]
+plot(r)
+spplot(df, cex=0.1)
 
 ######################################################
 ####### Parameters bootstrapping #####################
