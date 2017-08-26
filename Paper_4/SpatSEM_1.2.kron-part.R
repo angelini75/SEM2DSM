@@ -41,9 +41,9 @@ h <- sp::spDists(ks)
 # Define the parameters alpha and range, and estimate distance matrix:
 # Sill to nugget ratio (alpha) ####
 # alpha = C/(C0 + C) = 0.8/(0.2 + 0.8) 
-alpha <- 0.5
+alpha <- 0.4
 # Range (a) ####
-a <- 0.7 #e+05
+a <- 0.4 #e+05
 # number of variables
 p=17
 # number of samples
@@ -106,7 +106,7 @@ objective_ML <- function(x, MLIST = MLIST) {
     logdetSIGMA.all = 2*sum(log(dL.S.R))
     
     objective <- -1 * (-1/2*p*N*log(2*pi) - 1/2*logdetSIGMA.all - 
-                         1/2*t(z.all)%*%SIGMA.all.inv%*%z.all)
+                         1/2 * crossprod(z.all, SIGMA.all.inv) %*%z.all)
     cat("objective = ", objective, "\n")
     objective
   } else {
@@ -386,7 +386,9 @@ spplot(df, cex=0.1)
 ######################################################
 ####### Parameters bootstrapping #####################
 ######################################################
-par <- read.csv("parameters.csv")[,-1]
+par250 <- read.csv("parameters.csv")[,-1]
+par750<- read.csv("parameters750.csv")[,-1]
+par <- rbind(par250,par750)
 #x <- rbind(as.data.frame(parameters),as.data.frame(x0))
 library(lavaan)
 partable <- partable(my.fit.lv.ML)
