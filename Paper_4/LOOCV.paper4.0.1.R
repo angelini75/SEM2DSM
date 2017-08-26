@@ -253,11 +253,179 @@ system.time({
             }
 })
 doParallel::stopImplicitCluster()
+##########################################################################
+################### Compute ME, RMSE and AVE ############################
+########################################################################
 
-(rowMeans(var.zeta)^0.5) * STt$std.dev[c(5:7,8:10,2:4)]
-doParallel::stopImplicitCluster()
+result <- read.csv("Paper_4/data/results_LOOCV.csv")[,-1]
+names(result)[1:9] <- gsub("r", "", names(result)[1:9])
+result.sp <- result[,1:9]#cbind(,ks[,c("X","Y")])
+ST <- ST[,-1]
+# function to unstandardise the data
+unstd<- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] * st[i,2]) + st[i,1]
+  }
+  y
+}
+STsub <- ST[c(5:7,8:10,2:4),]
 
-pred <- pred.lm + k.res
-sds <- matrix(rep(STt$std.dev[c(5:7,8:10,2:4)], each=1), ncol=9)
-means <- matrix(rep(STt$mean[c(5:7,8:10,2:4)], each=1), ncol=9)
-summary((pred[rownames(loc),1:9] + k.res) *  sds + means)
+obs <- unstd(x = ks[,names(result.sp)], STsub)
+pred <- unstd(x = result.sp, STsub)
+
+
+# create report
+report <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, SS = NA,
+                     mean_theta = NA, median_th = NA)
+obs <- unstd(x = ks[,names(result.sp)], STsub)
+pred <- unstd(x = result.sp, STsub)
+Res <- cbind(obs, pred)
+names(Res)[10:18] <- paste0(names(Res)[10:18],".p")
+for (i in 1:9) {
+  # ME <- mean error 
+  ME  <-  mean(Res[,i] - Res[,i + 9])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((Res[,i] - Res[,i + 9]) ^ 2))
+  MSE <- mean((Res[,i] - Res[,i + 9]) ^ 2)
+  # SS (Sum of squares)
+  SS <- sum((Res[,i] - Res[,i + 9]) ^ 2)
+  # fill report table
+  report[i,1] <- c(names(Res)[i])
+  report[i,2] <- ME
+  report[i,3] <- RMSE
+  report[i,4] <- SS
+}
+
+# for(i in 1:9){
+#   report$mean_theta[i] <- mean(theta[,i])
+#   report$median_th[i] <- median(theta[,i])
+# }
+report
+#d.stat <- read.csv("summary.calibdata.csv")
+STsub$SS <- NA 
+for(i in 1:9){
+  STsub$SS[i] <- sum((obs[,i] - STsub$mean[i])^2)
+}
+
+report$R2 <- 1 - (as.numeric(report$SS) / as.numeric(STsub$SS))
+report
+
+# Analysis by Soil Property
+# plot mesured vs predicted combined ####par(mfrow = c(1,3), pty="s",mai=rep(0.7,4))
+par(mfrow = c(1, 3), pty="s",mai=rep(0.7,4))
+rsq<- NULL
+CEC <- rbind(as.matrix(Res[,c(1,10)]), as.matrix(Res[,c(2,11)]),
+             as.matrix(Res[,c(3,12)]))
+colnames(CEC) <- c("CECo","CECp")
+rownames(CEC) <- 1:nrow(CEC)
+CEC <- as.data.frame(CEC)
+rsq[1] <- 1 - (sum((CEC$CECo - CEC$CECp)^2)/
+                 sum((mean(CEC$CECo)-CEC$CECo)^2))
+
+OC <- rbind(as.matrix(Res[,c(4,13)]), as.matrix(Res[,c(5,14)]),
+            as.matrix(Res[,c(6,15)]))
+colnames(OC) <- c("OCo","OCp")
+rownames(OC) <- 1:nrow(OC)
+OC <- as.data.frame(OC)
+rsq[2] <- 1 - (sum((OC$OCo - OC$OCp)^2)/
+                 sum((mean(OC$OCo)-OC$OCo)^2))
+
+clay <- rbind(as.matrix(Res[,c(7,16)]), as.matrix(Res[,c(8,17)]),
+              as.matrix(Res[,c(9,18)]))
+colnames(clay) <- c("clayo","clayp")
+rownames(clay) <- 1:nrow(clay)
+clay <- as.data.frame(clay)
+rsq[3] <- 1 - (sum((clay$clayo - clay$clayp)^2)/
+                 sum((mean(clay$clayo)-clay$clayo)^2))
+
+
+# create report by soil property
+report2 <- data.frame(Soil_property = NA, ME = NA, RMSE = NA, r2 = NA)
+z <- cbind(CEC, OC, clay)
+for (i in c(1,3,5)) {
+  # ME <- mean error 
+  ME  <-  mean(z[,i] - z[,i + 1])
+  # RMSE (root mean squared error)
+  RMSE <- sqrt(mean((z[,i] - z[,i + 1]) ^ 2))
+  MSE <- mean((z[,i] - z[,i + 1]) ^ 2)
+  # fill report table
+  report2[i,1] <- c(names(z)[i])
+  report2[i,2:3] <- c(ME, RMSE)
+}
+
+report2$r2[1] <- rsq[1]
+report2$r2[3] <- rsq[2]
+report2$r2[5] <- rsq[3]
+
+report2 <- report2[c(-4,-2),]
+names(report)[7] <- "r2"
+report.total <- rbind(report[,c(1:3,7)],report2)
+
+write.csv(report.total, "Paper_4/data/report_LOOCV.csv")
+
+# kriged residuals statistics
+
+kres <- result[, 10:18]
+
+kres.un <- unstd.b(x = kres,st = STsub)
+unstd.b<- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] * st[i,2])
+  }
+  y
+}
+round(colMeans(kres.un), 3)
+round(apply(kres.un, FUN = sd, MARGIN = 2), 3)
+
+################################################################################
+# Plot with lattice ####
+head(Res)
+Res$X <- NA
+Res <- Res[,c(19,1:18)]
+residuales <- rbind(data.frame(sp="CEC", hor="Joint h.", Obs=Res[,2], Pred=Res[,11]),
+                    data.frame(sp="CEC", hor="Joint h.", Obs=Res[,3], Pred=Res[,12]),
+                    data.frame(sp="CEC", hor="Joint h.", Obs=Res[,4], Pred=Res[,13]),
+                    data.frame(sp="OC", hor="Joint h.", Obs=Res[,5], Pred=Res[,14]),
+                    data.frame(sp="OC", hor="Joint h.", Obs=Res[,6], Pred=Res[,15]),
+                    data.frame(sp="OC", hor="Joint h.", Obs=Res[,7], Pred=Res[,16]),
+                    data.frame(sp="Clay", hor="Joint h.", Obs=Res[,8], Pred=Res[,17]),
+                    data.frame(sp="Clay", hor="Joint h.", Obs=Res[,9], Pred=Res[,18]),
+                    data.frame(sp="Clay", hor="Joint h.", Obs=Res[,10], Pred=Res[,19]),
+                    data.frame(sp="CEC", hor="C", Obs=Res[,4], Pred=Res[,13]),
+                    data.frame(sp="CEC", hor="B", Obs=Res[,3], Pred=Res[,12]),
+                    data.frame(sp="CEC", hor="A", Obs=Res[,2], Pred=Res[,11]),
+                    data.frame(sp="OC", hor="C", Obs=Res[,7], Pred=Res[,16]),
+                    data.frame(sp="OC", hor="B", Obs=Res[,6], Pred=Res[,15]),
+                    data.frame(sp="OC", hor="A", Obs=Res[,5], Pred=Res[,14]),
+                    data.frame(sp="Clay", hor="C", Obs=Res[,10], Pred=Res[,19]),
+                    data.frame(sp="Clay", hor="B", Obs=Res[,9], Pred=Res[,18]),
+                    data.frame(sp="Clay", hor="A", Obs=Res[,8], Pred=Res[,17]))
+
+library(lattice)
+library(latticeExtra)
+library(hexbin)
+png(filename = "~/Dropbox/PhD_Marcos/Paper 4/TeX/Figures/Scatterplot_res.png", 
+     width = 2000, height = 2000, res =  300)
+plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, 
+               type=c('p', "g"),asp = 0.9,.aspect.ratio = 1, 
+               default.scales = list(tick.number=3, tck = 1, minlength = 3),
+               scales = list(alternating= FALSE,
+                             y=list(relation='free'), x=list(relation='free'),
+                             limits=rep(list(c(0,40), c(0,4), c(0,70)), 4)),
+               par.settings=list(grid.pars=list(fontfamily="serif")),
+               pch = ".", cex = 5, alpha = 0.3, col = "black",
+               xlab = "Observed", ylab = "Predicted",
+               
+)
+#panel = panel.hexbinplot())
+
+useOuterStrips(combineLimits(x = plot,
+                             margin.x = c(2), margin.y = c(),
+                             extend = T, adjust.labels = T),
+               strip = strip.custom(
+                 factor.levels = c(expression("CEC"~~"/ cmol"[c]~~"kg"^{-1}),
+                                   "OC / %",
+                                   "Clay / %")))
+dev.off()
