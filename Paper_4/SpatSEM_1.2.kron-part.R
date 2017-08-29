@@ -36,7 +36,7 @@ ks$Y2 <- ks$Y * ST$std.dev[21] / ST$std.dev[20]
 coordinates(ks) <- ~X+Y2
 # h = n x n matrix of distances between samples 
 h <- sp::spDists(ks)
-
+MLIST <- my.fit.lv.ML@Model@GLIST
 
 # Define the parameters alpha and range, and estimate distance matrix:
 # Sill to nugget ratio (alpha) ####
@@ -49,6 +49,7 @@ p=17
 # number of samples
 N=147
 # number of free parameters of lavaan model
+fit <- my.fit.lv.ML
 free <-  length(lavaan:::lav_model_get_parameters(lavmodel = fit@Model))
 
 # Function to include free parameters into the matrix structure MLIST
@@ -386,15 +387,29 @@ spplot(df, cex=0.1)
 ######################################################
 ####### Parameters bootstrapping #####################
 ######################################################
+setwd("/home/marcos/Documents/SEM2DSM1/Paper_4/data/")
 par250 <- read.csv("parameters.csv")[,-1]
 par750<- read.csv("parameters750.csv")[,-1]
 par <- rbind(par250,par750)
 #x <- rbind(as.data.frame(parameters),as.data.frame(x0))
 library(lavaan)
-partable <- partable(my.fit.lv.ML)
-colnames(par) <- c(paste0(partable$lhs[partable$free!=0],
-                          partable$op[partable$free!=0],
-                          partable$rhs[partable$free!=0]), "alpha", "a")
+
+partable <- partable(fit)[partable(fit)$free>0,]
+colnames(par) <- c(paste0(partable$lhs,
+                          partable$op,
+                          partable$rhs), "alpha", "a")
+
+new.fit <- fit
+new.fit@Model@GLIST <- MLIST.out[1:4]
+
+est.se <- cbind(partable[partable$free!=0,c(2:4)],
+      partable[partable$free!=0,c(14,15)],
+      data.frame(new.est=lavaan:::lav_model_get_parameters(lavmodel = new.fit@Model)),
+      sd=data.frame(apply(par, 2, sd))[c(-55,-56),])
+est.se[,4:7] <- round(est.se[,4:7],3)      
+est.se$ratio <- round(sqrt((est.se$new.est/est.se$sd)^2),3)
+est.se$diff <- round(est.se$est - est.se$new.est,3)
+write.csv(est.se, "est_se.csv")
 # statistics of the estimates
 library(reshape)
 xmean <- as.data.frame(colMeans(par))
