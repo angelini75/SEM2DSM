@@ -385,8 +385,37 @@ plot(r)
 spplot(df, cex=0.1)
 
 ######################################################
-####### Parameters bootstrapping #####################
+#################### SE #############################
+####################################################
+# By default (if information = "expected"), lavaan computes the (expected) 
+# information matrix for the 'unrestricted' model, 
+# which is 1/2 * t(D) %*% (Sigma.inv %x% Sigma.inv) %*% D, 
+# where D is the duplication matrix:
+  
+Sigma <- lavaan:::computeSigmaHat.LISREL(MLIST = MLIST.out)
+Sigma.inv <- solve(Sigma)
+
+info.h1 <- 0.5 * lav_matrix_duplication_pre_post(Sigma.inv %x% Sigma.inv)
+
+# Then, this information matrix is 'converted' to the restricted information 
+# model under the model (h0):
+  
+Delta <- lavInspect(new.fit, "Delta")
+info.h0 <- t(Delta) %*% info.h1 %*% Delta
+
+# where 'Delta' is the Jacobian matrix (\partial Sigma/ \partial theta), 
+# evaluated under the final parameter estimates.
+
+# Finally, vcov is the inverse of info.h0 (divided by N):
+  
+VCOV <- solve(info.h0) / 147
+
+# and the standard errors are the square root of the diagonal of VCOV:
+  
+lav.se <- sqrt(diag(VCOV))
 ######################################################
+####### Parameters bootstrapping ####################
+####################################################
 setwd("/home/marcos/Documents/SEM2DSM1/Paper_4/data/")
 par250 <- read.csv("parameters.csv")[,-1]
 par750<- read.csv("parameters750.csv")[,-1]
@@ -405,10 +434,11 @@ new.fit@Model@GLIST <- MLIST.out[1:4]
 est.se <- cbind(partable[partable$free!=0,c(2:4)],
       partable[partable$free!=0,c(14,15)],
       data.frame(new.est=lavaan:::lav_model_get_parameters(lavmodel = new.fit@Model)),
-      sd=data.frame(apply(par, 2, sd))[c(-55,-56),])
-est.se[,4:7] <- round(est.se[,4:7],3)      
+      sd=data.frame(apply(par, 2, sd))[c(-55,-56),],
+      lav.se=lav.se)
+est.se[,4:8] <- round(est.se[,4:7],3)      
 est.se$ratio <- round(sqrt((est.se$new.est/est.se$sd)^2),3)
-est.se$diff <- round(est.se$est - est.se$new.est,3)
+est.se$diff <- round(est.se$est - est.se$lav.se,3)
 write.csv(est.se, "est_se.csv")
 # statistics of the estimates
 library(reshape)
