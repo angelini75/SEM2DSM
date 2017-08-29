@@ -436,9 +436,9 @@ est.se <- cbind(partable[partable$free!=0,c(2:4)],
       data.frame(new.est=lavaan:::lav_model_get_parameters(lavmodel = new.fit@Model)),
       sd=data.frame(apply(par, 2, sd))[c(-55,-56),],
       lav.se=lav.se)
-est.se[,4:8] <- round(est.se[,4:7],3)      
+est.se[,4:8] <- round(est.se[,4:8],3)      
 est.se$ratio <- round(sqrt((est.se$new.est/est.se$sd)^2),3)
-est.se$diff <- round(est.se$est - est.se$lav.se,3)
+est.se$diff <- round(est.se$se - est.se$lav.se,2)
 write.csv(est.se, "est_se.csv")
 # statistics of the estimates
 library(reshape)
