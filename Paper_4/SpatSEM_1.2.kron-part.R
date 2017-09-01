@@ -243,13 +243,13 @@ get.pred <- function (MLIST = NULL, covar = covar.st){
   cbind(pred,xy)
 }
 # function to get residuals
-get.res <- function (m = NULL){
-  A <- m$beta[1:9,10:p]
+get.res <- function (m = NULL, z = s){
+  A <- m$beta[1:9,10:17]
   B <- m$beta[1:9,1:9]
   I <- diag(nrow = 9, ncol = 9)
   IB.inv <- solve(I - B)
   sp <- z[,1:9]
-  p <- z[,10:p]
+  p <- z[,10:17]
   res <- matrix(data = NA, nrow = N, ncol = 9)
   for(i in seq_along(p[,1])){
     res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
@@ -500,28 +500,26 @@ library(sp)
 #   res
 # }
 ## compute the residuals from multivariate linear model
-# r <- get.res(m = MLIST.out)
-# res <- ks
-# res@data[,2:10] <- r
-# res@data <- res@data[,2:10]
-#var.res <- apply(X = r,FUN =  var, MARGIN = 2)
-
-ks <- as.data.frame(ks)
-ks$X <- (ks$X * ST$std.dev[20]) + ST$mean[20]
-ks$Y2 <- (ks$Y2 * ST$std.dev[20]) + ST$mean[21]
-coordinates(ks) <- ~X+Y2
+res <- get.res(m = MLIST.out, z= s)
+ks <- read.csv("Paper_4/data/ks.csv")[,-1]
+xy <- ks[, c("X","Y")] # coordinates of cal data
+xy[,"Y"] <- xy[,"Y"] * ST$std.dev[21] + ST$mean[21]
+xy[,"X"] <- xy[,"X"] * ST$std.dev[20] + ST$mean[20]
+res.2 <- cbind(res, xy)
+res.2 <- as.data.frame(res.2)
+coordinates(res.2) <- ~X+Y
 
 
 # spatial model
-cv <- gstat(id = "CEC.A", formula = CEC.A ~ 1, data = ks, nmax = 10)
-cv <- gstat(cv, id = "CEC.B", formula = CEC.B ~ 1, data = ks, nmax = 10)
-cv <- gstat(cv, id = "CEC.C", formula = CEC.C ~ 1, data = ks, nmax = 10)
-cv <- gstat(cv, id = "OC.A", formula = OC.A ~ 1, data = ks, nmax = 10)
-cv <- gstat(cv, id = "OC.B", formula = OC.B ~ 1, data = ks, nmax = 10)
-cv <- gstat(cv, id = "OC.C", formula = OC.C ~ 1, data = ks, nmax = 10)
-cv <- gstat(cv, id = "Clay.A", formula = Clay.A ~ 1, data = ks, nmax = 10)
-cv <- gstat(cv, id = "Clay.B", formula = Clay.B ~ 1, data = ks, nmax = 10)
-cv <- gstat(cv, id = "Clay.C", formula = Clay.C ~ 1, data = ks, nmax = 10)
+cv <- gstat(id = "CEC.A", formula = CEC.A ~ 1, data = res.2, nmax = 10)
+cv <- gstat(cv, id = "CEC.B", formula = CEC.B ~ 1, data = res.2, nmax = 10)
+cv <- gstat(cv, id = "CEC.C", formula = CEC.C ~ 1, data = res.2, nmax = 10)
+cv <- gstat(cv, id = "OC.A", formula = OC.A ~ 1, data = res.2, nmax = 10)
+cv <- gstat(cv, id = "OC.B", formula = OC.B ~ 1, data = res.2, nmax = 10)
+cv <- gstat(cv, id = "OC.C", formula = OC.C ~ 1, data = res.2, nmax = 10)
+cv <- gstat(cv, id = "Clay.A", formula = Clay.A ~ 1, data = res.2, nmax = 10)
+cv <- gstat(cv, id = "Clay.B", formula = Clay.B ~ 1, data = res.2, nmax = 10)
+cv <- gstat(cv, id = "Clay.C", formula = Clay.C ~ 1, data = res.2, nmax = 10)
 cv <- gstat(cv, # To fill in the object
             model = vgm(nugget = 99 ,
                         psill= 100,
@@ -531,11 +529,18 @@ cv <- gstat(cv, # To fill in the object
 # replace nugget and psill # [[[[[[[[[[[[to be continued...]]]]]]]]]]]]]]]]]]]]]
 sigma0 <- computeSigmaHat.LISREL(MLIST = MLIST.out)[1:9,1:9]
 psi <- MLIST.out$psi[1:9,1:9] # system variance-covariance matrix
+B <- MLIST.out$beta[1:9,1:9]
+I <- diag(nrow = 9, ncol = 9)
+IB.inv <- solve(I - B)
+test <- IB.inv %*% psi %*% t(IB.inv)
+
 #variance <- sigma0-psi
-psill <- sigma0[lower.tri(sigma0,T)] * (1-MLIST.out$alpha) - psi[lower.tri(psi,T)]# psill for those free variables 
-nugget <- sigma0[lower.tri(sigma0,T)] * MLIST.out$alpha # c0 = psill/alpha
+psill <-  test[lower.tri(psi,T)] * (1-MLIST.out$alpha)# psill for those free variables 
+nugget <- test[lower.tri(psi,T)] * MLIST.out$alpha # c0 = psill/alpha
 
 # replace nugget and psill values in cv object
+
+
 for(i in 1:45){
   cv$model[[i]][1,"psill"] <- nugget[i]
   cv$model[[i]][2,"psill"] <- psill[i]
