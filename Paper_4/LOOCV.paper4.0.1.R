@@ -73,7 +73,7 @@ get.RHO <- function(MLIST = NULL, h = NULL) {
 }
 
 # Objective function:
-objective_ML <- function(x, MLIST = MLIST) {
+objective_ML <- function(x, MLIST = NULL) {
   MLIST <- x2MLIST(x = x, MLIST = MLIST)
   # compute Sigma.hat
   SIGMA0 <- computeSigmaHat.LISREL(MLIST = MLIST)
@@ -143,16 +143,16 @@ get.pred <- function (MLIST = NULL, covar = NULL){
   pred
 }
 # function to get residuals
-get.res <- function (m = NULL, z = cal){
+get.res <- function (m = NULL, z = NULL){
   A <- m$beta[1:9,10:p]
   B <- m$beta[1:9,1:9]
   I <- diag(nrow = 9, ncol = 9)
   IB.inv <- solve(I - B)
   sp <- z[,1:9]
-  p <- z[,10:p]
+  pr <- z[,10:p]
   res <- matrix(data = NA, nrow = N, ncol = 9)
-  for(i in seq_along(p[,1])){
-    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% p[i,]))
+  for(i in seq_along(pr[,1])){
+    res[i,] <- t(sp[i,] - (IB.inv %*% A %*% pr[i,]))
   }
   colnames(res) <- colnames(sp)
   res
@@ -187,77 +187,77 @@ z.all <- numeric()
 ############### Foreach loop ###################################
 ###############################################################
 library(doParallel)
-registerDoParallel(cores = 48) # quics server, 48 cores: 6.5 hours
+registerDoParallel(cores = 12) # quics server, 48 cores: 6.5 hours
 
-system.time({
-  result <-
-    foreach(i = icount(nrow(ks)), .combine = rbind, # 147 calibrations 
-            .packages = "sp") %dopar% {
-              # calibration dataset
-              cal <- ks[-i,]
-              rownames(cal) <- 1:N
-              # get h
-              xy <- cal[, c("X","Y")] # coordinates of cal data
-              xy[,"Y"] <- xy[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
-              coordinates(xy) <- ~X+Y
-              h <- sp::spDists(xy) # h of cal data
-              # Optimize the function
-              cal <- as.matrix(cal[,colnames(s)])
-              z.all <- as.vector(cal)
-              out <- nlminb(start = start.x, objective = objective_ML,
-                            MLIST = MLIST, control = list(iter.max = 200)) # ~150 iterations
-              MLIST.obs <- x2MLIST(out$par, MLIST) # extract parameters
-              RHO <- get.RHO(MLIST = MLIST.obs, h = h) # estimate RHO for the 146 samples
-              # # # Compute matrices: SIGMA.yy (9x9), SIGMA.xx (9Nx9N), SIGMA.xy (9x9N)
-              SIGMA.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # qxq
-              SIGMA.xx <- kronecker(SIGMA.yy, RHO)   # qN x qN
-              # covar for prediction
-              covar.st <- ks[i,c("dem","vdchn","X", "lstm","evisd","ndwi.b","twi","ndwi.a")]
-              # prediction from linear model and residuals
-              pred.lm <- get.pred(MLIST = MLIST.obs, covar = covar.st) 
-              res <- get.res(m = fit@Model@GLIST)
-              y.all <- as.vector(res) # vector of residuals
-              # Locations of calibration profiles (xy) and predition profile (ll)
-              ll <- ks[i,c("X","Y")] # location of ks[i,]
-              ll[,"Y"] <- ll[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
-              xy <- as.data.frame(xy)
-              xy.ll <- rbind(xy,ll)
-              coordinates(xy.ll) <- ~X+Y # all coordinates (N+1 = 147)
-              h.all <- sp::spDists(xy.ll) 
-              h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N) # h for prediction location
-              RHO0 <- get.RHO0(MLIST.obs, h0 = h0) # note that h0 is Nx1
-              # get SIGMA.xy
-              SIGMA.xy <- kronecker(SIGMA.yy, RHO0) # qN x q
-              # kriging of residuals
-              k.res <- t(crossprod(SIGMA.xy, chol2inv(chol(SIGMA.xx))) %*% y.all) 
-              colnames(k.res) <- paste0(colnames(res),".res")
-              # total prediction
-              predicted <- pred.lm + k.res
-              # Computing prediction variance (could be in a function get.var())
-              PSI <- MLIST.obs$psi[1:9,1:9] # system error of SP
-              B <- MLIST.obs$beta[1:9,1:9] 
-              I <- diag(nrow = 9, ncol = 9)
-              IB.inv <- solve(I - B)
-              theta <- MLIST.obs$theta[1:9,1:9] # measurement error
-              var.SIGMA.yy <- PSI + IB.inv %*% tcrossprod(theta, IB.inv) #
-              var.SIGMA.xx <- kronecker(var.SIGMA.yy, RHO)
-              var.SIGMA.xy <- kronecker(var.SIGMA.yy, RHO0)
-              var.zeta <- var.SIGMA.yy -
-                crossprod(var.SIGMA.xy,
-                          chol2inv(chol(var.SIGMA.xx))) %*% var.SIGMA.xy
-              variance <- matrix(diag(var.zeta), nrow = 1)
-              colnames(variance) <- paste0(colnames(res),".var")
-              #as.vector(var.zeta)
-              result <- cbind(predicted, k.res, variance)
-              result
-            }
-})
+result <-
+  foreach(i = icount(nrow(ks)), .combine = rbind, # 147 calibrations 
+          .packages = "sp") %dopar% {
+            # calibration dataset
+            cal <- ks[-i,]
+            rownames(cal) <- 1:N
+            # get h
+            xy <- cal[, c("X","Y")] # coordinates of cal data
+            xy[,"Y"] <- xy[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
+            coordinates(xy) <- ~X+Y
+            h <- sp::spDists(xy) # h of cal data
+            # Optimize the function
+            cal <- as.matrix(cal[,colnames(s)])
+            z.all <- as.vector(cal)
+            out <- nlminb(start = start.x, objective = objective_ML,
+                          MLIST = MLIST, control = list(iter.max = 200)) # ~150 iterations
+            MLIST.obs <- x2MLIST(out$par, MLIST) # extract parameters
+            RHO <- get.RHO(MLIST = MLIST.obs, h = h) # estimate RHO for the 146 samples
+            # # # Compute matrices: SIGMA.yy (9x9), SIGMA.xx (9Nx9N), SIGMA.xy (9x9N)
+            SIGMA.yy <- computeSigmaHat.LISREL(MLIST = MLIST.obs)[1:9,1:9] # qxq
+            SIGMA.xx <- kronecker(SIGMA.yy, RHO)   # qN x qN
+            # covar for prediction
+            covar.st <- ks[i,c("dem","vdchn","X", "lstm","evisd","ndwi.b","twi","ndwi.a")]
+            # prediction from linear model and residuals
+            pred.lm <- get.pred(MLIST = MLIST.obs, covar = covar.st) 
+            res <- get.res(m = MLIST.obs, z = cal)
+            y.all <- as.vector(res) # vector of residuals
+            # Locations of calibration profiles (xy) and predition profile (ll)
+            ll <- ks[i,c("X","Y")] # location of ks[i,]
+            ll[,"Y"] <- ll[,"Y"] * ST$std.dev[21] / ST$std.dev[20]
+            xy <- as.data.frame(xy)
+            xy.ll <- rbind(xy,ll)
+            coordinates(xy.ll) <- ~X+Y # all coordinates (N+1 = 147)
+            h.all <- sp::spDists(xy.ll) 
+            h0 <- matrix(h.all[1:N,N+1], ncol = 1, nrow = N) # h for prediction location
+            RHO0 <- get.RHO0(MLIST.obs, h0 = h0) # note that h0 is Nx1
+            # get SIGMA.xy
+            SIGMA.xy <- kronecker(SIGMA.yy, RHO0) # qN x q
+            # kriging of residuals
+            k.res <- t(crossprod(SIGMA.xy, chol2inv(chol(SIGMA.xx))) %*% y.all) 
+            colnames(k.res) <- paste0(colnames(res),".res")
+            # total prediction
+            predicted <- pred.lm + k.res
+            # Computing prediction variance (could be in a function get.var())
+            PSI <- MLIST.obs$psi[1:9,1:9] # system error of SP
+            B <- MLIST.obs$beta[1:9,1:9] 
+            I <- diag(nrow = 9, ncol = 9)
+            IB.inv <- solve(I - B)
+            theta <- MLIST.obs$theta[1:9,1:9] # measurement error
+            var.SIGMA.yy <- PSI + IB.inv %*% tcrossprod(theta, IB.inv) #
+            var.SIGMA.xx <- kronecker(var.SIGMA.yy, RHO)
+            var.SIGMA.xy <- kronecker(var.SIGMA.yy, RHO0)
+            var.zeta <- var.SIGMA.yy -
+              crossprod(var.SIGMA.xy,
+                        chol2inv(chol(var.SIGMA.xx))) %*% var.SIGMA.xy
+            variance <- matrix(diag(var.zeta), nrow = 1)
+            colnames(variance) <- paste0(colnames(res),".var")
+            #as.vector(var.zeta)
+            result <- cbind(predicted, k.res, variance)
+            result
+          }
+
 doParallel::stopImplicitCluster()
 ##########################################################################
 ################### Compute ME, RMSE and AVE ############################
 ########################################################################
-
-result <- read.csv("Paper_4/data/results_LOOCV.csv")[,-1]
+result <- as.data.frame(result)
+write.csv(result, "results_LOOCV_2.csv")
+#result <- read.csv("Paper_4/data/results_LOOCV.csv")[,-1]
 names(result)[1:9] <- gsub("r", "", names(result)[1:9])
 result.sp <- result[,1:9]#cbind(,ks[,c("X","Y")])
 ST <- ST[,-1]
@@ -362,7 +362,7 @@ report2 <- report2[c(-4,-2),]
 names(report)[7] <- "r2"
 report.total <- rbind(report[,c(1:3,7)],report2)
 
-write.csv(report.total, "Paper_4/data/report_LOOCV.csv")
+write.csv(report.total, "Paper_4/data/report_LOOCV_2.csv")
 
 # kriged residuals statistics
 
@@ -406,7 +406,7 @@ residuales <- rbind(data.frame(sp="CEC", hor="Joint h.", Obs=Res[,2], Pred=Res[,
 library(lattice)
 library(latticeExtra)
 library(hexbin)
-png(filename = "~/Dropbox/PhD_Marcos/Paper 4/TeX/Figures/Scatterplot_res.png", 
+png(filename = "~/big/Scatterplot_res.png", 
      width = 2000, height = 2000, res =  300)
 plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, 
                type=c('p', "g"),asp = 0.9,.aspect.ratio = 1, 
@@ -415,7 +415,7 @@ plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales,
                              y=list(relation='free'), x=list(relation='free'),
                              limits=rep(list(c(0,40), c(0,4), c(0,70)), 4)),
                par.settings=list(grid.pars=list(fontfamily="serif")),
-               pch = ".", cex = 5, alpha = 0.3, col = "black",
+               pch = ".", cex = 3, alpha = 0.4, col = "black",
                xlab = "Observed", ylab = "Predicted",
                
 )
