@@ -362,7 +362,7 @@ report2 <- report2[c(-4,-2),]
 names(report)[7] <- "r2"
 report.total <- rbind(report[,c(1:3,7)],report2)
 
-write.csv(report.total, "Paper_4/data/report_LOOCV_2.csv")
+write.csv(report.total, "report_LOOCV_2.csv")
 
 # kriged residuals statistics
 
