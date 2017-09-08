@@ -24,50 +24,93 @@ name <- function(x) { as.data.frame(names(x))}
 
 Arg <- read.csv("~/Documents/SEM2DSM1/Paper_2/data/calib.data-5.0.csv")[,c(-1,-20)]
 
-d <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/KS.data-0.2.csv")[,c(-1)] 
+d <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/KS.data-0.3.csv")[,c(-1)] 
 name(d)
-names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
-# remove outlayers
-# d <- d[d$idp!=26058,]
-# d <- d[d$idp!=22961,]
-d <- cbind(d[1],
-           d[,colnames(Arg)[2:10]],
-           d[11:21])
-d <- d[c(-156,-157),]
+names(d)[1:10] <- c("id.p","clay.A","clay.B","clay.C","CEC.A",
+                    "CEC.B","CEC.C","OC.A","OC.B","OC.C")
+Arg <- Arg[,names(d)]
 ks <- d
-name(ks)
-name(Arg)
-names(ks)[1] <- "id.p"
-ks$evim <- ks$evim/10000
-ks$evisd <- ks$evisd/10000
-Arg <- Arg[,names(ks)]
+ks$Country <- "USA"
+Arg$Country <- "Arg"
+names(ks)[2:4] <- c("Clay.A","Clay.B","Clay.C")
+names(Arg)[2:10] <- names(ks)[2:10]
+names(ks)[11:21] <- c("DEM","TWI","VDCHN","EVIM","EVISD","LSTM","LSTSD",
+                      "NDWI.A","NDWI.B","X","Y")
 
-ks$country <- "US"
-Arg$country <- "Arg"
+names(Arg)[11:21] <- c("DEM","TWI","VDCHN","EVIM","EVISD","LSTM","LSTSD",
+                      "NDWI.A","NDWI.B","X","Y")
+name(Arg)
+
+ks$EVIM <- ks$EVIM/10000
+ks$EVISD <- ks$EVISD/10000
+
+
+
 data <- rbind(ks, Arg)
 
 library(reshape)
 library(ggplot2)
-meltp <- unique(melt(data,id.vars = c("id.p", "country")))
+meltp <- unique(melt(data,id.vars = c("id.p", "Country")))
 name(meltp)
 sp <- levels(meltp$variable)
 # plot soil properties
 ggplot(data = meltp[which(meltp$variable %in% sp[1:9]),],
-       aes(x = value, fill = country)) + geom_density(alpha = 0.4) +
+       aes(x = value, fill = Country)) + geom_density(alpha = 0.4) +
   facet_wrap( ~ variable,scales = "free")
 # plot covariates
-ggplot(data = meltp[which(meltp$variable %in% sp[c(10:12,14,15,17:19)]),],
-       aes(x = value, fill = country)) + geom_density(alpha = 0.4) +
-  facet_wrap( ~ variable,scales = "free")
+tiff(filename = "~/Dropbox/PhD_Marcos/Paper 3/Figures/Fig3.tif",
+     width = 2000, height = 1200, res =  250)
+ggplot(data = meltp[which(meltp$variable %in% sp[c(10:12,14,15,17:18)]),],
+       aes(x = value, fill = Country)) + geom_density(alpha = 0.4) +
+  facet_wrap( ~ variable,scales = "free") + theme(text = element_text(size = 13, family = "serif"))
+dev.off()
 #############
 # another approach from: http://ggobi.github.io/ggally/#ggallyggnostic
 # Load required packages
 require(GGally)
 
+ggscatmatM <- function (data, columns = 1:ncol(data), color = NULL, alpha = 1, 
+                        corMethod = "pearson") 
+{
+  data <- data
+  data.choose <- data[columns]
+  dn <- data.choose[sapply(data.choose, is.numeric)]
+  if (ncol(dn) == 0) {
+    stop("All of your variables are factors. Need numeric variables to make scatterplot matrix.")
+  }
+  if (ncol(dn) < 2) {
+    stop("Not enough numeric variables to make a scatter plot matrix")
+  }
+  a <- uppertriangle(data, columns = columns, color = color, 
+                     corMethod = corMethod)
+  if (is.null(color)) {
+    plot <- scatmat(data, columns = columns, alpha = alpha) + 
+      geom_text(data = a, aes_string(label = "r"), colour = "black", family = "serif")
+  }
+  else {
+    plot <- scatmat(data, columns = columns, color = color, 
+                    alpha = alpha) + geom_text(data = a, family = "serif", 
+                                               aes_string(label = "r", 
+                                                                    color = "colorcolumn")) + labs(color = color)
+  }
+  factor <- data.choose[sapply(data.choose, is.factor)]
+  if (ncol(factor) == 0) {
+    return(plot)
+  }
+  else {
+    warning("Factor variables are omitted in plot")
+    return(plot)
+  }
+}
 # hist and correlation for soil properties
-ggscatmat(data, color = "country", columns = c(names(data)[c(2:10)]), alpha = 0.10) + 
-  theme(axis.text.x = element_text(size = 8,angle = 90, vjust = 0.5),
-        axis.text.y = element_text(size = 8,angle =  0, vjust = 0.5))
+tiff(filename = "~/Dropbox/PhD_Marcos/Paper 3/Figures/Fig2.tif",
+     width = 2000, height = 2000, res =  250)
+ggscatmatM(data, color = "Country", columns = c(names(data)[c(2:10)]), alpha = 0.10) + 
+  theme(axis.text.x = element_text(size = 8,angle = 90, vjust = 0.5), 
+        axis.text.y = element_text(size = 8,angle =  0, vjust = 0.5),
+        text = element_text(size = 13, family = "serif"),
+        title = element_text(family = "serif"))
+dev.off()
 # hist and scaterplots for covariates
 ggscatmat(data, color = "country", columns = c(names(data)[c(11:12,14,15,17:21)]), alpha = 0.10) + 
   theme(axis.text.x = element_text(size = 8,angle = 90, vjust = 0.5),
