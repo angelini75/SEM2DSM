@@ -11,7 +11,7 @@ setwd("~/big/SEM2DSM1/Paper_4/data")
 # load lavaan model (from RS desktop)
 setwd("~/Documents/SEM2DSM1/Paper_4/data")
 #setwd("C:/Users/quics/Marcos/SEM2DSM1/Paper_4/data")
-load("SpatSEM_1.2.RData")
+load("data_for_prediction_maps.RData")
 # ks <- read.csv("ks.csv")
 # ks <- ks[,colnames(s)]
 # s <- as.matrix(ks[,-17])
