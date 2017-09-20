@@ -345,33 +345,33 @@ r.SEM <- rasterize(pred.SEM.xy,r, background= NA)
 ############################ Plots MAPS #######################################
 ##############################################################################
 CEC <- stack(r.SEM[[2]],r.spatSEM[[2]])
-CEC.color <-  c('#f7fcfd','#e0ecf4','#bfd3e6','#9ebcda','#8c96c6','#8c6bb1',
-                '#88419d','#810f7c','#4d004b')
+CEC.color <-  c('#e0ecf4','#e0ecf4','#e0ecf4','#bfd3e6','#9ebcda','#8c96c6','#8c6bb1',
+                '#88419d','#810f7c','#4d004b','#4d004b')
 CEC.plot <- levelplot(CEC, layout=c(1, 2), names.attr=c('Standard SEM', 'Spatial SEM'),
                       ylab = "", xlab = "", scales=list(draw=FALSE, alternating= FALSE),
-                      at=seq(0, 40, length.out=40), 
+                      at=seq(0, 35, length.out=70), 
                       par.strip.text=list(font=0.7),
                       par.settings=list(grid.pars=list(fontfamily="serif")),
                       col.regions = colorRampPalette(CEC.color), 
                       main = expression("CEC of A horizon"~~"/ cmol"[c]~~"kg"^{-1}))
 
 OC <- stack(r.SEM[[5]],r.spatSEM[[5]])
-OC.color <-  c('#ffffe5','#f7fcb9','#d9f0a3','#addd8e','#78c679','#41ab5d',
-               '#238443','#006837','#004529')
+OC.color <-  c('#d9f0a3','#d9f0a3','#d9f0a3','#addd8e','#78c679','#41ab5d',
+               '#238443','#006837','#004529','#004529')
 OC.plot <- levelplot(OC, layout=c(1, 2), names.attr=c('Standard SEM', 'Spatial SEM'), 
                      ylab = "", xlab = "",scales=list(draw=FALSE, alternating= FALSE),
-                     at=seq(0, 4, length.out=40), 
+                     at=seq(0, 3.5, length.out=60), 
                      par.strip.text=list(font=0.7),
                      par.settings=list(grid.pars=list(fontfamily="serif")),
                      col.regions = colorRampPalette(OC.color), 
                      main = expression("OC of A horizon / %"))
 
 Clay <- stack(r.SEM[[8]],r.spatSEM[[8]])
-Clay.color <-  c('#ffffcc','#ffeda0','#fed976','#feb24c','#fd8d3c','#fc4e2a',
-                '#e31a1c','#bd0026','#800026')
+Clay.color <-  c('#ffffcc','#ffffcc','#ffffcc','#ffeda0','#fed976','#feb24c','#fd8d3c','#fc4e2a',
+                '#e31a1c','#bd0026','#800026','#800026','#800026')
 Clay.plot <- levelplot(Clay, layout=c(1, 2), names.attr=c('Standard SEM', 'Spatial SEM'), 
-                       ylab = "", xlab = "", scales=list(draw=T, alternating= FALSE),
-                       at=seq(0,50, length.out=50), 
+                       ylab = "", xlab = "", scales=list(draw=FALSE, alternating= FALSE),
+                       at=seq(0,45, length.out=90), 
                        par.strip.text=list(font=0.7),
                        par.settings=list(grid.pars=list(fontfamily="serif")),
                        col.regions = colorRampPalette(Clay.color), 
@@ -387,3 +387,6 @@ for (i in 1:3){
 }
 dev.off()
 
+
+writeRaster(r.spatSEM, filename = "/home/mangelini/big/predicted_spatSEM.tif", bylayer = TRUE)
+writeRaster(r.SEM, filename = "/home/mangelini/big/predicted_SEM.tif", bylayer = TRUE)
