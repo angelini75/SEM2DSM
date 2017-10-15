@@ -344,6 +344,13 @@ r.SEM <- rasterize(pred.SEM.xy,r, background= NA)
 ################################################################################
 ############################ Plots MAPS #######################################
 ##############################################################################
+library(raster)
+msk <- shapefile("~/big/mask.shp")
+msk <- spTransform(msk, CRS("+init=epsg:2796"))
+
+r.SEM <- mask(r.SEM, mask = msk, inverse=T)
+r.spatSEM <- mask(r.spatSEM, mask = msk, inverse=T)
+
 CEC <- stack(r.SEM[[2]],r.spatSEM[[2]])
 CEC.color <-  c('#e0ecf4','#e0ecf4','#e0ecf4','#bfd3e6','#9ebcda','#8c96c6','#8c6bb1',
                 '#88419d','#810f7c','#4d004b','#4d004b')
@@ -398,13 +405,14 @@ CEC <- stack(r.SEM[[2:4]])
 CEC.color <-  c('#e0ecf4','#e0ecf4','#e0ecf4','#bfd3e6','#9ebcda','#8c96c6','#8c6bb1',
                 '#88419d','#810f7c','#4d004b','#4d004b')
 new.color <- c('#b2e2e2','#66c2a4','#238b45', '#ffffd4','#fed98e','#fe9929','#cc4c02')
+CEC.color <- c('#b2e2e2','#b2e2e2','#66c2a4','#238b45', '#ffffd4','#fed98e','#fe9929','#cc4c02','#cc4c02')
 CEC.plot <- levelplot(CEC, layout=c(1, 3), 
                       names.attr=c('CEC A horizon','CEC B horizon', 'CEC C horizon'),
                       ylab = "", xlab = "", scales=list(draw=FALSE, alternating= FALSE),
                       at=seq(0, 35, length.out=90), 
                       par.strip.text=list(font=0.7),
                       par.settings=list(grid.pars=list(fontfamily="serif")),
-                      col.regions = colorRampPalette(new.color))
+                      col.regions = colorRampPalette(CEC.color))
 CEC.plot
 
 OC <- stack(r.SEM[[5:7]])
