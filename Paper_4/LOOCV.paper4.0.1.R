@@ -406,9 +406,9 @@ residuales <- rbind(data.frame(sp="CEC", hor="Joint h.", Obs=Res[,2], Pred=Res[,
 library(lattice)
 library(latticeExtra)
 library(hexbin)
-png(filename = "~/big/Scatterplot_res.png", 
+  png(filename = "~/Documents/Scatterplot_res.png", 
      width = 2000, height = 2000, res =  300)
-plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, 
+plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, abline=c(0,1),
                type=c('p', "g"),asp = 0.9,.aspect.ratio = 1, 
                default.scales = list(tick.number=3, tck = 1, minlength = 3),
                scales = list(alternating= FALSE,
