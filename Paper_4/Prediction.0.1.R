@@ -449,3 +449,53 @@ for (i in 1:3){
 dev.off()
 
 #save.image("/data/big/mangelini/env4plottingmapspaper4.RData")
+
+################################################################################
+###################### Plots 9 MAPS spatialSEM paper 3 ########################
+##############################################################################
+CEC <- stack(r.SEM[[2:4]])
+CEC.color <-  c('#e0ecf4','#e0ecf4','#e0ecf4','#bfd3e6','#9ebcda','#8c96c6','#8c6bb1',
+                '#88419d','#810f7c','#4d004b','#4d004b')
+new.color <- c('#b2e2e2','#66c2a4','#238b45', '#ffffd4','#fed98e','#fe9929','#cc4c02')
+CEC.color <- c('#b2e2e2','#b2e2e2','#66c2a4','#238b45', '#ffffd4','#fed98e','#fe9929','#cc4c02','#cc4c02')
+CEC.plot <- levelplot(CEC, layout=c(1, 3), 
+                      names.attr=c('CEC A horizon','CEC B horizon', 'CEC C horizon'),
+                      ylab = "", xlab = "", scales=list(draw=FALSE, alternating= FALSE),
+                      at=seq(0, 40, length.out=90), 
+                      par.strip.text=list(font=0.7),
+                      par.settings=list(grid.pars=list(fontfamily="serif")),
+                      col.regions = colorRampPalette(CEC.color))
+CEC.plot
+
+OC <- stack(r.SEM[[5:7]])
+OC.color <-  c('#b2e2e2','#238b45', '#ffffd4','#fed98e','#fe9929','#cc4c02','#cc4c02','#cc4c02')
+OC.plot <- levelplot(OC, layout=c(1, 3),
+                     names.attr=c('OC A horizon','OC B horizon', 'OC C horizon'),
+                     ylab = "", xlab = "",scales=list(draw=FALSE, alternating= FALSE),
+                     at=seq(0, 3, length.out=90), 
+                     par.strip.text=list(font=0.7),
+                     par.settings=list(grid.pars=list(fontfamily="serif")),
+                     col.regions = colorRampPalette(OC.color))
+OC.plot
+
+Clay <- stack(r.SEM[[8:10]])
+Clay.color <-  c('#ffffcc','#ffffcc','#ffffcc','#ffffcc','#ffeda0','#fed976','#feb24c','#fd8d3c','#fc4e2a',
+                 '#e31a1c','#bd0026','#800026','#800026','#800026')
+Clay.plot <- levelplot(Clay, layout=c(1, 3), 
+                       names.attr=c('Clay A horizon','Clay B horizon', 'Clay C horizon'),
+                       ylab = "", xlab = "", scales=list(draw=FALSE, alternating= FALSE),
+                       at=seq(0,55, length.out=90), 
+                       par.strip.text=list(font=0.7),
+                       par.settings=list(grid.pars=list(fontfamily="serif")),
+                       col.regions = colorRampPalette(new.color))
+Clay.plot
+
+mat <- matrix(1:3, nrow=1)
+plots <- list(CEC.plot,OC.plot,Clay.plot)
+
+png(filename = "~/big/Fig7_paper4.png",
+    width = 2500*1.40, height = 1950*1.40, res =  300)
+for (i in 1:3){
+  print(plots[[i]], split=c(col(mat)[i], row(mat)[i], ncol(mat), nrow(mat)), more=(i<3))
+}
+dev.off()
