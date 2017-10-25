@@ -448,3 +448,4 @@ for (i in 1:3){
 }
 dev.off()
 
+#save.image("/data/big/mangelini/env4plottingmapspaper4.RData")
