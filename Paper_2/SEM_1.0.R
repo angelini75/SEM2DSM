@@ -477,9 +477,9 @@ residuales <- rbind(data.frame(sp="CEC", hor="Joint h.", Obs=Res[,2], Pred=Res[,
 library(lattice)
 library(latticeExtra)
 library(hexbin)
-tiff(filename = "~/Dropbox/PhD Marcos/Paper 2/Figures/Fig9.tif", 
+tiff(filename = "~/Dropbox/PhD_Marcos/Paper 2/Figures/Fig9.tif", 
      width = 2000, height = 2000, res =  300)
-plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, 
+plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales,  abline=c(0,1),
                type=c('p', "g"),asp = 0.9,.aspect.ratio = 1, 
                default.scales = list(tick.number=3, tck = 1, minlength = 3),
                scales = list(alternating= FALSE,
