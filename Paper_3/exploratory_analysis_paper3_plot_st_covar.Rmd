@@ -1,0 +1,318 @@
+---
+title: "Model extrapolation"
+output:
+  html_document:
+    theme: journal
+date: 'null'
+---
+#bar
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE,
+                results = ('markup'))
+```
+
+
+## Exploratory analysis of US data and Argentinian data
+```{r exploratory analysis, echo=FALSE}
+# Purpose        : Fit a SEM model with Argentinian data and apply in KS data
+# Maintainer     : Marcos Angelini  (angelini75@gmail.com); 
+library(pastecs)
+library(utils)
+library(lattice)
+
+rm(list=ls()[ls()!="t"])
+name <- function(x) { as.data.frame(names(x))}
+# chose one
+
+
+# Dictionary of elements in this script ######
+# d = calibration dataset. It comes from replacement_of_NAs.Rm 
+#     (different versions: 5.0 to 5.3)
+# ST = original mean and standard deviation of all variables
+# STt = mean and standard deviation of transformed data
+# nor = normalisation funcion (x-mean)/sd
+# D = transformed and normalised data
+# my.model = lavaan syntax
+# my.fit = model fitted
+# mod = modification indices (for respecification)
+#------------------------------------------------#
+
+e <- read.csv("~/Documents/SEM2DSM1/Paper_2/data/calib.data-5.0.csv")[,c(-1,-20)]
+# Descriptive statistics and normality test. ####
+round(stat.desc(e,norm = TRUE),3)
+# Soil properties does not present strong deviation from normality.
+# But some covariates need to be transformed. First, we store original mean and 
+# sd in ST
+ST.arg <- t(stat.desc(e,norm = TRUE)[c(9,13),])
+
+# Based on normtest.W the following covariates need to be transformed
+e$wdist <- e$wdist^0.5
+e$maxc <- (e$maxc+20000)^2
+e$slope <- e$slope^0.25
+e$twi <- log10(e$twi)
+e$vdchn <- log10(e$vdchn+10)
+e$ndwi.a <- (e$ndwi.a+10)^.3
+# New statistics
+round(stat.desc(e,norm = TRUE),3)
+# New mean and sd
+STt.arg <- t(stat.desc(e,norm = TRUE)[c(9,13),])
+
+# standardised data set ####
+std <- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] - st[i,1]) / st[i,2]
+  }
+  y
+}
+Arg <- std(e,STt.arg)
+Arg[,1] <- e[,1] 
+
+setwd("~/Documents/SEM2DSM1/Paper_3/data/")
+d <- read.csv("KS.data-0.3.csv")[,c(-1)] 
+name(d)
+names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
+# remove outlayers
+# d <- d[d$idp!=26058,]
+# d <- d[d$idp!=22961,]
+d <- cbind(d[1],
+           d[,colnames(Arg)[2:10]],
+           d[11:21])
+d <- d[c(-156,-157),]
+# Descriptive statistics and normality test. ####
+round(stat.desc(d,norm = TRUE),3)
+# Soil properties does not present strong deviation from normality.
+# But some covariates need to be transformed. First, we store original mean and 
+# sd in ST
+ST.ks <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+
+# Based on normtest.W the following covariates need to be transformed
+d$twi <- log10(d$twi)
+d$vdchn <- log10(d$vdchn+10)
+d$ndwi.a <- (d$ndwi.a+10)^.3
+# OC as log10 of OC
+# d$OC.A <- log10(d$OC.A)
+# d$OC.B <- log10(d$OC.B)
+# d$OC.C <- log10(d$OC.C)
+
+# New statistics
+round(stat.desc(d,norm = TRUE),3)
+# New mean and sd
+STt.ks <- t(stat.desc(d,norm = TRUE)[c(9,13),])
+
+# standardised data set ####
+std <- function(x, st){
+  y <- x
+  for(i in seq_along(names(x))){
+    y[,i] <- (x[,i] - st[i,1]) / st[i,2]
+  }
+  y
+}
+ks <- std(d,STt.ks)
+ks[,1] <- d[,1] 
+######## ks and Arg from Model 4
+ks$Country <- "USA"
+Arg$Country <- "Arg"
+
+Arg <- Arg[,names(ks)[11:22]]
+ks <- ks[,names(ks)[11:22]]
+
+
+data <- rbind(ks, Arg)
+
+library(reshape)
+library(ggplot2)
+meltp <- unique(melt(data,id.vars = c("Country")))
+name(meltp)
+sp <- levels(meltp$variable)
+# plot soil properties
+ggplot(data = meltp[which(meltp$variable %in% sp),],
+       aes(x = value, fill = Country)) + geom_density(alpha = 0.4) +
+  facet_wrap( ~ variable,scales = "free")
+# plot covariates
+# tiff(filename = "~/Dropbox/PhD_Marcos/Paper 3/Figures/Fig3.tif",
+#      width = 2000, height = 1200, res =  250)
+# ggplot(data = meltp[which(meltp$variable %in% sp[c(10:12,14,15,17:18)]),],
+#        aes(x = value, fill = Country)) + geom_density(alpha = 0.4) +
+#   facet_wrap( ~ variable,scales = "free") + theme(text = element_text(size = 13, family = "serif"))
+# dev.off()
+# #############
+# # another approach from: http://ggobi.github.io/ggally/#ggallyggnostic
+# # Load required packages
+# require(GGally)
+# 
+# ggscatmatM <- function (data, columns = 1:ncol(data), color = NULL, alpha = 1, 
+#                         corMethod = "pearson") 
+# {
+#   data <- data
+#   data.choose <- data[columns]
+#   dn <- data.choose[sapply(data.choose, is.numeric)]
+#   if (ncol(dn) == 0) {
+#     stop("All of your variables are factors. Need numeric variables to make scatterplot matrix.")
+#   }
+#   if (ncol(dn) < 2) {
+#     stop("Not enough numeric variables to make a scatter plot matrix")
+#   }
+#   a <- uppertriangle(data, columns = columns, color = color, 
+#                      corMethod = corMethod)
+#   if (is.null(color)) {
+#     plot <- scatmat(data, columns = columns, alpha = alpha) + 
+#       geom_text(data = a, aes_string(label = "r"), colour = "black", family = "serif")
+#   }
+#   else {
+#     plot <- scatmat(data, columns = columns, color = color, 
+#                     alpha = alpha) + geom_text(data = a, family = "serif", 
+#                                                aes_string(label = "r", 
+#                                                                     color = "colorcolumn")) + labs(color = color)
+#   }
+#   factor <- data.choose[sapply(data.choose, is.factor)]
+#   if (ncol(factor) == 0) {
+#     return(plot)
+#   }
+#   else {
+#     warning("Factor variables are omitted in plot")
+#     return(plot)
+#   }
+# }
+# # hist and correlation for soil properties
+# tiff(filename = "~/Dropbox/PhD_Marcos/Paper 3/Figures/Fig2.tif",
+#      width = 2000, height = 2000, res =  250)
+# ggscatmatM(data, color = "Country", columns = c(names(data)[c(2:10)]), alpha = 0.10) + 
+#   theme(axis.text.x = element_text(size = 8,angle = 90, vjust = 0.5), 
+#         axis.text.y = element_text(size = 8,angle =  0, vjust = 0.5),
+#         text = element_text(size = 13, family = "serif"),
+#         title = element_text(family = "serif"))
+# dev.off()
+# # hist and scaterplots for covariates
+# ggscatmat(data, color = "country", columns = c(names(data)[c(11:12,14,15,17:21)]), alpha = 0.10) + 
+#   theme(axis.text.x = element_text(size = 8,angle = 90, vjust = 0.5),
+#         axis.text.y = element_text(size = 8,angle =  0, vjust = 0.5))
+# ```
+# 
+# ## Accuracy measures from 7 models
+# ```{r accuracy, echo=FALSE}
+# library(ggplot2)
+# library(gridExtra)
+# library(ggthemes)
+# library(reshape)
+# 
+# rm(list=ls())
+# name <- function(x) { as.data.frame(names(x))}
+# 
+# a <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/accuracy3.csv")
+# a <- melt(a, id.vars = c("sp","hor", "model"), measure.vars = c( "ME", "RMSE", "AVE"))
+# 
+# with(a, levels(hor))
+# 
+# a <- within(a, hor <- factor(hor, levels(a$hor)[c(1,3,4,2)]))
+# with(a, levels(hor))
+# a <- within(a, sp <- factor(sp, levels(a$sp)[c(1,3,2)]))
+# with(a, levels(sp))
+# with(a, levels(model))
+# color_bars <- c('#ffa700', '#cc8500', '#996400', '#4c3200','#ff3f2c','#ab2419','#808080')
+# 
+# 
+# b <- a
+# a <- a[a$sp=="CEC",]
+# CEC.ME <- ggplot(a[a$variable=="ME",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) + 
+#   facet_grid(hor ~ variable) + 
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5), strip.text.y = element_blank(),
+#         text=element_text(family="Serif"))+
+#   scale_fill_manual(values= color_bars) +
+#   scale_x_discrete(name="") + scale_y_continuous(name = "CEC", limits = c(-3.5,3))
+# 
+# CEC.RMSE <- ggplot(a[a$variable=="RMSE",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) +
+#   facet_grid(hor ~ variable, ) + 
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5), strip.text.y = element_blank(),
+#         text=element_text(family="Serif"))+
+#   scale_fill_manual(values= color_bars) +
+#   scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(0,8))
+# 
+# CEC.AVE <- ggplot(a[a$variable=="AVE",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) +
+#   facet_grid(hor ~ variable, ) + 
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5), 
+#         text=element_text(family="Serif")) +
+#   scale_fill_manual(values= color_bars) +
+#   scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.3,0.55))
+# 
+# a <- b
+# a <- a[a$sp=="OC",]
+# OC.ME <- ggplot(a[a$variable=="ME",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) + 
+#   facet_grid(hor ~ variable) + 
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5), strip.text.y = element_blank(),
+#         text=element_text(family="Serif")) +
+#   scale_fill_manual(values= color_bars) +
+#   scale_x_discrete(name="") + scale_y_continuous(name = "OC", limits = c(-0.31,0.30))
+# 
+# OC.RMSE <- ggplot(a[a$variable=="RMSE",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) +
+#   facet_grid(hor ~ variable, ) + 
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5), strip.text.y = element_blank(),
+#         text=element_text(family="Serif")) +
+#   scale_fill_manual(values= color_bars) +
+#   scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(0,0.8))
+# 
+# OC.AVE <- ggplot(a[a$variable=="AVE",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) +
+#   facet_grid(hor ~ variable, ) + 
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+#         text=element_text(family="Serif")) +
+#   scale_fill_manual(values= color_bars) +
+#   scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.3,1))
+# 
+# a <- b
+# a <- a[a$sp=="Clay",]
+# clay.ME <- ggplot(a[a$variable=="ME",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) + 
+#   facet_grid(hor ~ variable) + 
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5), strip.text.y = element_blank(),
+#         text=element_text(family="Serif")) +
+#   scale_fill_manual(values= color_bars) +
+#   scale_x_discrete(name="") + scale_y_continuous(name = "Clay", limits = c(-5,5))
+# 
+# clay.RMSE <- ggplot(a[a$variable=="RMSE",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) +
+#   facet_grid(hor ~ variable, ) + 
+# theme(axis.text.x = element_text(angle = 90, vjust = 0.5), strip.text.y = element_blank(),
+#         text=element_text(family="Serif")) +
+#   scale_fill_manual(values= color_bars) +
+#   scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(0,11))
+# 
+# clay.AVE <- ggplot(a[a$variable=="AVE",], aes(x = model, y = value, fill = model)) +
+#   geom_col( show.legend = F, alpha = 0.6) +
+#   facet_grid(hor ~ variable) + 
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+#         text=element_text(family="Serif")) +
+#   scale_fill_manual(values= color_bars) + 
+#   scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.1,0.8))
+# 
+# png(filename = "/home/marcos/Dropbox/PhD_Marcos/Paper 3/Figures/accuracy_measures.png",
+#     width = 1400, height = 2400, res = 180)
+# grid.arrange(CEC.ME, CEC.RMSE, CEC.AVE,
+#              OC.ME, OC.RMSE, OC.AVE,
+#              clay.ME, clay.RMSE, clay.AVE,
+#              ncol=3, nrow=3)
+# dev.off()
+# 
+# 
+# 
+# # library(lattice)
+# # par(mfrow = c(3, 1), pty = "s")
+# # plot1 <- barchart(ME ~ model | sp*hor,  between = list(x = 0.5, y = 0),
+# #          data=a, origin = 0, scales=list(x=list(rot=90))) 
+# # plot2 <- barchart(RMSE ~ model | sp+hor,  between = list(x = 0.5, y = 0),
+# #          data=a, origin = 0, scales=list(x=list(rot=90)))
+# # plot3 <- barchart(AVE ~ model | sp+hor,  between = list(x = 0.5, y = 0),
+# #          data=a, origin = 0, scales=list(x=list(rot=90)),)
+# # 
+# # 
+# # print(plot1, position=c(0,.66,1,1), more=T)
+# # print(plot2, position=c(0,.33,1,0.66), more=T)
+# print(plot3, position=c(0,0,1,0.33), more=F)
+```
+
