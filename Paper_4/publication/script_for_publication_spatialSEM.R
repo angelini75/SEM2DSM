@@ -178,6 +178,8 @@ xy <- data[, c("X","Y")] # coordinates of data
 xy[,"Y"] <- xy[,"Y"] * ST["Y","std.dev"] / ST["X","std.dev"]
 coordinates(xy) <- ~X+Y
 h <- sp::spDists(xy) # h of cal data
+# coordinate system was originally set as:
+# NAD83.N <- CRS("+init=epsg:2796")
 
 # get.RHO function: this function get the C matrix of Eq. (12), 
 # wich depend on alpha and a
