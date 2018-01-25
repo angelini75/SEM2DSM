@@ -200,11 +200,16 @@ rm(list=ls())
 name <- function(x) { as.data.frame(names(x))}
 
 a <- read.csv("~/Documents/SEM2DSM1/Paper_3/data/accuracy3.csv")
+a$hor <- as.character(a$hor)
+a$hor[a$hor=="all"] <- "Joint"
+a$hor <- as.factor(a$hor) 
 a <- melt(a, id.vars = c("sp","hor", "model"), measure.vars = c( "ME", "RMSE", "AVE"))
+
+
 
 with(a, levels(hor))
 
-a <- within(a, hor <- factor(hor, levels(a$hor)[c(1,3,4,2)]))
+# a <- within(a, hor <- factor(hor, levels(a$hor)[c(1,3,4,2)]))
 with(a, levels(hor))
 a <- within(a, sp <- factor(sp, levels(a$sp)[c(1,3,2)]))
 with(a, levels(sp))
@@ -290,7 +295,7 @@ clay.AVE <- ggplot(a[a$variable=="AVE",], aes(x = model, y = value, fill = model
   scale_fill_manual(values= color_bars) +
   scale_x_discrete(name="") + scale_y_continuous(name = "", limits = c(-0.1,0.8))
 
-tiff(filename = "/home/marcos/Dropbox/PhD_Marcos/Paper 3/Figures/Fig7.tiff",
+png(filename = "/home/marcos/Dropbox/PhD_Marcos/Paper 3/Figures/Fig7.png",
     width = 2100, height = 3600, res = 370)
 grid.arrange(CEC.ME, CEC.RMSE, CEC.AVE,
              OC.ME, OC.RMSE, OC.AVE,
