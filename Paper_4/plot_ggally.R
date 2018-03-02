@@ -123,9 +123,9 @@ library(ggplot2)
 d <- d[d$OC.C<5,]
 d <- d[,c(2:13,15:16,18:21)]
 names(d) <- c("Clay.A","Clay.B","Clay.C","CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C",
-              "DEM","TWI","VDCHN","EVISD","LSTM","NDWI.A","NDWI.B","X", "Y")
+              "DEM","TWI","VDCHN","EVISD","LSTM","NDWI.A","NDWI.B","LON", "LAT")
 d <- d[,c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C","Clay.A","Clay.B","Clay.C",
-          "DEM","TWI","VDCHN","EVISD","LSTM","NDWI.A","NDWI.B","X", "Y")]
+          "DEM","TWI","VDCHN","EVISD","LSTM","NDWI.A","NDWI.B","LON", "LAT")]
 
 ggscatmatM <- function (data, columns = 1:ncol(data), color = NULL, alpha = 1, 
                         corMethod = "pearson") 
@@ -163,6 +163,14 @@ ggscatmatM <- function (data, columns = 1:ncol(data), color = NULL, alpha = 1,
 png(filename =  "~/Dropbox/PhD_Marcos/Paper 4/TeX/Figures/scatterplot.png",
     width = 2000,height = 2000, res = 300 )
 ggscatmatM(d, columns = 1:9,  alpha=0.15)+  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        text = element_text(size = 13, family = "serif"),
+        title = element_text(family = "serif"))
+dev.off()
+
+png(filename =  "~/Dropbox/PhD_Marcos/Paper 4/TeX/Figures/scatterplot_cov.png",
+    width = 2000,height = 2000, res = 300 )
+ggscatmatM(d, columns = 10:18,  alpha=0.15)+  
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
         text = element_text(size = 13, family = "serif"),
         title = element_text(family = "serif"))
