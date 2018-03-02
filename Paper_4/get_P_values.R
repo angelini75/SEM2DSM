@@ -14,24 +14,22 @@ coef$p.sem <- 0
 coef$p.spt <- 0
 coef <- coef[c(1:5,8,6,7,9)]
 
-
-# P-value for sem
-a <- -0.033
-s <- 0.068
-n <- 147
-xbar <- 0
-z <- (xbar-a)/(s/sqrt(n))
-coef$p.sem <- 2*pnorm(-abs(z))
-
 # P-value for sem
 a <- coef$est.sem
 s <- coef$se.sem
 n <- 147
 xbar <- 0
-z <- (a)/(s/sqrt(n))
+z <- (xbar-a)/s
 coef$p.sem <- 2*pnorm(-abs(z))
 
+# P-value for spt
+a <- coef$est.spt
+s <- coef$se.spt
+n <- 147
+xbar <- 0
+z <- (xbar-a)/s
+coef$p.spt <- 2*pnorm(-abs(z))
 
-2*pt(-abs(t),df=n-1)
+
 
 write.csv(coef, "~/git/SEM2DSM/Paper_4/data/est_se_pvalue.csv")
