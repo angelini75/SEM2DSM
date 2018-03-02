@@ -6,7 +6,7 @@ library(lavaan)
 library(pastecs)
 library(utils)
 
-setwd("~/Documents/SEM2DSM1/Paper_3/data/")
+setwd("~/git/SEM2DSM/Paper_3/data/")
 d <- read.csv("KS.data-0.2.csv")[,c(-1)] 
 name(d)
 names(d)[5:10] <- c("CEC.A","CEC.B","CEC.C","OC.A","OC.B","OC.C")
