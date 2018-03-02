@@ -167,3 +167,11 @@ ggscatmatM(d, columns = 1:9,  alpha=0.15)+
         text = element_text(size = 13, family = "serif"),
         title = element_text(family = "serif"))
 dev.off()
+
+png(filename =  "~/Dropbox/PhD_Marcos/Paper 4/TeX/Figures/scatterplot_all.png",
+    width = 4000,height = 4000, res = 300 )
+ggscatmatM(d, columns = 1:18,  alpha=0.15)+  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        text = element_text(size = 13, family = "serif"),
+        title = element_text(family = "serif"))
+dev.off()
