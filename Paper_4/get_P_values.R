@@ -1,18 +1,37 @@
 # Get P-values of estimates for paper 4
-# from http://www.cyclismo.org/tutorial/R/pValues.html
+rm(list=ls())
+name <- function(x) { as.data.frame(names(x))}
+
+# from http://www.cyclismo.org/tutorial/R/pValues.html ##############
 
 # table with coefficients. est = standard sem; new.est = spatial sem
-coef <- read.csv("~/git/SEM2DSM/Paper_4/data/est_se.csv")
-a <- coef$new.est
-s <- coef$lav.se
+coef <- read.csv("~/git/SEM2DSM/Paper_4/data/est_se.csv")[,-1]
+name(coef)
+coef <- coef[c(1:6,8)]
+# sem = standard sem; spt = spatial sem; se = standard error
+names(coef) <- c("lhs","op","rhs","est.sem","se.sem","est.spt","se.spt")
+coef$p.sem <- 0
+coef$p.spt <- 0
+coef <- coef[c(1:5,8,6,7,9)]
+
+
+# P-value for sem
+a <- -0.033
+s <- 0.068
 n <- 147
 xbar <- 0
 z <- (xbar-a)/(s/sqrt(n))
-z
+coef$p.sem <- 2*pnorm(-abs(z))
 
-p_value <- 2*pnorm(-abs(z))
+# P-value for sem
+a <- coef$est.sem
+s <- coef$se.sem
+n <- 147
+xbar <- 0
+z <- (a)/(s/sqrt(n))
+coef$p.sem <- 2*pnorm(-abs(z))
 
-coef$P_value <- p_value
-coef$signif <- coef$P_value<0.05
+
+2*pt(-abs(t),df=n-1)
 
 write.csv(coef, "~/git/SEM2DSM/Paper_4/data/est_se_pvalue.csv")
