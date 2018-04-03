@@ -257,7 +257,7 @@ doParallel::stopImplicitCluster()
 ########################################################################
 result <- as.data.frame(result)
 write.csv(result, "results_LOOCV_2.csv")
-#result <- read.csv("Paper_4/data/results_LOOCV.csv")[,-1]
+#result <- read.csv("results_LOOCV_2.csv")[,-1]
 names(result)[1:9] <- gsub("r", "", names(result)[1:9])
 result.sp <- result[,1:9]#cbind(,ks[,c("X","Y")])
 ST <- ST[,-1]
@@ -406,7 +406,7 @@ residuales <- rbind(data.frame(sp="CEC", hor="Joint h.", Obs=Res[,2], Pred=Res[,
 library(lattice)
 library(latticeExtra)
 library(hexbin)
-  png(filename = "~/Documents/Scatterplot_res.png", 
+  png(filename = "~/Dropbox/PhD_Marcos/Paper 4/Figures/Scatterplot_res_2.png", 
      width = 2000, height = 2000, res =  300)
 plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, abline=c(0,1),
                type=c('p', "g"),asp = 0.9,.aspect.ratio = 1, 
@@ -416,14 +416,12 @@ plot <- xyplot(Pred ~ Obs| sp + hor, data=residuales, abline=c(0,1),
                              limits=rep(list(c(0,40), c(0,4), c(0,70)), 4)),
                par.settings=list(grid.pars=list(fontfamily="serif")),
                pch = ".", cex = 3, alpha = 0.4, col = "black",
-               xlab = "Observed", ylab = "Predicted",
-               
-)
+               xlab = "Observed", ylab = "Predicted")
 #panel = panel.hexbinplot())
 
 useOuterStrips(combineLimits(x = plot,
                              margin.x = c(2), margin.y = c(),
-                             extend = T, adjust.labels = T),
+                             extend = F, adjust.labels = T),
                strip = strip.custom(
                  factor.levels = c(expression("CEC"~~"/ cmol"[c]~~"kg"^{-1}),
                                    "OC / %",
