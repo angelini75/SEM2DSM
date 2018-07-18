@@ -94,6 +94,7 @@ hor <- hor[,-6]
 hor.lab <- merge(hor, lab, by.x="num_lab", by.y="labid", all=F)
 # add coordenates to hor.lab
 hor.xy <- merge(hor.lab,site[,c(2,5,6)], all.x = T)
+write.csv(file = "validation_marcos_phd.csv",x =  hor.xy)
 hor.xy <- hor.xy[(hor.xy$hor == "A" | hor.xy$hor == "B" |
                    hor.xy$hor == "C") & !is.na(hor.xy$hor),]
 # thickness of standarized horizons
