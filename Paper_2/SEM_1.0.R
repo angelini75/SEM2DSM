@@ -1,8 +1,8 @@
-############### #### ### ## # - SEM for second paper - # ## ### #### ###########
+############### #### ### ## # - SEM for DSM, second paper - # ## ### #### ###########
 # Purpose        : Load, standardise and create a SE model
-# Maintainer     : Marcos Angelini  (marcos.angelini@wur.nl); 
-# Contributions  : Gerard?
-# Status         : 
+# Maintainer     : Marcos Angelini  (angelini.marcos@inta.gob.ar); 
+# Contributions  : Gerard BM Heuvelink, Bas Kempen
+# Status         : alpha
 # Note           : 
 # sessionInfo(@RStudio desktop)  lenovo ThinkPad T430 (4 cores)
 # R version 3.0.2 (2013-09-25)
